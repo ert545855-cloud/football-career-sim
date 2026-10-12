@@ -2,6 +2,8 @@ import './styles/main.css';
 import { createApp } from './ui/app.js';
 import { configureAudio, unlock } from './audio.js';
 import * as chirp from './core/chirp/index.js';
+import * as mentor from './core/mentor/index.js';
+import { runMiniGame } from './games/index.js';
 
 const root = document.getElementById('app');
 const app = createApp(root);
@@ -24,5 +26,9 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
 
 app.go('title');
 window.__krampon = app;
-// Test modu (?autoplay=1): Chirp tetikleyicilerini konsoldan/testten çağırabilmek için
-if (app.autoplay) window.__chirp = chirp;
+// Test modu (?autoplay=1): Chirp/mentor tetikleyicilerini ve mini oyunları testten çağırabilmek için
+if (app.autoplay) {
+  window.__chirp = chirp;
+  window.__mentor = mentor;
+  window.__games = { runMiniGame };
+}

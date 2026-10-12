@@ -14,6 +14,9 @@ import { pickEvent, resolveEvent } from './events.js';
 import {
   RelationshipService, chirpOnInjury, chirpOnMatch, chirpOnOffers, chirpOnSeasonEnd, chirpOnTransfer, chirpOnWeekEnd, ensureChirp,
 } from './chirp/index.js';
+import {
+  ensureMentor, gainInfluence, mentorBonus, mentorOnAction, mentorOnMatch, mentorOnSeasonEnd, mentorOnSeasonStart, mentorOnTransfer, mentorOnWeekEnd,
+} from './mentor/index.js';
 
 export const SAVE_VERSION = 1;
 
@@ -47,6 +50,7 @@ export function newGame(setup) {
     pending: { match: null, event: null, offers: null, seasonReport: null },
   };
   ensureChirp(state);
+  ensureMentor(state);
   return state;
 }
 
@@ -90,10 +94,10 @@ export function canDoAction(state, id) {
 
 function snapshot(state) {
   const p = state.player;
-  return { energy: p.energy, morale: p.morale, manager: p.rel.manager, teammates: p.rel.teammates, fans: p.rel.fans, fame: p.fame, money: state.career.money };
+  return { energy: p.energy, morale: p.morale, manager: p.rel.manager, teammates: p.rel.teammates, fans: p.rel.fans, fame: p.fame, influence: p.influence ?? 0, money: state.career.money };
 }
 
-const DIFF_LABELS = { energy: 'Enerji', morale: 'Moral', manager: 'Hoca', teammates: 'Takım', fans: 'Taraftar', fame: 'Ün', money: 'Para' };
+const DIFF_LABELS = { energy: 'Enerji', morale: 'Moral', manager: 'Hoca', teammates: 'Takım', fans: 'Taraftar', fame: 'Ün', influence: 'Nüfuz', money: 'Para' };
 
 export function diffChanges(before, after) {
   return Object.keys(before)
@@ -164,6 +168,7 @@ export function doAction(state, id) {
     default:
       return { ok: false, text: 'Bilinmeyen aksiyon.' };
   }
+  mentorOnAction(state, id); // takım yemeği ve hocayla görüşme kulüp nüfuzunu artırır
   state.calendar.slots -= 1;
   return { ok: true, title, text, changes: diffChanges(before, snapshot(state)) };
 }
@@ -179,12 +184,14 @@ export function finishTraining(state, stat, result) {
   const bonus = itemEffects(state).train + (flags.trainBoostWeeks > 0 ? 0.25 : 0);
   const before = player.stats[stat];
   const progressBefore = player.progress[stat];
-  const gained = addProgress(player, stat, trainingAmount(result, bonus));
+  // Çalışkan mentor: antrenman gelişim hızı ×1.2
+  const mentorMult = mentorBonus(state).trainingGrowth;
+  const gained = addProgress(player, stat, trainingAmount(result, bonus) * mentorMult);
   changeEnergy(player, -18);
   if (result.success) changeMorale(player, 1);
   state.calendar.slots -= 1;
   state.calendar.trainings += 1;
-  return { stat, name: STATS[stat].name, before, after: player.stats[stat], gained, progress: player.progress[stat], progressBefore, success: result.success };
+  return { stat, name: STATS[stat].name, before, after: player.stats[stat], gained, progress: player.progress[stat], progressBefore, success: result.success, mentorMult };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -207,6 +214,8 @@ export function completeMatch(state, match) {
 
   // Chirp: paylaşım kartı + gazeteci tweetleri (formsuzluk, büyük performans, kulübe, yönetim)
   const chirp = chirpOnMatch(state, { summary, match });
+  // Kulüp nüfuzu: oynadıkça ve iyi oynadıkça soyunma odasında sözün geçer
+  summary.influence = mentorOnMatch(state, summary);
 
   const opp = CLUB_BY_ID[match.oppId].name;
   const resTxt = { W: 'Galibiyet', D: 'Beraberlik', L: 'Mağlubiyet' }[summary.result];
@@ -245,6 +254,10 @@ function endWeek(state, ctx) {
   if (discipline.outcome === 'ban') addNews(state, 'PFDK: 1 maç men cezası aldın.', 'bad');
   if (discipline.outcome === 'fine') addNews(state, `PFDK: €${discipline.fine} para cezası aldın.`, 'bad');
 
+  // Mentorluk: buluşmasız hafta ilişkiyi düşürür; akıl hocası isen nüfuz +2; gençlerden talepler
+  const mentor = mentorOnWeekEnd(state);
+  if (mentor.signing) addNews(state, `${currentClub(state).short} kadrosuna genç transfer: ${mentor.signing.name} (${mentor.signing.age}).`, 'info');
+
   const event = pickEvent(state, ctx);
   state.pending.event = event;
 
@@ -262,7 +275,7 @@ function endWeek(state, ctx) {
     calendar.slots = WEEK_SLOTS;
     calendar.trainings = 0;
   }
-  return { finance: fin, changes: diffChanges(before, snapshot(state)), event, offers: state.pending.offers, seasonOver, discipline, chirp: chirpTweets };
+  return { finance: fin, changes: diffChanges(before, snapshot(state)), event, offers: state.pending.offers, seasonOver, discipline, chirp: chirpTweets, mentor };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -313,6 +326,9 @@ export function endSeason(state) {
 
   const ageChanges = ageUp(player);
   career.contract.yearsLeft -= 1;
+  // Kulüp nüfuzu: kulüpte geçen sezon ve ödüller; mentorluk sezonu kapanır
+  const influenceGain = gainInfluence(state, (s.apps >= 8 ? 2 : 0.5) + awards.length * 3);
+  const mentorEnd = mentorOnSeasonEnd(state);
 
   const offers = generateOffers(state, 'end');
   const mustChoose = career.contract.yearsLeft <= 0;
@@ -334,6 +350,8 @@ export function endSeason(state) {
     newAge: player.age,
     canRetire: player.age >= 34,
     mustRetire: player.age >= 38,
+    influenceGain,
+    mentor: { ...mentorEnd, start: null },
   };
 
   calendar.season += 1;
@@ -346,6 +364,8 @@ export function endSeason(state) {
   flags.benchStreak = 0;
   player.energy = 100;
   state.pending.match = null;
+  // Yeni sezon: kadro yaşlanır; ≤ 26 ise mentor seçimi açılır, değilse rol değişimi (gençlere akıl hocalığı)
+  report.mentor.start = mentorOnSeasonStart(state);
   state.pending.seasonReport = report;
   addNews(state, `Sezon ${report.season} bitti: ${league.name} ${position}. sıra.`, 'info');
   return report;
@@ -355,6 +375,10 @@ export function takeOffer(state, offer) {
   const fromClubId = state.career.clubId;
   const text = acceptOffer(state, offer);
   chirpOnTransfer(state, offer, fromClubId);
+  if (!offer.renewal) {
+    const m = mentorOnTransfer(state, fromClubId);
+    if (m.ended) addNews(state, `Mentorun ${m.ended} ile yolların ayrıldı.`, 'info');
+  }
   state.pending.offers = null;
   state.pending.match = null; // eski kulübün planlanmış maçı geçersiz
   addNews(state, text, 'good');

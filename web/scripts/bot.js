@@ -6,6 +6,19 @@ import { applyAiEvent, resolveMoment } from '../src/core/match.js';
 import { getEvent } from '../src/core/events.js';
 import { buyItem } from '../src/core/economy.js';
 import { clubRating } from '../src/core/league.js';
+import { MentorManager } from '../src/core/mentor/index.js';
+
+/** Mentorluk kararları: sezon başı en iyi adayı seç (Çalışkan öncelikli), haftada bir buluş, gençleri kabul et. */
+export function playMentor(state) {
+  const mm = new MentorManager(state);
+  if (mm.canChooseMentor().ok) {
+    const c = mm.candidates();
+    const best = c.find((p) => p.trait === 'hardworker') || c[0];
+    mm.chooseMentor(best.id);
+  }
+  if (state.player.energy >= 60 && mm.canMeet('coffee').ok) mm.meet(state.calendar.week % 2 ? 'coffee' : 'dinner');
+  for (const r of [...state.mentor.legacy.requests]) mm.acceptRequest(r.id);
+}
 
 /** İnsan benzeri mini oyun sonucu: yetenek arttıkça başarı artar. */
 export function fakeGame(skill, humanSkill = 0.5) {
@@ -17,6 +30,7 @@ const pickFail = () => ['save', 'wide', 'over', 'post', 'block'][Math.floor(Math
 
 export function playWeek(state, humanSkill = 0.5) {
   const pos = POSITIONS[state.player.position];
+  playMentor(state);
   // Aksiyonlar
   let guard = 0;
   while (state.calendar.slots > 0 && guard++ < 10) {
@@ -49,7 +63,7 @@ export function playWeek(state, humanSkill = 0.5) {
       const w = { shot: { shooting: 1 }, pass: { passing: 1 }, tackle: { defending: 0.7, speed: 0.3 } }[item.m.type];
       let s = 0; let tw = 0;
       for (const [k, v] of Object.entries(w)) { s += state.player.stats[k] * v; tw += v; }
-      resolveMoment(match, item.m, fakeGame(s / tw / 100, humanSkill), state.player.name);
+      resolveMoment(match, item.m, fakeGame((s / tw / 100) * (match.big?.skillMult ?? 1), humanSkill), state.player.name);
     }
   }
   const out = completeMatch(state, match);

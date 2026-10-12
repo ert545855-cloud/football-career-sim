@@ -17,6 +17,12 @@ export function createPlayer({ name, position, avatar, number }) {
     ratings: [],
     rel: { ...RELATION_DEFAULTS },
     fame: 3,
+    /** Kulüp Nüfuzu (kaptanlık/söz hakkı, 0–100). Kulüp değişince büyük ölçüde sıfırlanır. */
+    influence: 5,
+    /** Kulüp Sadakati: yönetim ve hocanın gözündeki değer (0–100) */
+    loyalty: 20,
+    /** Aktif mentor bonusu (MentorManager.sync yazar) */
+    mentorBonus: null,
   };
 }
 
@@ -112,6 +118,8 @@ export function changeMorale(player, delta) {
 }
 
 export function changeRel(player, key, delta) {
+  // Lider mentor: Takım Uyumu kayıpları yarıya iner
+  if (key === 'teammates' && delta < 0) delta *= player.mentorBonus?.teamLossMult ?? 1;
   player.rel[key] = clamp(Math.round(player.rel[key] + delta), 0, 100);
 }
 

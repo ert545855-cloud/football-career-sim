@@ -20,6 +20,7 @@ Tarayıcıda çalışır. iPhone'da ve Android'de **ana ekrana eklenip uygulama 
 - **Para ve yaşam tarzı:** Maaş, galibiyet/gol/asist primleri ve sözleşme süresi. Devre arası ve sezon sonu transfer teklifleri gelir; her teklifte forma şansı tahmini gösterilir. 20 eşyalık mağazada araç, ev, gelişim ve yaşam ürünleri var.
 - **Metin olayları ve moral:** 28 seçimli olay (röportaj, parti, sakatlık, sponsor, milli takım çağrısı...). Moral ve yorgunluk mini oyun performansını etkiler.
 - **Chirp (sosyal medya):** Oyun içi zaman tüneli. İki parodi gazeteci hesabı var: *Fabricio Romana* ("It's a deal!") kesinleşen transferleri ve büyük dedikoduları, *Yağız Sapanca* ("Flaş Gelişme:") form düşüşü, sakatlık ve kulüp içi haberleri paylaşır. Her tweetin altına 3-4 taraftar botu yorum yazar; yorumlar Türkçe duygu analiziyle olumlu/olumsuz etiketlenir. Maçtan sonra ana ekrandan Mütevazı, Egoist veya Agresif bir paylaşım yapılabilir. Her biri Hoca, Taraftar, Takım, Sponsor, Federasyon ve Yönetim ilişkilerini değiştirir. Agresif paylaşım PFDK'dan para cezası ya da 1 maç men getirebilir.
+- **Mentorluk ve rol model:** Her sezonun ilk haftasında, 26 yaş ve altındaysan kadrodaki tecrübeli isimlerden (32+ yaş, Kaptan veya Yıldız Oyuncu, kulüp nüfuzu 75'in üstünde) en fazla 3 aday listelenir; birini sezonun mentoru seçersin. Mentorun karakteri bir bonus verir: *Çalışkan* antrenman gelişimini %20 hızlandırır, *Lider* nüfuz kazancını %20 artırır ve Takım Uyumu kayıplarını yarıya indirir, *Soğukkanlı* büyük maçlarda (derbi, sezon finali, zirve, kader maçı) heyecanı %20 azaltıp mini oyun nişangahını yavaşlatır. Mentoru haftada bir kahveye ya da yemeğe davet edersin (−20 enerji, +10 ilişki); her buluşmada bağlama uygun bir diyalog çıkar. 26 yaşını geçince roller değişir: kulüp nüfuzun 80'in üstündeyse 20 yaş ve altı gençler senden mentorluk ister; kabul edersen her hafta nüfuz +2, kulüp sadakati, hoca ve yönetim ilişkisi artar.
 - **Sezon sonu:** Şampiyonluk, gol krallığı, sezonun oyuncusu ve genç oyuncu ödülleri. Yaşlanma, sözleşme yenileme ve emeklilik.
 - **Ses ve titreşim:** Bütün sesler WebAudio ile üretilir; dışarıdan dosya yüklenmez. Titreşim Android'de çalışır.
 - **Kayıt:** Oyun otomatik kaydedilir (localStorage). Kayıt kodu dışa ve içe aktarılarak başka cihaza taşınabilir.
@@ -43,6 +44,7 @@ web/src/
     game.js       Hafta akışı, sezon sonu
     storage.js    Kayıt
     chirp/        Sosyal medya: modeller, tetikleyiciler, paylaşımlar, ilişkiler, duygu analizi
+    mentor/       Mentorluk: MentorManager, kadro (yapay zekâ oyuncular), diyaloglar, büyük maçlar
   games/     Canvas mini oyunları (shot, pass, tackle, sprint)
   ui/        Ekranlar, SVG çizimler (avatar, arma, ikonlar), akışlar
 web/tests/   Birim testleri (node --test)

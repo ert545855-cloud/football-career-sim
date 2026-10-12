@@ -452,11 +452,76 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.01em; }
 .spacer { height: 12px; }
 .hide { display: none !important; }
 
+
+/* ───────── Mentorluk ───────── */
+.sq-av { width: 46px; height: 46px; border-radius: 50%; overflow: hidden; flex: none; display: block; background: radial-gradient(circle at 50% 30%, #2a3f35, #0b1912); border: 2px solid rgba(255, 207, 61, 0.45); }
+.sq-av svg { width: 100%; height: 100%; display: block; }
+.sq-av.sm { width: 36px; height: 36px; border-width: 1.5px; border-color: var(--line-2); }
+.sq-av.lg { width: 58px; height: 58px; }
+.sq-av.xl { width: 96px; height: 96px; border-width: 3px; box-shadow: 0 0 0 6px rgba(255, 207, 61, 0.1), 0 12px 30px rgba(0, 0, 0, 0.35); }
+.mentor-hero { display: grid; place-items: center; margin: 12px 0 8px; }
+.cand { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 14px; display: grid; gap: 12px; }
+.cand-name { font-size: 16px; font-weight: 800; }
+.trait { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 14px; background: color-mix(in srgb, var(--c) 10%, transparent); border: 1px solid color-mix(in srgb, var(--c) 32%, transparent); }
+.trait .t-ic { width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; flex: none; color: var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); }
+.trait b { display: block; font-size: 13.5px; }
+.trait span { display: block; font-size: 12.5px; color: var(--muted); line-height: 1.4; margin-top: 2px; }
+.trait b .muted { display: inline; font-size: inherit; margin: 0; font-weight: 600; }
+.trait.compact { padding: 6px 10px; align-items: center; }
+.trait.compact .t-ic { width: 24px; height: 24px; border-radius: 8px; }
+.trait.compact b { font-size: 12.5px; }
+.speech { display: flex; gap: 10px; align-items: flex-end; }
+.speech .bubble { position: relative; flex: 1; background: #f4f8ec; color: #10231a; border-radius: 18px 18px 18px 6px; padding: 10px 14px 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25); }
+.speech .bubble b { font-size: 12px; color: #4b6b2a; }
+.speech .bubble p { margin: 3px 0 0; font-size: 14.5px; line-height: 1.45; font-weight: 600; }
+.scene { margin: 4px 0 14px; text-align: center; font-size: 13.5px; color: var(--muted); font-style: italic; line-height: 1.45; }
+.mentor-card { margin-top: 10px; display: grid; gap: 12px; border-color: rgba(255, 207, 61, 0.28); background: linear-gradient(180deg, rgba(255, 207, 61, 0.07), var(--panel)); }
+.mentor-card.glow-gold { box-shadow: 0 0 0 1px rgba(255, 207, 61, 0.35), 0 10px 30px rgba(255, 207, 61, 0.1); animation: goldPulse 2.4s ease-in-out infinite; }
+.mentor-card.slim { display: flex; align-items: center; gap: 12px; width: 100%; color: inherit; font: inherit; cursor: pointer; background: var(--panel); border-color: var(--line); }
+.mentor-card.slim > svg { width: 18px; height: 18px; color: var(--muted); }
+.mentor-ic { width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; flex: none; background: rgba(255, 207, 61, 0.14); color: var(--gold); }
+.mentor-ic svg { width: 23px; height: 23px; }
+.mentor-ic.dim { background: var(--panel-2); color: var(--muted); }
+.mentor-ic.gold { background: rgba(74, 222, 128, 0.14); color: var(--good); }
+.meet-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.meet { appearance: none; border: 1px solid rgba(255, 207, 61, 0.3); background: rgba(255, 207, 61, 0.08); color: var(--text); border-radius: 14px; padding: 10px 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; text-align: center; transition: transform 0.12s; font: inherit; }
+.meet:active { transform: scale(0.96); }
+.meet svg { width: 24px; height: 24px; color: var(--gold); }
+.meet b { font-size: 13px; }
+.meet span { font-size: 10.5px; color: var(--muted); }
+.meet.off { opacity: 0.4; }
+.event-art.gold { background: radial-gradient(circle at 30% 20%, rgba(74, 222, 128, 0.35), rgba(74, 222, 128, 0.06)); color: var(--good); }
+.mode-banner { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 16px; margin-bottom: 10px; background: rgba(255, 207, 61, 0.08); border: 1px solid rgba(255, 207, 61, 0.25); }
+.mode-banner b { display: block; font-size: 14.5px; }
+.mode-banner span { display: block; font-size: 12.5px; color: var(--muted); line-height: 1.4; margin-top: 2px; }
+.mode-banner.gold { background: rgba(74, 222, 128, 0.08); border-color: rgba(74, 222, 128, 0.25); }
+.inf-num { min-width: 30px; text-align: right; font-weight: 900; color: var(--gold); font-variant-numeric: tabular-nums; }
+.squad-list .li { gap: 10px; }
+.rules p { margin: 0; line-height: 1.5; color: var(--muted); }
+.rules p + p { margin-top: 8px; }
+.rules b { color: var(--text); }
+.log-item { display: grid; gap: 6px; }
+.chip.cool { background: rgba(165, 243, 252, 0.16); color: #a5f3fc; }
+.big-banner { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 9px 12px; border-radius: 12px; background: linear-gradient(90deg, rgba(255, 93, 108, 0.2), rgba(255, 93, 108, 0.04)); border: 1px solid rgba(255, 93, 108, 0.35); color: #ffc2c9; }
+.big-banner b { color: var(--text); font-size: 14px; }
+.big-banner span { margin-left: auto; font-size: 12px; font-weight: 700; }
+.big-banner.cool { background: linear-gradient(90deg, rgba(165, 243, 252, 0.16), rgba(165, 243, 252, 0.03)); border-color: rgba(165, 243, 252, 0.35); color: #a5f3fc; }
+.nerves-vignette { position: absolute; inset: 0; z-index: 1; pointer-events: none; box-shadow: inset 0 0 calc(40px + 160px * var(--nerves)) rgba(255, 40, 60, calc(0.25 + var(--nerves))); animation: heartbeat var(--beat) ease-in-out infinite; }
+.game-layer.nervous .game-hud { z-index: 3; }
+.nerves-chip { pointer-events: none; }
+.nerves-note { display: flex; gap: 10px; align-items: flex-start; text-align: left; padding: 10px 12px; margin: 0 0 12px; border-radius: 12px; background: rgba(255, 93, 108, 0.12); border: 1px solid rgba(255, 93, 108, 0.3); color: #fda4af; }
+.nerves-note b { display: block; color: var(--text); font-size: 13.5px; }
+.nerves-note span { display: block; font-size: 12.5px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+.nerves-note.cool { background: rgba(165, 243, 252, 0.1); border-color: rgba(165, 243, 252, 0.3); color: #a5f3fc; }
+@keyframes heartbeat { 0%, 100% { opacity: 0.35; } 14% { opacity: 1; } 28% { opacity: 0.5; } 42% { opacity: 0.9; } 70% { opacity: 0.4; } }
+@keyframes goldPulse { 0%, 100% { box-shadow: 0 0 0 1px rgba(255, 207, 61, 0.35), 0 10px 30px rgba(255, 207, 61, 0.08); } 50% { box-shadow: 0 0 0 1px rgba(255, 207, 61, 0.6), 0 10px 34px rgba(255, 207, 61, 0.2); } }
+
 @media (max-width: 360px) {
   .actions { gap: 6px; }
   .action { min-height: 84px; padding: 10px 4px 8px; }
   .action b { font-size: 11.5px; }
   .h-title { font-size: 22px; }
+  .meet span { font-size: 9.5px; }
   .scoreboard .sc { font-size: 34px; }
   .logo .word { font-size: 44px; }
 }

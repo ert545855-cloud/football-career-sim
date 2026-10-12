@@ -61,14 +61,20 @@ export function playShot(host, opts) {
     const backY = (y) => y - (y - L.hy) * 0.16;
     const backX = (x) => L.cx + (x - L.cx) * 0.9;
 
+    // Büyük maç heyecanı: nişangah titrer. Salınım oyun zamanıyla (tempo) ilerler,
+    // bu yüzden Soğukkanlı mentorla nişangah daha yavaş ve daha az sallanır.
+    const nerves = clamp(opts.nerves ?? 0, 0, 1);
+    const sway = () => (nerves > 0 ? { u: Math.sin(S.t * 2.6) * nerves * 0.34 + Math.sin(S.t * 6.1) * nerves * 0.06, v: Math.sin(S.t * 3.3 + 1.2) * nerves * 0.2 } : { u: 0, v: 0 });
+
     function aimFromDrag(d) {
       const dx = d.x - d.x0;
       const dy = d.y - d.y0;
       if (dy > -14) return null;
       const xg = L.bx + (dx * (L.by - L.gl)) / -dy;
-      const u = (xg - L.cx) / (L.gw / 2);
+      const sw = sway();
+      const u = (xg - L.cx) / (L.gw / 2) + sw.u;
       const power = clamp(Math.hypot(dx, dy) / (L.H * 0.38), 0.05, 1.45);
-      const v = clamp((power - 0.2) / 0.85, 0, 1.7);
+      const v = clamp((power - 0.2) / 0.85 + sw.v, 0, 1.7);
       return { u, v, power };
     }
 
@@ -181,6 +187,7 @@ export function playShot(host, opts) {
     }
 
     const stage = createStage(host, {
+      tempo: opts.tempo ?? 1,
       update(dt) {
         if (!L || L.W !== stage.W || L.H !== stage.H) layout(stage.W, stage.H);
         S.t += dt;
@@ -347,6 +354,18 @@ export function playShot(host, opts) {
             ctx.fillStyle = ok ? 'rgba(198,255,61,.18)' : 'rgba(255,93,108,.18)';
             ctx.fill();
             ctx.stroke();
+            if (nerves > 0) {
+              // Titreyen nişangah (büyük maç heyecanı)
+              const rr = Math.max(10, (sigma * L.gw) / 2) + 6;
+              ctx.strokeStyle = 'rgba(255,207,61,.9)';
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+              ctx.moveTo(tx - rr - 6, ty); ctx.lineTo(tx - rr + 6, ty);
+              ctx.moveTo(tx + rr - 6, ty); ctx.lineTo(tx + rr + 6, ty);
+              ctx.moveTo(tx, ty - rr - 6); ctx.lineTo(tx, ty - rr + 6);
+              ctx.moveTo(tx, ty + rr - 6); ctx.lineTo(tx, ty + rr + 6);
+              ctx.stroke();
+            }
             // güç çubuğu
             const ph = H * 0.28;
             const px = W - 26;

@@ -6,6 +6,7 @@ import { icon, itemArt, playerAvatar } from '../art.js';
 import { animateBars, esc } from '../dom.js';
 import { meter, statRow } from '../components.js';
 import { currentClub } from '../../core/game.js';
+import { MENTOR_TRAITS } from '../../core/mentor/index.js';
 
 function radar(stats) {
   // Ölçek: en yüksek stat'a göre (erken kariyerde şekil okunur kalsın), en az 50
@@ -51,6 +52,7 @@ export function playerScreen(app) {
     fx.fans && `<span class="chip good">Taraftar +${fx.fans}/hf</span>`,
     fx.train && `<span class="chip accent">Antrenman +%${Math.round(fx.train * 100)}</span>`,
     s.flags.trainBoostWeeks > 0 && `<span class="chip accent">Kamp bonusu +%25 · ${s.flags.trainBoostWeeks} hf</span>`,
+    p.mentorBonus && `<span class="chip gold" style="white-space:normal;line-height:1.3;height:auto;padding-top:5px;padding-bottom:5px">${icon('mentor', 'ico sm')} ${MENTOR_TRAITS[p.mentorBonus.trait].name} mentor: ${MENTOR_TRAITS[p.mentorBonus.trait].desc.replace(/\.$/, '')}</span>`,
   ].filter(Boolean).join('');
 
   return {
@@ -83,6 +85,13 @@ export function playerScreen(app) {
         <p class="muted small" style="margin:0">Etkin yetenek; stat, enerji (yorgunluk) ve morale göre hesaplanır.</p>
       </div>
 
+      <div class="h-sec">Kulüpteki yerin</div>
+      <button class="card" data-go-mentor style="display:grid;gap:12px;width:100%;text-align:left;color:inherit;font:inherit;cursor:pointer">
+        ${meter('Kulüp Nüfuzu', 'flag', p.influence ?? 0, 100, 'var(--gold)')}
+        ${meter('Kulüp Sadakati', 'shield', p.loyalty ?? 0, 100, '#fb923c')}
+        <span class="muted small">Nüfuz maç oynadıkça, takımla vakit geçirdikçe ve sezonlar boyunca kulüpte kaldıkça artar. Mentorluk ekranı için dokun.</span>
+      </button>
+
       <div class="h-sec">Sözleşme</div>
       <div class="card">
         <div class="row between"><span class="muted">Haftalık maaş</span><b class="tnum" style="color:var(--gold)">${money(s.career.contract.wage)}</b></div>
@@ -97,6 +106,10 @@ export function playerScreen(app) {
       </div>`,
     mount(el) {
       animateBars(el);
+      el.querySelector('[data-go-mentor]')?.addEventListener('click', () => {
+        app.click();
+        app.go('mentor');
+      });
     },
   };
 }

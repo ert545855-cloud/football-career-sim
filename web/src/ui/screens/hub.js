@@ -7,6 +7,7 @@ import { animateBars, esc } from '../dom.js';
 import { energyColor, meter, moraleColor, ratingColor } from '../components.js';
 import { RELATIONS } from '../../core/chirp/index.js';
 import { shareCard, shareFlow } from '../chirpView.js';
+import { bigMatchChip, hubMentorCard, meetingFlow, requestsSheet, selectionSheet } from '../mentorView.js';
 
 export function hubScreen(app) {
   const s = app.state;
@@ -70,16 +71,19 @@ export function hubScreen(app) {
           <span>${esc(ov.league.name)} · ${calendar.week === 1 ? 'Sezon başlıyor' : `${ov.position}. sıradasınız`}</span>
           <span>Kulüp gücü ${ov.clubRating}</span>
         </div>
+        ${bigMatchChip(s) ? `<div class="chips" style="margin-top:10px;justify-content:center">${bigMatchChip(s)}</div>` : ''}
       </div>
 
       <div class="h-sec">Bu hafta <span class="slots">${slots}</span></div>
       <div class="actions">${actionTiles}</div>
+      ${hubMentorCard(s)}
       <button class="btn primary lg block ${calendar.slots === 0 ? 'pulse' : ''}" style="margin-top:12px" data-act="match">${icon('whistle')} Maç Gününe Geç</button>
 
       <div class="h-sec">İlişkiler</div>
       <div class="card" style="display:grid;gap:12px">
         ${Object.values(RELATIONS).map((r) => meter(r.label, r.icon, player.rel[r.field], 100, r.color)).join('')}
         ${meter('Ün', 'star', player.fame, 100, '#c084fc')}
+        ${meter('Kulüp Nüfuzu', 'flag', player.influence ?? 0, 100, 'var(--gold)')}
         <p class="muted small" style="margin:0">Sponsor reklam kazancını, Federasyon ceza riskini, Yönetim sözleşme yenilemeyi etkiler.</p>
       </div>
 
@@ -98,6 +102,21 @@ export function hubScreen(app) {
           app.state.chirp.pendingPost = null;
           app.save();
           app.go('hub');
+          return;
+        }
+        const mt = e.target.closest('[data-meet],[data-go-mentor],[data-open-selection],[data-open-requests]');
+        if (mt) {
+          app.click();
+          if (mt.dataset.meet) {
+            // Uygun değilse meetingFlow nedenini gösterir (enerji, haftalık sınır…)
+            if (await meetingFlow(app, mt.dataset.meet)) app.go('hub');
+          } else if (mt.hasAttribute('data-open-selection')) {
+            await selectionSheet(app);
+            app.go('hub');
+          } else if (mt.hasAttribute('data-open-requests')) {
+            await requestsSheet(app);
+            app.go('hub');
+          } else app.go('mentor');
           return;
         }
         const t = e.target.closest('[data-action],[data-act]');

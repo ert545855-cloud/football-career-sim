@@ -10,8 +10,11 @@ export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 export const lerp = (a, b, t) => a + (b - a) * t;
 export const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
 
-/** Tuval sahnesi. update(dt, t) ve render(ctx, W, H, t) her karede çağrılır. */
-export function createStage(host, { update, render, pointer } = {}) {
+/**
+ * Tuval sahnesi. update(dt, t) ve render(ctx, W, H, t) her karede çağrılır.
+ * tempo: oyun dünyasının hız çarpanı (büyük maç heyecanı > 1, Soğukkanlı mentor yavaşlatır).
+ */
+export function createStage(host, { update, render, pointer, tempo = 1 } = {}) {
   const canvas = document.createElement('canvas');
   host.appendChild(canvas);
   const ctx = canvas.getContext('2d');
@@ -55,7 +58,7 @@ export function createStage(host, { update, render, pointer } = {}) {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
     stage.t += dt;
-    update?.(dt, stage.t);
+    update?.(dt * tempo, stage.t);
     const { W, H, dpr } = stage;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (stage.shakeAmt > 0.2) {

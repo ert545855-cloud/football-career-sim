@@ -84,6 +84,7 @@ export function playSprint(host, opts) {
     }
 
     const stage = createStage(host, {
+      tempo: opts.tempo ?? 1,
       update(dt) {
         S.t += dt;
         particles.update(dt);

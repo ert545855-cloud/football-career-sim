@@ -70,6 +70,7 @@ export function playTackle(host, opts) {
     }
 
     const stage = createStage(host, {
+      tempo: opts.tempo ?? 1,
       update(dt) {
         if (!L || L.W !== stage.W || L.H !== stage.H) layout(stage.W, stage.H);
         S.t += dt;

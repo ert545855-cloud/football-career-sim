@@ -39,6 +39,7 @@ export function matchScreen(app, { match }) {
         <span class="chip ${match.role === 'starter' ? 'accent' : 'warn'}" data-role>${icon('user')} ${roleText}</span>
         <span class="chip">${match.moments.length ? `${match.moments.length} kritik an` : 'Kritik an yok'}</span>
       </div>
+      ${match.big ? `<div class="big-banner ${match.big.cool ? 'cool' : ''}">${icon(match.big.kind === 'derby' ? 'fire' : match.big.kind === 'final' ? 'trophy' : 'star', 'ico sm')}<b>${esc(match.big.title)}</b><span>Heyecan %${Math.round(match.big.nerves * 100)}${match.big.cool ? ' · Soğukkanlı' : ''}</span></div>` : ''}
       <div class="mom-bar"><i data-mom></i></div>
       <div class="feed" data-feed></div>
       <div style="height:90px"></div>
@@ -93,6 +94,7 @@ export function matchScreen(app, { match }) {
       };
 
       line(0, `Hakemin düdüğüyle maç başladı! ${home.name} - ${away.name}.`, 'whistle');
+      if (match.big) line(0, `${match.big.title}! Tribünler ayakta, atmosfer elektrik yüklü.`, 'tackle');
       sfx('whistle');
       if (match.role !== 'starter') {
         line(0, match.role === 'out' ? (match.reason === 'suspended' ? `${shortName} PFDK cezası nedeniyle bu maçta yok.` : `${shortName} sakatlığı nedeniyle bu maçta yok.`) : `${shortName} maça yedek kulübesinde başlıyor.`, '');
@@ -102,7 +104,8 @@ export function matchScreen(app, { match }) {
         busy = true;
         const type = m.type;
         const weights = GAME_WEIGHTS[type];
-        const skill = effectiveSkill(s.player, weights);
+        // Büyük maç heyecanı etkin yeteneği düşürür (Soğukkanlı mentor %20 azaltır)
+        const skill = effectiveSkill(s.player, weights) * (match.big?.skillMult ?? 1);
         await sleep(350);
         const result = await runMiniGame({
           type,
@@ -117,6 +120,7 @@ export function matchScreen(app, { match }) {
           number: s.player.number,
           name: shortName.toUpperCase(),
           auto: app.autoplay,
+          big: match.big,
         });
         const lines = resolveMoment(match, m, result, shortName);
         lines.forEach((ln) => push({ ...ln, kind: ln.kind === 'goal-me' ? 'goal-me' : ln.kind }));

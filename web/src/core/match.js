@@ -2,6 +2,7 @@ import { POSITIONS, CLUB_BY_ID, LEAGUES } from './data.js';
 import { clamp, chance, pick, poisson, rand, randInt, round1, weightedPick } from './rng.js';
 import { clubRating, fixtureFor, goalLambda, leagueOf } from './league.js';
 import { addProgress, changeEnergy, changeFame, changeMorale, changeRel, form, ovr } from './player.js';
+import { bigMatchSetup } from './mentor/index.js';
 
 /** İlk 11 kararı: OVR + hoca ilişkisi + form + moral, rakip oyuncuya karşı. */
 export function selection(state) {
@@ -121,6 +122,8 @@ export function planMatch(state) {
     reason: sel.reason,
     subMinute,
     stoppage: randInt(1, 5),
+    /** Derbi / final / zirve / kader maçı: heyecan, etkin yetenek çarpanı ve mini oyun temposu */
+    big: bigMatchSetup(state, { myId, oppId, week }),
     events,
     moments,
     score: { my: 0, opp: 0 },

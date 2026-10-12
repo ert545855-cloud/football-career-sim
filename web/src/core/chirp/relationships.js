@@ -49,7 +49,9 @@ export class RelationshipService {
       if (!d || !RELATIONS[key]) continue;
       const f = RELATIONS[key].field;
       const before = this.state.player.rel[f];
-      this.state.player.rel[f] = clamp(before + d);
+      // Lider mentor: Takım Uyumu kayıpları yarıya iner
+      const mult = key === 'team' && d < 0 ? (this.state.player.mentorBonus?.teamLossMult ?? 1) : 1;
+      this.state.player.rel[f] = clamp(before + d * mult);
       const real = this.state.player.rel[f] - before;
       out.push({ key, label: RELATIONS[key].short, delta: real });
     }

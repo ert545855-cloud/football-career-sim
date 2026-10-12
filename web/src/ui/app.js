@@ -23,7 +23,10 @@ import { careerScreen } from './screens/career.js';
 import { settingsScreen } from './screens/settings.js';
 import { matchScreen } from './screens/match.js';
 import { chirpScreen } from './screens/chirp.js';
+import { mentorScreen } from './screens/mentor.js';
 import { unreadCount } from '../core/chirp/index.js';
+import { MENTOR_TRAITS, MentorManager } from '../core/mentor/index.js';
+import { legacyShiftSheet, requestsSheet, selectionSheet } from './mentorView.js';
 
 const TABS = [
   { id: 'home', screen: 'hub', label: 'Ana Sayfa', icon: 'home' },
@@ -50,6 +53,7 @@ export function createApp(rootEl) {
     settings: settingsScreen,
     match: matchScreen,
     chirp: chirpScreen,
+    mentor: mentorScreen,
     retired: retiredScreen,
   };
 
@@ -129,7 +133,23 @@ export function createApp(rootEl) {
       });
       sfx('coin');
       this.go('hub');
+      await this.mentorFlow();
+      this.go('hub');
       setTimeout(() => toast('İpucu: Haftada 4 zaman hakkın var. Antrenman yap, sonra maç gününe geç!'), 600);
+    },
+
+    // ── Mentorluk: rol değişimi → sezon başı seçim → gençlerin talepleri ──
+    async mentorFlow() {
+      const s = this.state;
+      if (!s || s.calendar.phase !== 'week') return;
+      const mm = new MentorManager(s);
+      if (s.mentor.legacy.shifted && !s.mentor.legacy.shiftShown) await legacyShiftSheet(this);
+      if (mm.shouldPromptSelection()) {
+        mm.markPrompted();
+        this.save();
+        await selectionSheet(this);
+      }
+      if (s.mentor.legacy.requests.some((r) => !r.prompted)) await requestsSheet(this);
     },
 
     resume() {
@@ -214,7 +234,7 @@ export function createApp(rootEl) {
             <div class="muted small" style="margin:8px 0 4px">Sonraki puana ilerleme</div>
             <div class="bar thick"><i style="--c:${STATS[stat].color}" data-w="${Math.round(res.progress * 100)}"></i></div>
           </div>
-          <div class="chips" style="margin-top:10px;justify-content:center"><span class="chip bad">Enerji −18</span>${res.success ? '<span class="chip good">Moral +1</span>' : ''}</div>
+          <div class="chips" style="margin-top:10px;justify-content:center"><span class="chip bad">Enerji −18</span>${res.success ? '<span class="chip good">Moral +1</span>' : ''}${res.mentorMult > 1 ? `<span class="chip gold">${icon('mentor', 'ico sm')} ${MENTOR_TRAITS.hardworker.name} mentor +%${Math.round((res.mentorMult - 1) * 100)}</span>` : ''}</div>
           <button class="btn primary block" style="margin-top:16px" data-close>Tamam</button>`,
       });
       this.go('hub');
@@ -258,6 +278,7 @@ export function createApp(rootEl) {
             <div class="row between small"><span>${esc(opp.short)} gücü</span><b>${oppR}</b></div>
             <div class="bar"><i style="--c:var(--bad)" data-w="${oppR}"></i></div>
           </div>
+          ${match.big ? `<div class="big-banner ${match.big.cool ? 'cool' : ''}" style="margin-top:12px">${icon(match.big.kind === 'derby' ? 'fire' : match.big.kind === 'final' ? 'trophy' : 'star', 'ico sm')}<b>${esc(match.big.title)}</b><span>Heyecan %${Math.round(match.big.nerves * 100)}${match.big.cool ? ' · Soğukkanlı mentor' : ''}</span></div>` : ''}
           <div style="margin-top:14px">${decision}</div>
           <div class="chips"><span class="chip">${icon('bolt')} Enerji ${s.player.energy}</span><span class="chip">${icon('smile')} Moral ${s.player.morale}</span></div>
           <button class="btn primary lg block" style="margin-top:16px" data-close="go">${icon('whistle')} Maça Çık</button>
@@ -314,6 +335,8 @@ export function createApp(rootEl) {
           ${we.discipline?.outcome === 'fine' ? `<div class="card" style="margin-top:10px;border-color:rgba(255,93,108,.45)"><b style="color:var(--bad)">PFDK kararı: ${money(we.discipline.fine)} para cezası</b></div>` : ''}
           ${we.discipline?.outcome === 'clear' ? `<div class="card" style="margin-top:10px"><b style="color:var(--good)">PFDK dosyayı ceza vermeden kapattı.</b></div>` : ''}
           ${out.chirp?.length ? `<div class="chips" style="margin-top:10px"><span class="chip accent">${icon('chirp')} Chirp'te ${out.chirp.length} yeni gönderi</span></div>` : ''}
+          ${we.mentor?.decay ? `<div class="chips" style="margin-top:10px"><span class="chip warn">${icon('mentor', 'ico sm')} Bu hafta mentorunla buluşmadın: İlişki ${we.mentor.decay}</span></div>` : ''}
+          ${we.mentor?.legacy ? `<div class="card" style="margin-top:10px"><b class="small">${icon('sprout', 'ico sm')} Akıl hocalığı</b><div class="muted small" style="margin:4px 0 8px">${esc(we.mentor.legacy.note)}</div>${changeChips(we.mentor.legacy.changes)}</div>` : ''}
           <button class="btn primary block" style="margin-top:16px" data-close>Devam</button>`,
       });
       await this.runPending();
@@ -333,6 +356,8 @@ export function createApp(rootEl) {
       if (s.pending.seasonReport) await this.seasonFlow(s.pending.seasonReport);
       if (s.calendar.phase === 'retired') return this.go('retired');
       if (s.pending.offers) await this.offersFlow();
+      this.go('hub');
+      await this.mentorFlow();
       this.go('hub');
     },
 
@@ -416,6 +441,8 @@ export function createApp(rootEl) {
             <div class="kpi"><b>${r.record.avg ? r.record.avg.toFixed(1) : '–'}</b><span>Not</span></div>
           </div>
           ${r.awards.length ? `<div class="h-sec">Ödüllerin</div>${r.awards.map((a) => `<div class="award"><span class="tro">${icon(a.icon, 'tro')}</span><b>${esc(a.title)}</b></div>`).join('')}` : ''}
+          ${r.mentor?.farewell ? `<div class="h-sec">Mentorun</div><div class="card"><p class="small" style="margin:0 0 8px">${esc(r.mentor.farewell.text)}</p><div class="chips"><span class="chip">İlişki ${r.mentor.farewell.relationship}</span>${r.mentor.farewell.influence ? `<span class="chip gold">Mentorun mirası: Nüfuz +${r.mentor.farewell.influence}</span>` : ''}</div></div>` : ''}
+          ${r.influenceGain ? `<div class="chips" style="margin-top:8px"><span class="chip gold">${icon('flag', 'ico sm')} Kulüp Nüfuzu +${r.influenceGain}</span></div>` : ''}
           <div class="h-sec">Şampiyonlar</div><div class="card list" style="padding:4px 12px">${champs}</div>
           <p class="muted small" style="margin-top:12px">Ligin gol kralı ${r.aiTop} golle zirvedeydi.</p>
           <div class="h-sec">Yeni sezon</div>
