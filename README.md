@@ -64,10 +64,11 @@ npm run build      # dist/ klasörüne üretim derlemesi
 
 ## Render'da yayınlama
 
-Repoda `render.yaml` hazır. İki yoldan biri seçilebilir:
+Üç yoldan biri seçilebilir:
 
-1. **Blueprint:** Render panelinde *New → Blueprint* seç ve bu repoyu bağla.
-2. **Elle:** *New → Static Site* oluştur, şu ayarları gir:
+1. **Docker web servisi (şu an kullanılan):** Kök dizindeki `Dockerfile` oyunu testlerle birlikte derler ve `web/server.mjs` ile `PORT` üzerinden sunar. Render'da *New → Web Service → Docker* yeterli, ek ayar gerekmez.
+2. **Blueprint:** Render panelinde *New → Blueprint* seç ve bu repoyu bağla.
+3. **Static Site (elle):** *New → Static Site* oluştur, şu ayarları gir:
    - Build Command: `cd web && npm ci && npm run build`
    - Publish Directory: `web/dist`
    - Ortam değişkeni: `NODE_VERSION = 22`
