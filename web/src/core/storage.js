@@ -1,5 +1,6 @@
 // Kayıt: tarayıcının localStorage'ı (iOS Safari, Android Chrome ve masaüstünde çalışır).
 import { SAVE_VERSION, emptySeasonStats } from './game.js';
+import { migrateChirp } from './chirp/index.js';
 
 const KEY = 'krampon.save.v1';
 const SETTINGS_KEY = 'krampon.settings';
@@ -55,6 +56,7 @@ export function migrate(state) {
   state.career.awards = state.career.awards || [];
   state.career.history = state.career.history || [];
   state.career.season = state.career.season || emptySeasonStats();
+  migrateChirp(state);
   return state;
 }
 

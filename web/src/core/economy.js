@@ -2,6 +2,7 @@ import { CLUBS, CLUB_BY_ID, ITEM_BY_ID, LIVING_COST } from './data.js';
 import { clamp, roundTo, chance, randInt, shuffle } from './rng.js';
 import { clubRating } from './league.js';
 import { ovr, form } from './player.js';
+import { RelationshipService } from './chirp/relationships.js';
 
 /** Haftalık maaş: kulüp gücüyle üstel artar, oyuncunun kulübe göre seviyesi çarpan olur. */
 export function wageFor(clubR, playerOvr) {
@@ -83,7 +84,9 @@ export function generateOffers(state, kind) {
   const offers = [];
 
   // Yedekte kalan oyuncuya daha küçük kulüplerden "oynama şansı" teklifi gelir
-  const benched = (state.flags.benchStreak || 0) >= 3 || career.season.starts < (kind === 'end' ? 8 : 4);
+  const rel = new RelationshipService(state);
+  // Yedekte kalan ya da yönetimin satış listesine koyduğu oyuncuya küçük kulüplerden teklif gelir
+  const benched = (state.flags.benchStreak || 0) >= 3 || career.season.starts < (kind === 'end' ? 8 : 4) || rel.onTransferList();
 
   const candidates = shuffle(CLUBS.filter((c) => c.id !== career.clubId)).filter((c) => {
     const r = clubRating(world, c.id);
@@ -102,8 +105,8 @@ export function generateOffers(state, kind) {
   }
 
   if (kind === 'end' && career.contract.yearsLeft <= 0) {
-    if (player.rel.manager >= 35) {
-      const w = Math.round(wageFor(curR, o) * 1.05 / 50) * 50;
+    if (rel.boardWillRenew()) {
+      const w = Math.round((wageFor(curR, o) * 1.05 * rel.boardWageMultiplier()) / 50) * 50;
       offers.unshift({ clubId: career.clubId, wage: Math.max(w, career.contract.wage), years: randInt(2, 3), signingBonus: 0, renewal: true, outlook: outlookFor(curR, o) });
     }
     if (offers.length === 0) {

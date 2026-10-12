@@ -213,6 +213,11 @@ const P = {
   target: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/>',
   run: '<circle cx="14.5" cy="4.5" r="2"/><path d="M8 21l3-6 3 2.5V21M6.5 11.5 9 8.5l4 1 2.5 3.5 3 .5M11 15l-1-4.5"/>',
   shield: '<path d="M12 3 4.5 6v6c0 4.5 3.2 7.6 7.5 9 4.3-1.4 7.5-4.5 7.5-9V6z"/>',
+  chirp: '<path d="M4 18.5V7.5A3.5 3.5 0 0 1 7.5 4h9A3.5 3.5 0 0 1 20 7.5v5a3.5 3.5 0 0 1-3.5 3.5H9z"/><path d="M9.5 9.5c1.2-1.4 3.6-1.6 5 .2l1.8-.5-1 1.6c0 2-1.7 3.2-3.6 3.2-1 0-1.9-.3-2.5-.9 1 0 1.8-.3 2.3-.8-1-.2-1.8-1-2-1.8z" fill="currentColor" stroke="none"/>',
+  reply: '<path d="M4.5 18.5v-3A6 6 0 0 1 10.5 9.5h9"/><path d="M15.5 5.5l4 4-4 4"/>',
+  comment: '<path d="M4 18.5V7.5A3.5 3.5 0 0 1 7.5 4h9A3.5 3.5 0 0 1 20 7.5v5a3.5 3.5 0 0 1-3.5 3.5H9z"/>',
+  repost: '<path d="M7 7h11l-3-3M17 17H6l3 3"/><path d="M18 7v4M6 17v-4"/>',
+  heartFill: '<path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.4 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z" fill="currentColor"/>',
 };
 
 export function icon(name, cls = 'ico') {
@@ -255,4 +260,16 @@ function win(x, y, w = 9, h = 7) {
 export function itemArt(item) {
   const fn = ART[item.art] || ART.heart;
   return `<svg viewBox="0 0 64 64" aria-hidden="true">${fn(item.tint)}</svg>`;
+}
+
+// ─────────────────────────────────────────────────────────────
+// CHIRP AVATARLARI
+// ─────────────────────────────────────────────────────────────
+/** Gazeteci / oyuncu / taraftar botu avatarı (daire içinde). */
+export function chirpAvatar(author, size = 44) {
+  const a = author.avatar || {};
+  if (a.look) {
+    return `<span class="tw-av" style="width:${size}px;height:${size}px;border-color:${a.color || '#475569'}">${avatarSVG(a.look, { colors: a.kit || ['#1e293b', '#e2e8f0'], pattern: 'solid' }, '')}</span>`;
+  }
+  return `<span class="tw-av init" style="width:${size}px;height:${size}px;background:${a.color || '#475569'};font-size:${Math.round(size * 0.36)}px">${(a.initials || '?').replace(/[<>&]/g, '')}</span>`;
 }

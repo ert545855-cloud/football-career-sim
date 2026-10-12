@@ -366,6 +366,59 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.01em; }
 .match-controls { position: absolute; left: 0; right: 0; bottom: 0; z-index: 10; display: flex; gap: 8px; padding: 12px 16px calc(var(--safe-bottom) + 14px); background: linear-gradient(180deg, transparent, rgba(4, 12, 9, 0.95) 35%); }
 .rating-big { font-size: 64px; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
 
+/* ── Chirp ── */
+.chirp-logo { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; background: linear-gradient(145deg, #38bdf8, #0ea5e9); color: #04202e; flex: none; }
+.chirp-logo svg { width: 20px; height: 20px; }
+.chirp-logo.lg { width: 40px; height: 40px; border-radius: 13px; }
+.chirp-logo.lg svg { width: 24px; height: 24px; }
+.chirp-share { margin-top: 12px; border-color: rgba(56, 189, 248, 0.45); box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.2), 0 10px 30px rgba(56, 189, 248, 0.1); animation: chirpIn 0.5s cubic-bezier(0.2, 1.2, 0.3, 1); }
+@keyframes chirpIn { from { transform: translateY(-8px) scale(0.97); opacity: 0; } to { transform: none; opacity: 1; } }
+.share-opts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+.share-opt { appearance: none; cursor: pointer; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); color: var(--text); padding: 10px 6px; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; transition: transform 0.12s, border-color 0.2s; }
+.share-opt:active { transform: scale(0.96); }
+.share-opt svg { width: 22px; height: 22px; }
+.share-opt b { font-size: 13px; }
+.share-opt span { font-size: 10px; color: var(--muted); line-height: 1.25; }
+.share-opt.good svg { color: var(--good); } .share-opt.warn svg { color: var(--gold); } .share-opt.bad svg { color: var(--bad); }
+.press-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.press { display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 14px; background: var(--panel); border: 1px solid var(--line); min-width: 0; }
+.feed-tweets { display: flex; flex-direction: column; gap: 10px; }
+.tweet { display: flex; gap: 10px; padding: 12px; border-radius: 16px; background: var(--panel); border: 1px solid var(--line); animation: feedIn 0.35s cubic-bezier(0.2, 0.9, 0.3, 1); }
+.tweet.mine { border-color: rgba(198, 255, 61, 0.3); }
+.tweet.preview { margin-top: 4px; }
+.tw-av { flex: none; border-radius: 50%; overflow: hidden; border: 2px solid #475569; background: radial-gradient(circle at 50% 35%, #24493a, #0b1912 70%); display: grid; place-items: center; }
+.tw-av svg { width: 100%; height: 100%; }
+.tw-av.init { border: 0; color: #fff; font-weight: 900; letter-spacing: -0.02em; }
+.tw-body { flex: 1; min-width: 0; }
+.tw-head { display: flex; align-items: center; gap: 6px; font-size: 13.5px; min-width: 0; }
+.tw-head .muted { font-size: 12px; }
+.tw-head > b { flex: 0 1 auto; max-width: 62%; }
+.tw-head > .muted { flex: 1 1 0; min-width: 0; }
+.parody { flex: none; font-size: 9px; font-weight: 900; letter-spacing: 0.08em; padding: 2px 5px; border-radius: 5px; background: rgba(255, 255, 255, 0.1); color: var(--muted); }
+.tw-text { margin-top: 4px; font-size: 14.5px; line-height: 1.45; -webkit-user-select: text; user-select: text; }
+.sig { font-weight: 900; }
+.sig-fabricio { color: #4ade80; }
+.sig-yagiz { color: #ff6b6b; }
+.tw-actions { display: flex; align-items: center; gap: 18px; margin-top: 10px; color: var(--muted); font-size: 12.5px; font-weight: 700; }
+.tw-actions > * { display: inline-flex; align-items: center; gap: 5px; }
+.tw-actions button { appearance: none; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; padding: 4px 0; }
+.tw-actions button.liked { color: #f43f5e; }
+.tw-actions button.pop svg { animation: likePop 0.45s cubic-bezier(0.2, 1.8, 0.3, 1); }
+@keyframes likePop { 0% { transform: scale(1); } 40% { transform: scale(1.5); } 100% { transform: scale(1); } }
+.ico.sm { width: 17px; height: 17px; } .ico.xs { width: 12px; height: 12px; display: inline-block; vertical-align: -1px; }
+.mood { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; margin-top: 8px; }
+.mood-bar { height: 6px; border-radius: 4px; background: rgba(255, 93, 108, 0.45); overflow: hidden; }
+.mood-bar i { display: block; height: 100%; background: var(--good); border-radius: 4px; transition: width 0.8s ease; }
+.replies { margin-top: 10px; border-top: 1px solid var(--line); display: flex; flex-direction: column; }
+.reply { display: flex; gap: 8px; padding: 9px 0 2px; }
+.reply + .reply { border-top: 1px dashed var(--line); }
+.r-head { font-size: 12.5px; display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+.r-head .muted { font-size: 11px; }
+.reply p { margin: 2px 0 6px; font-size: 13.5px; line-height: 1.4; }
+.chip.sent { font-size: 10.5px; padding: 2px 7px; }
+.tab .badge { position: absolute; top: 6px; left: calc(50% + 4px); min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px; background: #f43f5e; color: #fff; font-size: 10px; font-weight: 900; font-style: normal; display: grid; place-items: center; box-shadow: 0 0 0 2px #071009; animation: popIn 0.3s; }
+.tabbar .tab span { font-size: 10px; }
+
 /* ── Mini oyun katmanı ── */
 .game-layer { position: absolute; inset: 0; z-index: 92; background: #04100a; display: flex; flex-direction: column; animation: fade 0.25s ease; }
 .game-hud { position: absolute; left: 0; right: 0; top: 0; z-index: 2; padding: calc(var(--safe-top) + 10px) 14px 10px; display: flex; align-items: center; gap: 10px; pointer-events: none; background: linear-gradient(180deg, rgba(0, 0, 0, 0.55), transparent); }

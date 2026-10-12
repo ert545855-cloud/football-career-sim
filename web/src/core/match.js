@@ -9,6 +9,7 @@ export function selection(state) {
   const o = ovr(player);
   const competitor = clubRating(world, career.clubId) - 3 + (flags.rivalOffset || 0);
   if (flags.injuredWeeks > 0) return { role: 'out', reason: 'injured', competitor, score: 0, gap: -99 };
+  if (flags.suspendedWeeks > 0) return { role: 'out', reason: 'suspended', competitor, score: 0, gap: -99 };
   let score = o + (player.rel.manager - 50) * 0.2 + (form(player) - 6.5) * 3 + (player.morale - 50) * 0.04;
   let reason = null;
   if (player.energy < 30) {

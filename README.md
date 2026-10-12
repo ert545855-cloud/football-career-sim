@@ -16,9 +16,10 @@ Tarayıcıda çalışır. iPhone'da ve Android'de **ana ekrana eklenip uygulama 
   - **Müdahale:** Sürükleyerek rakibi karşılarsın, dokunarak kayarak müdahale edersin. Rakip çalım da atar.
   - **Sürat / Dayanıklılık koşusu:** SOL-SAĞ ritmiyle koşulur. Dayanıklılık modunda nefes barı da yönetilir.
 - **Kulüp ve lig:** 24 kurgusal kulüp, 2 lig (Süper Lig, 1. Lig). Çift devreli fikstür, puan tablosu ve diğer maçların simülasyonu.
-- **İlişkiler:** Teknik direktör, takım arkadaşları ve taraftar. İlk 11'e girmek OVR, hoca ilişkisi, form ve morale bağlıdır.
+- **İlişkiler:** Teknik direktör, takım arkadaşları, taraftar, sponsor, federasyon ve kulüp yönetimi. Sponsor reklam gelirini, federasyon ceza riskini, yönetim sözleşme yenilemeyi etkiler. İlk 11'e girmek OVR, hoca ilişkisi, form ve morale bağlıdır.
 - **Para ve yaşam tarzı:** Maaş, galibiyet/gol/asist primleri ve sözleşme süresi. Devre arası ve sezon sonu transfer teklifleri gelir; her teklifte forma şansı tahmini gösterilir. 20 eşyalık mağazada araç, ev, gelişim ve yaşam ürünleri var.
 - **Metin olayları ve moral:** 28 seçimli olay (röportaj, parti, sakatlık, sponsor, milli takım çağrısı...). Moral ve yorgunluk mini oyun performansını etkiler.
+- **Chirp (sosyal medya):** Oyun içi zaman tüneli. İki parodi gazeteci hesabı var: *Fabricio Romana* ("It's a deal!") kesinleşen transferleri ve büyük dedikoduları, *Yağız Sapanca* ("Flaş Gelişme:") form düşüşü, sakatlık ve kulüp içi haberleri paylaşır. Her tweetin altına 3-4 taraftar botu yorum yazar; yorumlar Türkçe duygu analiziyle olumlu/olumsuz etiketlenir. Maçtan sonra ana ekrandan Mütevazı, Egoist veya Agresif bir paylaşım yapılabilir. Her biri Hoca, Taraftar, Takım, Sponsor, Federasyon ve Yönetim ilişkilerini değiştirir. Agresif paylaşım PFDK'dan para cezası ya da 1 maç men getirebilir.
 - **Sezon sonu:** Şampiyonluk, gol krallığı, sezonun oyuncusu ve genç oyuncu ödülleri. Yaşlanma, sözleşme yenileme ve emeklilik.
 - **Ses ve titreşim:** Bütün sesler WebAudio ile üretilir; dışarıdan dosya yüklenmez. Titreşim Android'de çalışır.
 - **Kayıt:** Oyun otomatik kaydedilir (localStorage). Kayıt kodu dışa ve içe aktarılarak başka cihaza taşınabilir.
@@ -41,6 +42,7 @@ web/src/
     events.js     Metin olayları
     game.js       Hafta akışı, sezon sonu
     storage.js    Kayıt
+    chirp/        Sosyal medya: modeller, tetikleyiciler, paylaşımlar, ilişkiler, duygu analizi
   games/     Canvas mini oyunları (shot, pass, tackle, sprint)
   ui/        Ekranlar, SVG çizimler (avatar, arma, ikonlar), akışlar
 web/tests/   Birim testleri (node --test)

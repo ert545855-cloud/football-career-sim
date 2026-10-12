@@ -38,7 +38,7 @@ export const EVENTS = [
     choices: [
       {
         label: 'Takıl', fx: () => chance(0.4)
-          ? { fx: { morale: 6, energy: -25, manager: -8, fans: -3 }, note: 'Fotoğrafların sabah gazetelerdeydi. Hoca hiç memnun değil.' }
+          ? { fx: { morale: 6, energy: -25, manager: -8, fans: -3, board: -4 }, note: 'Fotoğrafların sabah gazetelerdeydi. Hoca ve yönetim hiç memnun değil.' }
           : { fx: { morale: 8, energy: -20 }, note: 'Harika bir geceydi ve kimse görmedi.' },
       },
       { label: 'Evde kal', fx: { energy: 6, manager: 1 }, note: 'Erken yattın, sabah dinç uyandın.' },
@@ -55,10 +55,10 @@ export const EVENTS = [
   },
   {
     id: 'drink_sponsor', icon: 'briefcase', title: 'Sponsor Teklifi',
-    when: (s) => s.player.fame >= 30, weight: 1,
+    when: (s) => s.player.fame >= 30, weight: (s) => 0.5 + (s.player.rel.sponsor ?? 30) / 100,
     text: () => 'Bir spor içeceği markası seninle reklam anlaşması yapmak istiyor.',
     choices: [
-      { label: 'İmzala', fx: (s) => ({ fx: { money: roundTo(2000 + s.player.fame * 180, 100), energy: -10, fame: 2 }, note: 'Yüzün artık otobüs duraklarında.' }) },
+      { label: 'İmzala', fx: (s) => ({ fx: { money: roundTo((2000 + s.player.fame * 180) * (0.6 + (s.player.rel.sponsor ?? 30) / 100), 100), energy: -10, fame: 2, sponsor: 8 }, note: 'Yüzün artık otobüs duraklarında.' }) },
       { label: 'Reddet', fx: { manager: 2 }, note: 'Futbola odaklanmayı seçtin.' },
     ],
   },
@@ -67,7 +67,7 @@ export const EVENTS = [
     when: (s, ctx) => ctx?.summary?.played && ctx.summary.rating < 6.0, weight: 3,
     text: () => 'Son maçtaki performansın sonrası sosyal medyada ağır eleştiriler var.',
     choices: [
-      { label: 'Sert cevap ver', fx: { fans: -6, morale: 3, manager: -2 }, note: 'Tartışma büyüdü, taraftar ikiye bölündü.' },
+      { label: 'Sert cevap ver', fx: { fans: -6, morale: 3, manager: -2, federation: -3 }, note: 'Tartışma büyüdü, taraftar ikiye bölündü.' },
       { label: 'Özür dile, söz ver', fx: { fans: 3, morale: -2 }, note: 'Olgun tavrın takdir topladı.' },
       { label: 'Görmezden gel', fx: { morale: -3 }, note: 'Telefonu kapattın ama aklın hep orada.' },
     ],
@@ -77,8 +77,8 @@ export const EVENTS = [
     when: (s) => form(s.player) >= 7, weight: 1.4,
     text: () => 'Bir gazeteci büyük bir kulübün seninle ilgilendiğini soruyor.',
     choices: [
-      { label: '"Kulübümde mutluyum"', fx: { manager: 4, fans: 4 }, note: 'Taraftarlar sadakatini alkışladı.' },
-      { label: '"Her teklifi dinlerim"', fx: { manager: -6, fans: -3, fame: 3 }, note: 'Adın manşetlerde, ama hoca soğuk bakıyor.' },
+      { label: '"Kulübümde mutluyum"', fx: { manager: 4, fans: 4, board: 4 }, note: 'Taraftarlar ve yönetim sadakatini alkışladı.' },
+      { label: '"Her teklifi dinlerim"', fx: { manager: -6, fans: -3, fame: 3, board: -6 }, note: 'Adın manşetlerde, ama hoca ve yönetim soğuk bakıyor.' },
     ],
   },
   {
@@ -205,7 +205,7 @@ export const EVENTS = [
     when: () => true, weight: 0.8,
     text: () => 'Bir sonraki rakibin oyuncusu basına senin hakkında küçümseyici konuştu.',
     choices: [
-      { label: 'Sert cevap ver', fx: { fans: 5, manager: -5, morale: 2 }, note: 'Taraftar coştu, hoca "sahada konuş" dedi.' },
+      { label: 'Sert cevap ver', fx: { fans: 5, manager: -5, morale: 2, federation: -5 }, note: 'Taraftar coştu, hoca "sahada konuş" dedi. Federasyon da not aldı.' },
       { label: '"Sahada görüşürüz"', fx: { manager: 3, fans: 2 }, note: 'Olgun ve iddialı.' },
     ],
   },
@@ -271,7 +271,7 @@ export const EVENTS = [
     when: (s) => s.player.fame >= 45, weight: 0.8,
     text: () => 'Büyük bir spor markası seninle krampon sözleşmesi imzalamak istiyor.',
     choices: [
-      { label: 'İmzala', fx: (s) => ({ fx: { money: roundTo(8000 + s.player.fame * 300, 1000), fame: 3, morale: 4 }, note: 'Yeni imza kramponların vitrinlerde.' }) },
+      { label: 'İmzala', fx: (s) => ({ fx: { money: roundTo(8000 + s.player.fame * 300, 1000), fame: 3, morale: 4, sponsor: 10 }, note: 'Yeni imza kramponların vitrinlerde.' }) },
       { label: 'Teklifi yükselt', fx: (s) => chance(0.5) ? { fx: { money: roundTo(12000 + s.player.fame * 400, 1000), fame: 3 }, note: 'Pazarlık işe yaradı!' } : { fx: { fame: -1 }, note: 'Marka geri çekildi.' } },
     ],
   },
@@ -323,6 +323,7 @@ export function resolveEvent(state, eventId, choiceIndex) {
 
 const LABELS = {
   money: 'Para', morale: 'Moral', energy: 'Enerji', manager: 'Hoca', teammates: 'Takım', fans: 'Taraftar', fame: 'Ün',
+  sponsor: 'Sponsor', federation: 'Federasyon', board: 'Yönetim',
   injuredWeeks: 'Sakatlık (hafta)', trainBoostWeeks: 'Antrenman bonusu (hafta)',
 };
 
@@ -335,7 +336,7 @@ export function applyFx(state, fx) {
       case 'money': career.money += val; break;
       case 'morale': changeMorale(player, val); break;
       case 'energy': changeEnergy(player, val); break;
-      case 'manager': case 'teammates': case 'fans': changeRel(player, key, val); break;
+      case 'manager': case 'teammates': case 'fans': case 'sponsor': case 'federation': case 'board': changeRel(player, key, val); break;
       case 'fame': changeFame(player, val); break;
       case 'injuredWeeks': flags.injuredWeeks = Math.max(flags.injuredWeeks || 0, val); break;
       case 'trainBoostWeeks': flags.trainBoostWeeks = Math.max(flags.trainBoostWeeks || 0, val); break;

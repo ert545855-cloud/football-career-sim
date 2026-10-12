@@ -5,6 +5,8 @@ import { money } from '../../core/economy.js';
 import { crestSVG, icon, playerAvatar } from '../art.js';
 import { animateBars, esc } from '../dom.js';
 import { energyColor, meter, moraleColor, ratingColor } from '../components.js';
+import { RELATIONS } from '../../core/chirp/index.js';
+import { shareCard, shareFlow } from '../chirpView.js';
 
 export function hubScreen(app) {
   const s = app.state;
@@ -27,6 +29,7 @@ export function hubScreen(app) {
 
   const status = flags.injuredWeeks > 0
     ? `<span class="chip bad">${icon('bandage')} Sakat · ${flags.injuredWeeks} hf</span>`
+    : flags.suspendedWeeks > 0 ? `<span class="chip bad">${icon('shield')} Cezalı · ${flags.suspendedWeeks} maç</span>`
     : player.energy < 30 ? `<span class="chip warn">${icon('bolt')} Yorgun</span>` : '';
 
   const news = career.news.slice(0, 3).map((n) => `<div class="li"><span class="news-dot ${n.kind}"></span><div class="grow small">${esc(n.text)}</div><span class="muted small">H${n.w}</span></div>`).join('');
@@ -42,6 +45,8 @@ export function hubScreen(app) {
         </div>
         <div class="ovr-badge">${ov.ovr}<small>OVR</small></div>
       </div>
+
+      ${shareCard(s)}
 
       <div class="row between" style="margin-top:14px">
         <span class="money-pill">${icon('coin')} <span class="tnum">${money(career.money)}</span></span>
@@ -73,16 +78,28 @@ export function hubScreen(app) {
 
       <div class="h-sec">İlişkiler</div>
       <div class="card" style="display:grid;gap:12px">
-        ${meter('Teknik direktör', 'clipboard', player.rel.manager, 100, 'var(--blue)')}
-        ${meter('Takım arkadaşları', 'users', player.rel.teammates, 100, 'var(--good)')}
-        ${meter('Taraftar', 'flag', player.rel.fans, 100, 'var(--gold)')}
+        ${Object.values(RELATIONS).map((r) => meter(r.label, r.icon, player.rel[r.field], 100, r.color)).join('')}
         ${meter('Ün', 'star', player.fame, 100, '#c084fc')}
+        <p class="muted small" style="margin:0">Sponsor reklam kazancını, Federasyon ceza riskini, Yönetim sözleşme yenilemeyi etkiler.</p>
       </div>
 
       ${news ? `<div class="h-sec">Haberler</div><div class="card list">${news}</div>` : ''}`,
     mount(el) {
       animateBars(el);
-      el.addEventListener('click', (e) => {
+      el.addEventListener('click', async (e) => {
+        const st = e.target.closest('[data-chirp-style]');
+        if (st) {
+          app.click();
+          const r = await shareFlow(app, st.dataset.chirpStyle);
+          app.go(r === 'chirp' ? 'chirp' : 'hub');
+          return;
+        }
+        if (e.target.closest('[data-chirp-dismiss]')) {
+          app.state.chirp.pendingPost = null;
+          app.save();
+          app.go('hub');
+          return;
+        }
         const t = e.target.closest('[data-action],[data-act]');
         if (!t) return;
         app.click();

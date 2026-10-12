@@ -1,5 +1,6 @@
 import { STAT_KEYS, POSITIONS, GROWTH } from './data.js';
 import { clamp, lerp } from './rng.js';
+import { RELATION_DEFAULTS } from './chirp/relationships.js';
 
 export function createPlayer({ name, position, avatar, number }) {
   const pos = POSITIONS[position] || POSITIONS.FW;
@@ -14,7 +15,7 @@ export function createPlayer({ name, position, avatar, number }) {
     energy: 100,
     morale: 60,
     ratings: [],
-    rel: { manager: 50, teammates: 45, fans: 25 },
+    rel: { ...RELATION_DEFAULTS },
     fame: 3,
   };
 }

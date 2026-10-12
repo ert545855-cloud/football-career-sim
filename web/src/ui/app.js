@@ -22,11 +22,14 @@ import { shopScreen } from './screens/shop.js';
 import { careerScreen } from './screens/career.js';
 import { settingsScreen } from './screens/settings.js';
 import { matchScreen } from './screens/match.js';
+import { chirpScreen } from './screens/chirp.js';
+import { unreadCount } from '../core/chirp/index.js';
 
 const TABS = [
   { id: 'home', screen: 'hub', label: 'Ana Sayfa', icon: 'home' },
   { id: 'player', screen: 'player', label: 'Oyuncu', icon: 'user' },
   { id: 'league', screen: 'league', label: 'Lig', icon: 'table' },
+  { id: 'chirp', screen: 'chirp', label: 'Chirp', icon: 'chirp' },
   { id: 'shop', screen: 'shop', label: 'Mağaza', icon: 'bag' },
   { id: 'career', screen: 'career', label: 'Kariyer', icon: 'trophy' },
 ];
@@ -46,6 +49,7 @@ export function createApp(rootEl) {
     career: careerScreen,
     settings: settingsScreen,
     match: matchScreen,
+    chirp: chirpScreen,
     retired: retiredScreen,
   };
 
@@ -237,6 +241,7 @@ export function createApp(rootEl) {
       const oppR = clubRating(s.world, match.oppId);
       let decision;
       if (match.role === 'starter') decision = `<span class="chip accent">${icon('check')} İlk 11'desin</span><p class="lead" style="margin-top:10px">Hoca: "Bugün sana güveniyorum. Fırsat geldiğinde değerlendir."</p>`;
+      else if (match.role === 'out' && match.reason === 'suspended') decision = `<span class="chip bad">${icon('shield')} Cezalısın</span><p class="lead" style="margin-top:10px">PFDK cezası nedeniyle bu maçta forma giyemezsin.</p>`;
       else if (match.role === 'out') decision = `<span class="chip bad">${icon('bandage')} Sakatsın</span><p class="lead" style="margin-top:10px">Bu maçı tribünden izleyeceksin.</p>`;
       else decision = `<span class="chip warn">${icon('user')} Yedek kulübesi</span><p class="lead" style="margin-top:10px">${match.reason === 'tired' ? 'Hoca: "Çok yorgunsun, bugün kenardan başla."' : 'Hoca: "Sabırlı ol, gerekirse seni oyuna alacağım."'} ${match.subMinute ? '' : ''}</p>`;
       const go = await sheet({
@@ -305,9 +310,14 @@ export function createApp(rootEl) {
             <div class="row between"><span>Kasa</span><b style="color:var(--gold)">${money(s.career.money)}</b></div>
           </div>
           <div style="margin-top:10px">${changeChips(we.changes.filter((c) => c.key !== 'money'))}</div>
+          ${we.discipline?.outcome === 'ban' ? `<div class="card" style="margin-top:10px;border-color:rgba(255,93,108,.45)"><b style="color:var(--bad)">PFDK kararı: 1 maç men cezası</b><div class="muted small">Hakem açıklamaların yüzünden sonraki maçta forma giyemeyeceksin.</div></div>` : ''}
+          ${we.discipline?.outcome === 'fine' ? `<div class="card" style="margin-top:10px;border-color:rgba(255,93,108,.45)"><b style="color:var(--bad)">PFDK kararı: ${money(we.discipline.fine)} para cezası</b></div>` : ''}
+          ${we.discipline?.outcome === 'clear' ? `<div class="card" style="margin-top:10px"><b style="color:var(--good)">PFDK dosyayı ceza vermeden kapattı.</b></div>` : ''}
+          ${out.chirp?.length ? `<div class="chips" style="margin-top:10px"><span class="chip accent">${icon('chirp')} Chirp'te ${out.chirp.length} yeni gönderi</span></div>` : ''}
           <button class="btn primary block" style="margin-top:16px" data-close>Devam</button>`,
       });
       await this.runPending();
+      if (s.chirp?.pendingPost) setTimeout(() => toast('Maç bitti! Ana ekrandan Chirp\'te paylaşabilirsin.'), 500);
     },
 
     // ── Bekleyen akışlar: olay → teklifler → sezon sonu ──
@@ -423,7 +433,8 @@ export function createApp(rootEl) {
   };
 
   function tabbar(active) {
-    const bar = el(`<nav class="tabbar">${TABS.map((t) => `<button class="tab ${t.id === active ? 'active' : ''}" data-screen="${t.screen}">${icon(t.icon)}<span>${t.label}</span></button>`).join('')}</nav>`);
+    const unread = app.state ? unreadCount(app.state) : 0;
+    const bar = el(`<nav class="tabbar" style="grid-template-columns:repeat(${TABS.length},1fr)">${TABS.map((t) => `<button class="tab ${t.id === active ? 'active' : ''}" data-screen="${t.screen}">${icon(t.icon)}<span>${t.label}</span>${t.id === 'chirp' && unread && active !== 'chirp' ? `<i class="badge">${unread > 9 ? '9+' : unread}</i>` : ''}</button>`).join('')}</nav>`);
     bar.addEventListener('click', (e) => {
       const b = e.target.closest('[data-screen]');
       if (!b) return;

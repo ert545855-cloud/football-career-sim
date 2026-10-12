@@ -11,6 +11,9 @@ import { aiTopScorerGoals, clubRating, createWorld, evolveRatings, leagueOf, pos
 import { acceptOffer, generateOffers, itemEffects, wageFor, weeklyFinance } from './economy.js';
 import { finalizeMatch, planMatch, selection } from './match.js';
 import { pickEvent, resolveEvent } from './events.js';
+import {
+  RelationshipService, chirpOnInjury, chirpOnMatch, chirpOnOffers, chirpOnSeasonEnd, chirpOnTransfer, chirpOnWeekEnd, ensureChirp,
+} from './chirp/index.js';
 
 export const SAVE_VERSION = 1;
 
@@ -21,7 +24,7 @@ export function newGame(setup) {
   const world = createWorld(1);
   const pool = CLUBS.filter((c) => c.league === 'first').sort((a, b) => a.rating - b.rating).slice(0, 4);
   const club = pick(pool);
-  return {
+  const state = {
     version: SAVE_VERSION,
     createdAt: Date.now(),
     player,
@@ -40,9 +43,11 @@ export function newGame(setup) {
     },
     calendar: { season: 1, week: 1, slots: WEEK_SLOTS, trainings: 0, phase: 'week' },
     world,
-    flags: { cooldowns: {}, benchStreak: 0, rivalOffset: randInt(-3, 3), injuredWeeks: 0, trainBoostWeeks: 0, nationalSeason: 0 },
+    flags: { cooldowns: {}, benchStreak: 0, rivalOffset: randInt(-3, 3), injuredWeeks: 0, suspendedWeeks: 0, trainBoostWeeks: 0, nationalSeason: 0 },
     pending: { match: null, event: null, offers: null, seasonReport: null },
   };
+  ensureChirp(state);
+  return state;
 }
 
 export function addNews(state, text, kind = 'info') {
@@ -149,7 +154,7 @@ export function doAction(state, id) {
       break;
     }
     case 'sponsor': {
-      const earned = roundTo(150 + player.fame * 70, 50);
+      const earned = roundTo((150 + player.fame * 70) * new RelationshipService(state).sponsorMultiplier(), 50);
       career.money += earned;
       changeEnergy(player, -12);
       title = 'Reklam Çekimi';
@@ -200,6 +205,9 @@ export function completeMatch(state, match) {
   const results = simulateWeek(state.world, match.week, { h: match.homeId, a: match.awayId, hg, ag });
   state.pending.match = null;
 
+  // Chirp: paylaşım kartı + gazeteci tweetleri (formsuzluk, büyük performans, kulübe, yönetim)
+  const chirp = chirpOnMatch(state, { summary, match });
+
   const opp = CLUB_BY_ID[match.oppId].name;
   const resTxt = { W: 'Galibiyet', D: 'Beraberlik', L: 'Mağlubiyet' }[summary.result];
   let news = `${resTxt}: ${summary.scoreLine}`;
@@ -210,7 +218,7 @@ export function completeMatch(state, match) {
   if (!summary.played) addNews(state, `${opp} maçında forma giymedin.`, 'bad');
 
   const weekEnd = endWeek(state, { summary });
-  return { summary, results, weekEnd };
+  return { summary, results, weekEnd, chirp: [...chirp, ...weekEnd.chirp] };
 }
 
 function endWeek(state, ctx) {
@@ -229,7 +237,13 @@ function endWeek(state, ctx) {
     addNews(state, 'Hesabın ekside! Harcamalarını azalt.', 'bad');
   }
   if (flags.injuredWeeks > 0) flags.injuredWeeks -= 1;
+  if (flags.suspendedWeeks > 0) flags.suspendedWeeks -= 1;
   if (flags.trainBoostWeeks > 0) flags.trainBoostWeeks -= 1;
+  const chirpTweets = [];
+  const discipline = chirpOnWeekEnd(state);
+  chirpTweets.push(...discipline.tweets);
+  if (discipline.outcome === 'ban') addNews(state, 'PFDK: 1 maç men cezası aldın.', 'bad');
+  if (discipline.outcome === 'fine') addNews(state, `PFDK: €${discipline.fine} para cezası aldın.`, 'bad');
 
   const event = pickEvent(state, ctx);
   state.pending.event = event;
@@ -238,6 +252,7 @@ function endWeek(state, ctx) {
   if (calendar.week === MID_WINDOW_WEEK) {
     offers = generateOffers(state, 'mid');
     state.pending.offers = offers.length ? { kind: 'mid', list: offers, mandatory: false } : null;
+    chirpTweets.push(...chirpOnOffers(state, offers));
   }
 
   const seasonOver = calendar.week >= SEASON_WEEKS;
@@ -247,7 +262,7 @@ function endWeek(state, ctx) {
     calendar.slots = WEEK_SLOTS;
     calendar.trainings = 0;
   }
-  return { finance: fin, changes: diffChanges(before, snapshot(state)), event, offers: state.pending.offers, seasonOver };
+  return { finance: fin, changes: diffChanges(before, snapshot(state)), event, offers: state.pending.offers, seasonOver, discipline, chirp: chirpTweets };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -302,6 +317,8 @@ export function endSeason(state) {
   const offers = generateOffers(state, 'end');
   const mustChoose = career.contract.yearsLeft <= 0;
   state.pending.offers = offers.length ? { kind: 'end', list: offers, mandatory: mustChoose } : null;
+  chirpOnSeasonEnd(state, { awards });
+  chirpOnOffers(state, offers);
 
   // Yeni sezon dünyası
   state.world = createWorld(calendar.season + 1, evolveRatings(world));
@@ -335,7 +352,9 @@ export function endSeason(state) {
 }
 
 export function takeOffer(state, offer) {
+  const fromClubId = state.career.clubId;
   const text = acceptOffer(state, offer);
+  chirpOnTransfer(state, offer, fromClubId);
   state.pending.offers = null;
   state.pending.match = null; // eski kulübün planlanmış maçı geçersiz
   addNews(state, text, 'good');
@@ -357,8 +376,10 @@ export function retire(state) {
 export function chooseEvent(state, choiceIndex) {
   const ev = state.pending.event;
   if (!ev) return null;
+  const injuredBefore = state.flags.injuredWeeks || 0;
   const out = resolveEvent(state, ev.id, choiceIndex);
   state.pending.event = null;
+  if ((state.flags.injuredWeeks || 0) > injuredBefore) chirpOnInjury(state, state.flags.injuredWeeks);
   return out;
 }
 

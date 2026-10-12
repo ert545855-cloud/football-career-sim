@@ -25,7 +25,7 @@ export function matchScreen(app, { match }) {
   timeline.push({ minute: 90 + match.stoppage, order: 9, kind: 'ft' });
   timeline.sort((a, b) => a.minute - b.minute || a.order - b.order);
 
-  const roleText = match.role === 'starter' ? 'İlk 11\'desin' : match.role === 'out' ? 'Sakatsın, tribündesin' : match.subMinute ? 'Yedek kulübesindesin' : 'Yedek kulübesindesin';
+  const roleText = match.role === 'starter' ? 'İlk 11\'desin' : match.role === 'out' ? (match.reason === 'suspended' ? 'Cezalısın, tribündesin' : 'Sakatsın, tribündesin') : 'Yedek kulübesindesin';
 
   return {
     tabs: false,
@@ -95,7 +95,7 @@ export function matchScreen(app, { match }) {
       line(0, `Hakemin düdüğüyle maç başladı! ${home.name} - ${away.name}.`, 'whistle');
       sfx('whistle');
       if (match.role !== 'starter') {
-        line(0, match.role === 'out' ? `${shortName} sakatlığı nedeniyle bu maçta yok.` : `${shortName} maça yedek kulübesinde başlıyor.`, '');
+        line(0, match.role === 'out' ? (match.reason === 'suspended' ? `${shortName} PFDK cezası nedeniyle bu maçta yok.` : `${shortName} sakatlığı nedeniyle bu maçta yok.`) : `${shortName} maça yedek kulübesinde başlıyor.`, '');
       }
 
       async function playMoment(m) {

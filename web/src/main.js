@@ -1,6 +1,7 @@
 import './styles/main.css';
 import { createApp } from './ui/app.js';
 import { configureAudio, unlock } from './audio.js';
+import * as chirp from './core/chirp/index.js';
 
 const root = document.getElementById('app');
 const app = createApp(root);
@@ -23,3 +24,5 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
 
 app.go('title');
 window.__krampon = app;
+// Test modu (?autoplay=1): Chirp tetikleyicilerini konsoldan/testten çağırabilmek için
+if (app.autoplay) window.__chirp = chirp;
