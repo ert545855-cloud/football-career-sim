@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+    <meta name="theme-color" content="#06110d" />
+    <meta name="description" content="Krampon: 17 yaşında bir futbolcunun kariyerini yönet. Antrenman, maçlar, transferler, mağaza ve olaylar. iOS ve Android'de çalışır." />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Krampon" />
+    <meta name="format-detection" content="telephone=no" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" type="image/png" href="./icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+    <title>Krampon — Futbol Kariyeri</title>
+    <style>
+      /* Yükleme ekranı (JS gelene kadar) */
+      html, body { background: #06110d; }
+      .boot { position: fixed; inset: 0; display: grid; place-items: center; color: #c6ff3d; font: 900 28px system-ui, sans-serif; letter-spacing: .08em; }
+    </style>
+  </head>
+  <body>
+    <div id="app" class="app"><div class="boot">KRAMPON</div></div>
+    <noscript>Krampon'u oynamak için JavaScript'i etkinleştir.</noscript>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,80 @@
+// Otomatik oyuncu: denge testleri ve simülasyon için oyunu baştan sona oynar.
+import { POSITIONS, SHOP_ITEMS } from '../src/core/data.js';
+import { chance, rand } from '../src/core/rng.js';
+import { canDoAction, chooseEvent, completeMatch, declineOffers, doAction, endSeason, finishTraining, getMatch, takeOffer, trainingSetup } from '../src/core/game.js';
+import { applyAiEvent, resolveMoment } from '../src/core/match.js';
+import { getEvent } from '../src/core/events.js';
+import { buyItem } from '../src/core/economy.js';
+import { clubRating } from '../src/core/league.js';
+
+/** İnsan benzeri mini oyun sonucu: yetenek arttıkça başarı artar. */
+export function fakeGame(skill, humanSkill = 0.5) {
+  const p = Math.min(0.85, 0.18 + 0.4 * skill + 0.25 * humanSkill);
+  const success = chance(p);
+  return { success, accuracy: success ? rand(0.3, 1) : 0, outcome: success ? 'goal' : pickFail() };
+}
+const pickFail = () => ['save', 'wide', 'over', 'post', 'block'][Math.floor(Math.random() * 5)];
+
+export function playWeek(state, humanSkill = 0.5) {
+  const pos = POSITIONS[state.player.position];
+  // Aksiyonlar
+  let guard = 0;
+  while (state.calendar.slots > 0 && guard++ < 10) {
+    const e = state.player.energy;
+    if (e < 50 && canDoAction(state, 'rest').ok) { doAction(state, 'rest'); continue; }
+    if (canDoAction(state, 'train').ok) {
+      const stat = state.calendar.trainings === 1 ? pos.secondary : pos.primary;
+      const setup = trainingSetup(state, stat);
+      finishTraining(state, stat, fakeGame(setup.skill, humanSkill));
+      continue;
+    }
+    if (state.player.rel.manager < 60 && canDoAction(state, 'manager').ok) { doAction(state, 'manager'); continue; }
+    if (state.player.fame >= 20 && canDoAction(state, 'sponsor').ok) { doAction(state, 'sponsor'); continue; }
+    if (canDoAction(state, 'media').ok) { doAction(state, 'media'); continue; }
+    doAction(state, 'rest');
+  }
+  // Alışveriş: paranın %20'sinden ucuz en iyi eşyayı al
+  const affordable = SHOP_ITEMS.filter((i) => i.kind !== 'use' && !state.career.items.includes(i.id) && i.price <= state.career.money * 0.2 && i.weekly <= state.career.contract.wage * 0.1);
+  if (affordable.length) buyItem(state, affordable.sort((a, b) => b.price - a.price)[0].id);
+
+  // Maç
+  const match = getMatch(state);
+  const timeline = [
+    ...match.events.map((ev) => ({ minute: ev.minute, ev })),
+    ...match.moments.map((m) => ({ minute: m.minute, m })),
+  ].sort((a, b) => a.minute - b.minute);
+  for (const item of timeline) {
+    if (item.ev) applyAiEvent(match, item.ev);
+    else {
+      const w = { shot: { shooting: 1 }, pass: { passing: 1 }, tackle: { defending: 0.7, speed: 0.3 } }[item.m.type];
+      let s = 0; let tw = 0;
+      for (const [k, v] of Object.entries(w)) { s += state.player.stats[k] * v; tw += v; }
+      resolveMoment(match, item.m, fakeGame(s / tw / 100, humanSkill), state.player.name);
+    }
+  }
+  const out = completeMatch(state, match);
+
+  if (state.pending.event) {
+    const ev = getEvent(state.pending.event.id);
+    chooseEvent(state, Math.floor(Math.random() * ev.choices.length));
+  }
+  handleOffers(state);
+  if (out.weekEnd.seasonOver) {
+    const report = endSeason(state);
+    handleOffers(state);
+    return { out, report };
+  }
+  return { out };
+}
+
+export function handleOffers(state) {
+  const p = state.pending.offers;
+  if (!p) return;
+  const cur = clubRating(state.world, state.career.clubId);
+  const benched = state.career.season.starts < 6 || (state.flags.benchStreak || 0) >= 3;
+  const sensible = p.list.filter((o) => o.outlook?.id !== 'bench');
+  const best = [...(sensible.length ? sensible : p.list)].sort((a, b) => clubRating(state.world, b.clubId) - clubRating(state.world, a.clubId))[0];
+  const better = clubRating(state.world, best.clubId) > cur && best.outlook?.id !== 'bench';
+  if (p.mandatory || better || (benched && best.outlook?.id === 'starter')) takeOffer(state, best);
+  else declineOffers(state);
+}

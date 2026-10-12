@@ -1,0 +1,20 @@
+{
+  "name": "krampon-futbol-kariyeri",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Krampon: NSS tarzı, mobil öncelikli futbol kariyer simülasyonu (JavaScript + Canvas, PWA).",
+  "type": "module",
+  "engines": {
+    "node": ">=20.19"
+  },
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview --host",
+    "test": "node --test tests/*.test.js",
+    "simulate": "node scripts/simulate.js"
+  },
+  "devDependencies": {
+    "vite": "^8.3.4"
+  }
+}

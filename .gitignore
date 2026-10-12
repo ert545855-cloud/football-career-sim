@@ -1,0 +1,10 @@
+node_modules/
+web/dist/
+.DS_Store
+*.log
+# Unity
+unity/Library/
+unity/Temp/
+unity/Obj/
+unity/Logs/
+unity/UserSettings/
