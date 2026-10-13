@@ -30,6 +30,9 @@ import { legacyShiftSheet, requestsSheet, selectionSheet } from './mentorView.js
 import { ACTION_SPRITES, ROLE_SPRITES, TRAINING_SPRITES, awardArt, eventArt } from './spriteMap.js';
 import { sprite, spriteOr } from '../assets/sprites.js';
 import { tryoutsScreen } from './screens/tryouts.js';
+import { achievementsScreen } from './screens/achievements.js';
+import { checkAchievements, drainAchievementQueue } from '../core/achievements.js';
+import { showAchievementToasts } from './achievementsView.js';
 import { runTryoutStation, heartsHTML } from '../games/tryoutStation.js';
 import { POSITIONS as POS } from '../core/data.js';
 import { createWorld } from '../core/league.js';
@@ -62,6 +65,7 @@ export function createApp(rootEl) {
     chirp: chirpScreen,
     mentor: mentorScreen,
     tryouts: tryoutsScreen,
+    achievements: achievementsScreen,
     retired: retiredScreen,
   };
 
@@ -76,7 +80,18 @@ export function createApp(rootEl) {
     prev: null,
 
     save() {
-      if (this.state) saveGame(this.state);
+      if (!this.state) return;
+      checkAchievements(this.state); // ölçüye dayalı rozetler (para, ün, eşya…) her kayıtta kontrol edilir
+      saveGame(this.state);
+    },
+
+    /** Açılan başarımları bildirir (oyun/maç ekranlarında beklemeye alınır). */
+    flushAchievements() {
+      if (!this.state || ['match', 'tryouts', 'title', 'create'].includes(this.current)) return;
+      const list = drainAchievementQueue(this.state);
+      if (!list.length) return;
+      saveGame(this.state);
+      showAchievementToasts(list);
     },
     saveSettings() {
       saveSettings(this.settings);
@@ -101,6 +116,7 @@ export function createApp(rootEl) {
         this.current = name;
       }
       def.mount?.(screenEl, screenEl);
+      setTimeout(() => this.flushAchievements(), 350);
     },
 
     back() {

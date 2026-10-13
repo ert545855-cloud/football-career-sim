@@ -1,4 +1,5 @@
 import './styles/main.css';
+import './styles/features.css';
 import { createApp } from './ui/app.js';
 import { configureAudio, unlock } from './audio.js';
 import * as chirp from './core/chirp/index.js';

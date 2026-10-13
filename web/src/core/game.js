@@ -21,6 +21,7 @@ import {
   applyStarterOffer, assignYouthNumber, ensureNumberAfterMove, isTransferLocked, resolveStartTerms, squadClubId,
 } from './onboarding/index.js';
 import { random } from './rng.js';
+import { achievementsOnMatch, achievementsOnTraining, checkAchievements, ensureAchievements } from './achievements.js';
 
 export const SAVE_VERSION = 1;
 
@@ -70,6 +71,7 @@ export function newGame(setup) {
   if (setup.tryout) state.career.tryout = setup.tryout;
   ensureChirp(state);
   ensureMentor(state);
+  ensureAchievements(state);
   // Forma numarası: seçilmez, kulüp boştaki genç numaralarından verir
   if (!setup.number) assignYouthNumber(state, random);
   else state.career.numberHistory.push({ season: 1, clubId: state.career.clubId, number: player.number, reason: 'Başlangıç' });
@@ -215,6 +217,7 @@ export function finishTraining(state, stat, result) {
   if (result.success) changeMorale(player, 1);
   state.calendar.slots -= 1;
   state.calendar.trainings += 1;
+  achievementsOnTraining(state);
   return { stat, name: STATS[stat].name, before, after: player.stats[stat], gained, progress: player.progress[stat], progressBefore, success: result.success, mentorMult };
 }
 
@@ -250,6 +253,7 @@ export function completeMatch(state, match) {
   addNews(state, news, summary.result === 'W' ? 'good' : summary.result === 'L' ? 'bad' : 'info');
   if (!summary.played) addNews(state, `${opp} maçında forma giymedin.`, 'bad');
 
+  achievementsOnMatch(state, summary, match);
   const weekEnd = endWeek(state, { summary });
   return { summary, results, weekEnd, chirp: [...chirp, ...weekEnd.chirp] };
 }
@@ -401,6 +405,7 @@ export function endSeason(state) {
   // Yeni sezon: kadro yaşlanır; ≤ 26 ise mentor seçimi açılır, değilse rol değişimi (gençlere akıl hocalığı)
   report.mentor.start = mentorOnSeasonStart(state);
   state.pending.seasonReport = report;
+  checkAchievements(state);
   addNews(state, `Sezon ${report.season} bitti: ${league.name} ${position}. sıra.`, 'info');
   return report;
 }

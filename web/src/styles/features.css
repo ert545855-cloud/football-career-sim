@@ -1,0 +1,67 @@
+/* ─────────────── Başarımlar ─────────────── */
+.badge-medal {
+  --sz: 56px;
+  position: relative;
+  width: var(--sz);
+  height: var(--sz);
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.28), transparent 45%),
+    radial-gradient(circle, rgba(10, 24, 18, 0.95) 56%, transparent 57%),
+    conic-gradient(from 210deg, var(--tier), color-mix(in srgb, var(--tier) 45%, #000) 40%, var(--tier) 70%, color-mix(in srgb, var(--tier) 55%, #fff) 85%, var(--tier));
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4), 0 6px 18px color-mix(in srgb, var(--tier) 30%, transparent);
+  color: var(--tier);
+}
+.badge-medal > .ico { width: 48%; height: 48%; }
+.badge-medal .spr { image-rendering: pixelated; }
+.badge-medal.locked { filter: grayscale(1) brightness(0.55); box-shadow: none; }
+.badge-lock { position: absolute; right: -2px; bottom: -2px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: #0b1712; border: 1px solid var(--line-2); color: var(--muted); filter: none; }
+.badge-lock .ico { width: 12px; height: 12px; }
+
+.ach-toast {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: calc(var(--safe-top) + 10px);
+  z-index: 95;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 18px;
+  background: linear-gradient(100deg, rgba(14, 30, 23, 0.98), rgba(22, 40, 31, 0.98));
+  border: 1px solid color-mix(in srgb, var(--tier) 55%, transparent);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5), 0 0 30px color-mix(in srgb, var(--tier) 18%, transparent);
+  animation: achIn 0.45s cubic-bezier(0.2, 1.3, 0.3, 1);
+  pointer-events: none;
+}
+.ach-toast.out { transition: transform 0.25s, opacity 0.25s; transform: translateY(-20px); opacity: 0; }
+.ach-toast b { display: block; font-size: 16px; }
+.ach-kicker { font-size: 10.5px; font-weight: 900; letter-spacing: 0.08em; color: var(--tier); }
+@keyframes achIn { from { transform: translateY(-40px) scale(0.96); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.ach-card { display: block; width: 100%; text-align: left; cursor: pointer; }
+.ach-strip { display: flex; gap: 8px; align-items: center; min-height: 40px; }
+.ach-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+.ach-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 6px 10px;
+  border-radius: 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  text-align: center;
+  cursor: pointer;
+  min-width: 0;
+}
+.ach-tile b { font-size: 12px; line-height: 1.2; min-height: 2.4em; display: flex; align-items: center; }
+.ach-tile.on { background: linear-gradient(180deg, color-mix(in srgb, var(--tier) 12%, transparent), var(--panel)); border-color: color-mix(in srgb, var(--tier) 40%, transparent); }
+.ach-tile .bar { width: 80%; height: 5px; }
+.chips.scroll-x { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.chips.scroll-x::-webkit-scrollbar { display: none; }
+.chips button.chip { border: 0; cursor: pointer; flex: none; }

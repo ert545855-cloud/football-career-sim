@@ -188,6 +188,8 @@ export function resolveMoment(match, moment, result, playerName) {
   const m = moment.minute;
   moment.done = true;
   moment.outcome = result.outcome;
+  moment.success = !!result.success;
+  moment.curve = result.curve || 0;
   const acc = clamp(result.accuracy || 0, 0, 1);
 
   if (moment.type === 'shot') {

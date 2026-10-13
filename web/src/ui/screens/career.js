@@ -3,7 +3,8 @@ import { awardArt } from '../spriteMap.js';
 import { MAX_SCORE, OFFER_KINDS } from '../../core/onboarding/index.js';
 import { ovr } from '../../core/player.js';
 import { crestSVG, icon } from '../art.js';
-import { esc } from '../dom.js';
+import { animateBars, esc } from '../dom.js';
+import { achievementsCard } from '../achievementsView.js';
 
 export function careerScreen(app) {
   const s = app.state;
@@ -34,6 +35,8 @@ export function careerScreen(app) {
       <h1 class="h-title">Kariyer</h1>
       <p class="muted small" style="margin:4px 0 0">${s.player.age} yaş · ${c.moves || 0} transfer · ${c.caps || 0} milli maç · OVR ${ovr(s.player)}</p>
 
+      <div style="margin-top:14px">${achievementsCard(s)}</div>
+
       <div class="h-sec">Bu sezon</div>
       <div class="kpis">
         <div class="kpi"><b>${se.apps}</b><span>Maç</span></div>
@@ -61,6 +64,14 @@ export function careerScreen(app) {
       <div class="h-sec">Haber akışı</div>
       <div class="card list">${news || '<span class="muted small">Henüz haber yok.</span>'}</div>
       <p class="muted small center" style="margin-top:14px">${LEAGUES.super.name} hedefin. Sonra efsane ol.</p>`,
-    mount() {},
+    mount(node) {
+      animateBars(node);
+      node.addEventListener('click', (e) => {
+        if (e.target.closest('[data-act="achievements"]')) {
+          app.click();
+          app.go('achievements');
+        }
+      });
+    },
   };
 }
