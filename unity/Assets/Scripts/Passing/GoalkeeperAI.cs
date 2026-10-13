@@ -66,6 +66,8 @@ namespace FootballCareer.Passing
         [SerializeField] private float catchRadius = 0.45f;
 
         public GoalFrame Goal { get { return goal; } }
+        /// <summary>Dalışta yatan gövde (tekrar kaydı için).</summary>
+        public Transform Body { get { return body; } }
         /// <summary>Ellerin dünya konumu.</summary>
         public Vector3 HandsPosition { get { return transform.position + Vector3.up * handY; } }
         public bool IsDiving { get { return state == State.Diving; } }
@@ -237,7 +239,8 @@ namespace FootballCareer.Passing
 
         private void Update()
         {
-            if (goal == null) return;
+            // Oyun duraklatıldıysa (gol tekrarı, menü) pozu ellemiyoruz
+            if (goal == null || Time.deltaTime <= 0f) return;
             if (state == State.Positioning) UpdatePositioning(Time.deltaTime);
             else if (state == State.Diving) UpdateDive(Time.deltaTime);
         }

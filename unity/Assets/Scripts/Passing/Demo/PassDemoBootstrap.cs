@@ -1,3 +1,5 @@
+using FootballCareer.Core;
+using FootballCareer.Passing.Feedback;
 using FootballCareer.Passing.Levels;
 using UnityEngine;
 using UnityEngine.AI;
@@ -26,6 +28,7 @@ namespace FootballCareer.Passing.Demo
         private BallController ball;
         private LevelRunner runner;
         private CareerStatsBridge bridge;
+        private GoalReplay replay;
         private NavMeshDataInstance navMesh;
         private float demoPassing = 50f, demoShooting = 50f;
 
@@ -62,6 +65,11 @@ namespace FootballCareer.Passing.Demo
             bridge.Setup(manager);
             if (!bridge.HasCareer) ApplyDemoSkill();
 
+            // His: titreşim + ses + kamera sarsıntısı, gol tekrarı
+            gameObject.AddComponent<PassFeedback>().Setup(manager, rig);
+            replay = gameObject.AddComponent<GoalReplay>();
+            replay.Setup(manager, rig);
+
             runner = gameObject.AddComponent<LevelRunner>();
             runner.Setup(manager, builder);
             runner.Changed += OnRunnerChanged;
@@ -80,12 +88,19 @@ namespace FootballCareer.Passing.Demo
         /// <summary>Menüye dönülünce kamera sahayı genel plandan göstersin.</summary>
         private void OnRunnerChanged(LevelRunner r)
         {
+            if (r.State == LevelState.Won) PlayWhistle();
             if (r.State == LevelState.None && rig != null && ball != null)
             {
                 ball.AttachTo(null, Vector3.zero);
                 ball.transform.position = new Vector3(0f, ball.Radius, 0f);
                 rig.SetDefault(ball.transform);
             }
+        }
+
+        private void PlayWhistle()
+        {
+            AudioSource src = GetComponent<AudioSource>();
+            if (src != null) src.PlayOneShot(ProceduralSfx.Get(ProceduralSfx.Kind.Whistle), 0.6f);
         }
 
         private void OnPassFinished(PassResult r)
@@ -110,8 +125,16 @@ namespace FootballCareer.Passing.Demo
                 case LevelState.None: DrawMenu(w, h); break;
                 case LevelState.Intro: DrawIntro(w, h); break;
                 case LevelState.Playing: DrawHud(w, h); break;
-                case LevelState.Won: DrawHud(w, h); DrawWon(w, h); break;
+                case LevelState.Won: DrawHud(w, h); if (!ReplayActive) DrawWon(w, h); break;
                 case LevelState.Lost: DrawHud(w, h); DrawLost(w, h); break;
+            }
+            if (replay.IsReplaying)
+            {
+                GUI.color = new Color(1f, 0.25f, 0.25f);
+                GUI.DrawTexture(new Rect(w - 150f, 70f, 14f, 14f), Texture2D.whiteTexture);
+                GUI.color = Color.white;
+                GUI.Label(new Rect(w - 130f, 62f, 120f, 30f), "TEKRAR", titleStyle);
+                GUI.Label(new Rect(0f, h - 40f, w, 30f), "Geçmek için dokun", smallStyle);
             }
         }
 
@@ -143,7 +166,13 @@ namespace FootballCareer.Passing.Demo
                 GUI.Label(new Rect(x + 16f, sy + 48f, cw - 32f, 22f), SkillSummary(), smallStyle);
             }
 
-            float rowH = 46f, top = sy + 80f;
+            // Ayarlar: titreşim ve ses
+            if (GUI.Button(new Rect(x + 16f, sy + 70f, (cw - 40f) / 2f, 34f), "Titreşim: " + (Haptics.Enabled ? "Açık" : "Kapalı"), buttonStyle))
+                Haptics.Enabled = !Haptics.Enabled;
+            if (GUI.Button(new Rect(x + 24f + (cw - 40f) / 2f, sy + 70f, (cw - 40f) / 2f, 34f), "Ses: " + (AudioListener.volume > 0f ? "Açık" : "Kapalı"), buttonStyle))
+                AudioListener.volume = AudioListener.volume > 0f ? 0f : 1f;
+
+            float rowH = 44f, top = sy + 112f;
             for (int i = 0; i < runner.Levels.Count; i++)
             {
                 PassLevel l = runner.Levels[i];
@@ -238,6 +267,8 @@ namespace FootballCareer.Passing.Demo
             if (GUI.Button(new Rect(card.x + 20f, by, bw, 52f), "Tekrar", buttonStyle)) runner.Retry();
             if (GUI.Button(new Rect(card.x + 30f + bw, by, bw, 52f), "Menü", buttonStyle)) runner.Quit();
         }
+
+        private bool ReplayActive { get { return replay != null && (replay.IsReplaying || replay.IsPending); } }
 
         /// <summary>Kariyer kaydı yokken stat etkisini denemek için (kaydırıcılar).</summary>
         private void ApplyDemoSkill()

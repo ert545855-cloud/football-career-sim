@@ -126,6 +126,8 @@ namespace FootballCareer.Passing
         public event Action<PassResult> PassFinished;
         /// <summary>Durum değişti.</summary>
         public event Action<PassState> StateChanged;
+        /// <summary>Top ayaktan çıktı (vuruş anı). Parametre: şut mu?</summary>
+        public event Action<bool> Launched;
 
         // ─────────────────────────── Dışa açık durum ───────────────────────────
 
@@ -151,6 +153,10 @@ namespace FootballCareer.Passing
         /// <summary>Çizilen çizgi kaleye mi (şut)?</summary>
         public bool IsShotAimed { get { return shotAimed; } }
         public GoalFrame TargetGoal { get { return targetGoal; } }
+        public IList<PassReceiver> Teammates { get { return teammates; } }
+        public IList<EnemyAI> Enemies { get { return enemies; } }
+        /// <summary>Sonuç ekranı başka bir sistem tarafından tutuluyor mu (ör. gol tekrarı)?</summary>
+        public bool IsResolveHeld { get { return resolveHolds > 0; } }
         public GoalkeeperAI Keeper { get { return keeper; } }
         /// <summary>Pas moduna girilebilir mi? (top pasörün ayağında ve sistem boşta)</summary>
         public bool CanEnterPassMode { get { return state == PassState.Idle && HasBall; } }
@@ -159,6 +165,7 @@ namespace FootballCareer.Passing
 
         private PassState state = PassState.Idle;
         private PassSkillProfile skill = PassSkillProfile.Neutral;
+        private int resolveHolds;
         private readonly PassPath path = new PassPath();
         private readonly List<Vector3> drawn = new List<Vector3>(128);
         private readonly List<EnemyAI> sortBuffer = new List<EnemyAI>(16);
@@ -589,6 +596,7 @@ namespace FootballCareer.Passing
             launchPasser = passer;
             ball.Launch(path, launchSpeed, passer, launchedShot);
             if (launchedShot && keeper != null) keeper.OnShot(path, launchSpeed);
+            if (Launched != null) Launched(launchedShot);
 
             // Pasör vuruş yönüne döner
             Vector3 t = path.TangentAtDistance(0f);
@@ -754,10 +762,14 @@ namespace FootballCareer.Passing
             if (PassFinished != null) PassFinished(result);
         }
 
+        /// <summary>Sonuç ekranını tut (ör. gol tekrarı bitene kadar diziliş sıfırlanmasın). Her Hold için bir Release.</summary>
+        public void HoldResolve() { resolveHolds++; }
+        public void ReleaseResolve() { resolveHolds = Mathf.Max(0, resolveHolds - 1); }
+
         private void UpdateResolving()
         {
             stateClock += Time.unscaledDeltaTime;
-            if (stateClock < resultHoldTime) return;
+            if (stateClock < resultHoldTime || resolveHolds > 0) return;
 
             if ((lastResult.isShot && resetAfterShot) || (!lastResult.Success && autoResetOnFail))
             {
@@ -771,6 +783,7 @@ namespace FootballCareer.Passing
         /// <summary>Dizilişi baştan kurar: herkes yerine, top ilk pasöre.</summary>
         public void ResetPlay()
         {
+            resolveHolds = 0;
             SetTimeScaleImmediate(1f);
             HideLine();
             SetTarget(null);

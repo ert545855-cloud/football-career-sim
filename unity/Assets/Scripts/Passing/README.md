@@ -19,6 +19,10 @@ Namespace: `FootballCareer.Passing` · Unity 2021.3 LTS ve üstü (Unity 6 dahil
 | `PassTypes.cs` | `PassState`, `PassOutcome`, `PassResult` ve `PassResultEvent` tipleri |
 | `PassSkillProfile.cs` | Oyuncu statlarını oynanış çarpanlarına çevirir: ağır çekim, mesafe, hız, isabet sapması, falso ustalığı, top koruma |
 | `CareerStatsBridge.cs` | Kariyer profilini PasManager'a uygular; isabetli pas ve gol statları geliştirir |
+| `Feedback/PassFeedback.cs` | His: titreşim, ses ve kamera sarsıntısı (vuruş, pas ulaştı, gol, kurtarış, direk, başarısız) |
+| `Feedback/GoalReplay.cs` | Gol tekrarı: son vuruşu kaydeder, golden sonra yandan ağır çekimde yeniden oynatır |
+| `Feedback/ProceduralSfx.cs` | Ses dosyası olmadan kodla üretilen efektler (vuruş, ağlar, tribün, direk, düdük) |
+| `../Core/Haptics.cs` + `Plugins/iOS/FCHaptics.mm` + `Plugins/WebGL/FCHaptics.jslib` | Platformlar arası titreşim |
 | `Levels/PassLevel.cs` | Bölüm verisi (ScriptableObject): diziliş, hedef, hak, yıldız eşikleri, zorluk |
 | `Levels/LevelRunner.cs` | Bölümü kurar; hedef, puan, hak ve yıldızları yönetir, en iyi sonucu kaydeder |
 | `Levels/LevelScoring.cs` | Puanlama ve yıldız hesabı (`LevelScoring`), kayıt ve kilitler (`LevelProgress`) |
@@ -137,6 +141,43 @@ Her bölümün bir **hedefi**, birkaç **hakkı** ve **yıldız eşikleri** vard
 - Olaylar: `Changed`, `LevelWon`, `LevelLost`.
 - Komutlar: `Load(i)`, `StartPlay()`, `Retry()`, `Next()`, `Quit()`.
 - Demo bunları IMGUI ile çizer; kendi Canvas'ınıza aynı şekilde bağlayabilirsiniz.
+
+## His: titreşim, ses, sarsıntı, gol tekrarı
+
+`PasManager`'ın yanına `PassFeedback` ve `GoalReplay` ekleyin (demo ekler).
+
+**Titreşim (`Core/Haptics`):**
+
+| An | Desen |
+|---|---|
+| Pas moduna giriş | Çok hafif tık |
+| Çizime başlama | Hafif tık |
+| Pas vuruşu | Orta |
+| Şut vuruşu | Sert |
+| Pas arkadaşa ulaştı | Çift hafif tık |
+| **GOL** | Ritmik, uzun kutlama titreşimi (~0.7 sn) |
+| Kurtarış / direk / başarısız | Kendi desenleri |
+
+- **Android:** `VibrationEffect.createWaveform` ile güç ayarlı desenler.
+- **iOS:** Taptic Engine (`FCHaptics.mm`, Unity Xcode projesine otomatik ekler).
+- **WebGL:** `navigator.vibrate` (Android tarayıcıları; iOS Safari desteklemez).
+- Oyuncu titreşimi kapatabilir: `Haptics.Enabled = false` (kayıtlıdır).
+
+**Ses:**
+- `PassFeedback`'e kendi kayıtlarınızı verin. Boş bırakılanlar kodla üretilir; bu sayede proje ses dosyası olmadan da sesli çalışır.
+- Ses seviyesi `volume`, tribün sesi `crowdVolume` ile ayarlanır.
+
+**Kamera sarsıntısı:**
+- Şutta hafif, golde güçlü, direkte keskin.
+- Yumuşak geçişleri bozmaz.
+- `PassCameraController.Shake(m, sn)` ile kodla da tetiklenebilir. `SetShakeMultiplier(0)` kapatır.
+
+**Gol tekrarı:**
+- Her vuruşta top ve oyuncuların pozları kaydedilir.
+- Gol olursa ağlar 0.9 sn sallanır. Ardından oyun durur ve son vuruş kalenin yanından, %40 hızda yeniden oynatılır.
+- Ekrana dokunmak tekrarı geçer.
+- Tekrar sürerken `PasManager` dizilişi sıfırlamaz (`HoldResolve`).
+- UI için olaylar: `ReplayStarted` / `ReplayEnded`.
 
 ## Statların etkisi (kariyer bağlantısı)
 

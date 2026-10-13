@@ -127,6 +127,12 @@ namespace FootballCareer.Passing
             if (trail != null) trail.emitting = false;
         }
 
+        /// <summary>Uçuş izini temizler (top ışınlanınca, ör. tekrar başında, iz çizgisi oluşmasın).</summary>
+        public void ClearTrail()
+        {
+            if (trail != null) trail.Clear();
+        }
+
         /// <summary>Saha sınırları (XZ). Dışına çıkan top "dışarıda" sayılır.</summary>
         public void SetPitchBounds(Bounds bounds)
         {

@@ -7,6 +7,8 @@ namespace FootballCareer.Passing
     ///  • Default : yayın kamerası (topun üstünden, geniş açı).
     ///  • Aim     : pas modu — oyuncunun ARKASINA geçer (3. şahıs), pas atılacak bölgeye bakar.
     ///  • Follow  : pas atıldı — topu arkasından, uçuş yönüne bakarak izler (falsoyu gösterir).
+    ///  • Replay  : gol tekrarı — sabit bir yan açıdan topu izler (GoalReplay kullanır).
+    ///  Ayrıca vuruş/gol anlarında kamera sarsıntısı (Shake) eklenir; sarsıntı yumuşatmayı bozmaz.
     ///
     /// Tüm yumuşatma GERÇEK zamanla (unscaledDeltaTime) yapılır: zaman 0.15'e indiğinde kamera
     /// ağır çekime girmez, oyuncunun arkasına akıcı şekilde süzülür.
@@ -15,7 +17,7 @@ namespace FootballCareer.Passing
     [DisallowMultipleComponent]
     public class PassCameraController : MonoBehaviour
     {
-        public enum Mode { Default, Aim, Follow }
+        public enum Mode { Default, Aim, Follow, Replay }
 
         [Tooltip("FOV'u değiştirilecek kamera (boşsa bu nesnedeki ya da ana kamera).")]
         [SerializeField] private Camera cam;
@@ -49,6 +51,15 @@ namespace FootballCareer.Passing
         [SerializeField] private float settleDistance = 0.2f;
         [SerializeField] private float settleAngle = 3f;
 
+        [Header("Tekrar (Replay)")]
+        [SerializeField] private float replayFov = 38f;
+
+        [Header("Sarsıntı")]
+        [Tooltip("Sarsıntı frekansı (Hz).")]
+        [SerializeField] private float shakeFrequency = 22f;
+        [Tooltip("0 = kapalı (ayarlardan).")]
+        [SerializeField, Range(0f, 2f)] private float shakeMultiplier = 1f;
+
         public Mode CurrentMode { get { return mode; } }
         /// <summary>Kamera hedef konumuna oturdu mu? (PasManager çizime izin vermeden önce bakar.)</summary>
         public bool IsSettled { get { return settled; } }
@@ -60,6 +71,12 @@ namespace FootballCareer.Passing
         private Vector3 followDir = Vector3.forward;
         private Vector3 velocity;
         private bool settled;
+        private Vector3 basePos;          // sarsıntısız (yumuşatılmış) poz
+        private Quaternion baseRot;
+        private bool hasBase;
+        private float shakeAmp, shakeTime, shakeDuration, shakeSeed;
+        private Vector3 replayPos;
+        private Transform replayLook;
 
         private void Awake()
         {
@@ -96,14 +113,44 @@ namespace FootballCareer.Passing
             settled = false;
         }
 
+        /// <summary>Tekrar kamerası: sabit konumdan bir hedefi (topu) izler. Ani geçiş için ardından Snap() çağırın.</summary>
+        public void SetReplay(Vector3 position, Transform lookAt)
+        {
+            replayPos = position;
+            replayLook = lookAt;
+            mode = Mode.Replay;
+            settled = false;
+        }
+
+        /// <summary>
+        /// Kamera sarsıntısı (vuruş, gol, direk). amplitude metre cinsinden (0.05 hafif, 0.3 güçlü).
+        /// Üst üste gelirse güçlü olan kalır.
+        /// </summary>
+        public void Shake(float amplitude, float duration)
+        {
+            amplitude *= shakeMultiplier;
+            if (amplitude <= 0f || duration <= 0f) return;
+            if (shakeTime > 0f && amplitude * duration < shakeAmp * shakeTime) return;
+            shakeAmp = amplitude;
+            shakeDuration = duration;
+            shakeTime = duration;
+            shakeSeed = Random.value * 100f;
+        }
+
+        /// <summary>Sarsıntı gücü ayarı (0 = kapalı).</summary>
+        public void SetShakeMultiplier(float value) { shakeMultiplier = Mathf.Max(0f, value); }
+
         /// <summary>Geçiş yapmadan hedef konuma ışınla (sahne başlangıcı / sıfırlama).</summary>
         public void Snap()
         {
             Vector3 pos, look;
             float fov;
             if (!Desired(out pos, out look, out fov)) return;
-            transform.position = pos;
-            transform.rotation = LookRotation(look - pos);
+            basePos = pos;
+            baseRot = LookRotation(look - pos);
+            hasBase = true;
+            transform.position = basePos;
+            transform.rotation = baseRot;
             if (cam != null) cam.fieldOfView = fov;
             velocity = Vector3.zero;
             settled = true;
@@ -119,14 +166,37 @@ namespace FootballCareer.Passing
             float fov;
             if (!Desired(out pos, out look, out fov)) return;
 
-            transform.position = Vector3.SmoothDamp(transform.position, pos, ref velocity, smoothTime, Mathf.Infinity, dt);
+            if (!hasBase)
+            {
+                basePos = transform.position;
+                baseRot = transform.rotation;
+                hasBase = true;
+            }
+            // Yumuşatma sarsıntısız "temel" poz üzerinde yapılır; sarsıntı en son üstüne eklenir
+            basePos = Vector3.SmoothDamp(basePos, pos, ref velocity, smoothTime, Mathf.Infinity, dt);
             // Bakış, kameranın ŞİMDİKİ konumundan hesaplanır → geçiş sırasında da hedef kadrajda kalır
-            Quaternion want = LookRotation(look - transform.position);
-            transform.rotation = Quaternion.Slerp(transform.rotation, want, 1f - Mathf.Exp(-rotationSharpness * dt));
+            Quaternion want = LookRotation(look - basePos);
+            baseRot = Quaternion.Slerp(baseRot, want, 1f - Mathf.Exp(-rotationSharpness * dt));
             if (cam != null) cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, fov, 1f - Mathf.Exp(-fovSharpness * dt));
 
-            settled = (transform.position - pos).sqrMagnitude < settleDistance * settleDistance
-                      && Quaternion.Angle(transform.rotation, want) < settleAngle;
+            settled = (basePos - pos).sqrMagnitude < settleDistance * settleDistance
+                      && Quaternion.Angle(baseRot, want) < settleAngle;
+
+            Vector3 shakeOffset = Vector3.zero;
+            Quaternion shakeRot = Quaternion.identity;
+            if (shakeTime > 0f)
+            {
+                shakeTime -= dt;
+                float k = Mathf.Clamp01(shakeTime / shakeDuration);
+                float amp = shakeAmp * k * k; // hızlı sönüm
+                float t = Time.unscaledTime * shakeFrequency;
+                float ox = (Mathf.PerlinNoise(shakeSeed, t) - 0.5f) * 2f * amp;
+                float oy = (Mathf.PerlinNoise(t, shakeSeed) - 0.5f) * 2f * amp;
+                shakeOffset = baseRot * new Vector3(ox, oy, 0f);
+                shakeRot = Quaternion.Euler(oy * 6f, ox * 6f, ox * 4f);
+            }
+            transform.position = basePos + shakeOffset;
+            transform.rotation = baseRot * shakeRot;
         }
 
         /// <summary>Moda göre hedef konum, bakış noktası ve FOV.</summary>
@@ -153,6 +223,13 @@ namespace FootballCareer.Passing
                     pos = new Vector3(b.x, 0f, b.z) - followDir * followDistance + Vector3.up * followHeight;
                     look = b + followDir * followLookAhead;
                     fov = followFov;
+                    return true;
+
+                case Mode.Replay:
+                    if (replayLook == null) break;
+                    pos = replayPos;
+                    look = replayLook.position;
+                    fov = replayFov;
                     return true;
             }
 
