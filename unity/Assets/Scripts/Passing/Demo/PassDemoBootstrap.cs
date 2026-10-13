@@ -21,21 +21,23 @@ namespace FootballCareer.Passing.Demo
         [SerializeField] private Vector2 pitchSize = new Vector2(68f, 105f);
 
         [Header("Diziliş (yerde, y = 0)")]
-        [SerializeField] private Vector3 passerPosition = new Vector3(0f, 0f, -24f);
+        [SerializeField] private Vector3 passerPosition = new Vector3(0f, 0f, 8f);
         [SerializeField] private Vector3[] teammatePositions =
         {
-            new Vector3(-15f, 0f, -8f),
-            new Vector3(13f, 0f, -4f),
-            new Vector3(-3f, 0f, 12f),
+            new Vector3(-15f, 0f, 22f),
+            new Vector3(14f, 0f, 24f),
+            new Vector3(-2f, 0f, 34f),
         };
         [SerializeField] private Vector3[] enemyPositions =
         {
-            new Vector3(-4f, 0f, -18f),
-            new Vector3(6f, 0f, -15f),
-            new Vector3(-9f, 0f, -2f),
-            new Vector3(5f, 0f, 3f),
-            new Vector3(-2f, 0f, 20f),
+            new Vector3(-4f, 0f, 14f),
+            new Vector3(6f, 0f, 17f),
+            new Vector3(-9f, 0f, 28f),
+            new Vector3(6f, 0f, 31f),
+            new Vector3(1f, 0f, 42f),
         };
+        [Tooltip("Rakip kalecinin yeteneği (0–1).")]
+        [SerializeField, Range(0f, 1f)] private float keeperSkill = 0.6f;
 
         [Header("Görsel (boşsa otomatik)")]
         [Tooltip("Pas çizgisi ve iz için malzeme. Boşsa Sprites/Default bulunur.")]
@@ -51,7 +53,7 @@ namespace FootballCareer.Passing.Demo
         private string banner;
         private Color bannerColor;
         private float bannerUntil;
-        private int attempts, completed;
+        private int attempts, completed, shots, goals;
         private GUIStyle boxStyle, bannerStyle, buttonStyle;
 
         private void Awake()
@@ -84,9 +86,13 @@ namespace FootballCareer.Passing.Demo
             PassCameraController rig = cam.GetComponent<PassCameraController>();
             if (rig == null) rig = cam.gameObject.AddComponent<PassCameraController>();
 
+            GoalFrame goal = BuildGoal();
+            GoalkeeperAI keeper = CreateKeeper(goal);
+
             manager = gameObject.AddComponent<PasManager>();
             manager.Setup(ball, passer, cam, rig, CreatePassLine(),
                 new Bounds(Vector3.zero, new Vector3(pitchSize.x, 20f, pitchSize.y)));
+            manager.SetGoal(goal, keeper);
             for (int i = 0; i < receivers.Count; i++) manager.AddTeammate(receivers[i]);
             for (int i = 0; i < enemies.Count; i++) manager.AddEnemy(enemies[i]);
             manager.PassFinished += OnPassFinished;
@@ -100,8 +106,16 @@ namespace FootballCareer.Passing.Demo
 
         private void OnPassFinished(PassResult r)
         {
-            attempts++;
-            if (r.Success) completed++;
+            if (r.isShot)
+            {
+                shots++;
+                if (r.outcome == PassOutcome.Goal) goals++;
+            }
+            else
+            {
+                attempts++;
+                if (r.Success) completed++;
+            }
             banner = r.Describe();
             bannerColor = r.Success ? new Color(0.45f, 1f, 0.5f) : new Color(1f, 0.45f, 0.4f);
             bannerUntil = Time.unscaledTime + 1.6f;
@@ -126,6 +140,10 @@ namespace FootballCareer.Passing.Demo
             Line(new Vector3(0f, 0f, hz), new Vector3(pitchSize.x, 0.02f, w));
             Line(Vector3.zero, new Vector3(pitchSize.x, 0.02f, w));
 
+            // Hücum edilen kalenin ceza sahası (40.32 × 16.5) ve kale alanı (18.32 × 5.5)
+            BoxLines(hz, 40.32f, 16.5f, w);
+            BoxLines(hz, 18.32f, 5.5f, w);
+
             // Orta yuvarlak
             var circle = new GameObject("Orta Yuvarlak").AddComponent<LineRenderer>();
             circle.transform.SetParent(transform, false);
@@ -143,6 +161,74 @@ namespace FootballCareer.Passing.Demo
                 float a = i * Mathf.PI * 2f / seg;
                 circle.SetPosition(i, new Vector3(Mathf.Cos(a) * 9.15f, 0.015f, Mathf.Sin(a) * 9.15f));
             }
+        }
+
+        /// <summary>Kale çizgisine (z = goalZ) dayalı dikdörtgen saha çizgileri.</summary>
+        private void BoxLines(float goalZ, float width, float depth, float w)
+        {
+            float hw = width / 2f, zFront = goalZ - depth;
+            Line(new Vector3(0f, 0f, zFront), new Vector3(width, 0.02f, w));
+            Line(new Vector3(-hw, 0f, goalZ - depth / 2f), new Vector3(w, 0.02f, depth));
+            Line(new Vector3(hw, 0f, goalZ - depth / 2f), new Vector3(w, 0.02f, depth));
+        }
+
+        /// <summary>
+        /// Kale: GoalFrame (analitik direk/üst direk) + görsel direkler ve ağ çizgileri.
+        /// Kale çizgisinin ortasında, sahaya (−z) bakar.
+        /// </summary>
+        private GoalFrame BuildGoal()
+        {
+            const float gw = 7.32f, gh = 2.44f, r = 0.06f, depth = 2f;
+            var root = new GameObject("Kale");
+            root.transform.SetParent(transform, false);
+            root.transform.SetPositionAndRotation(new Vector3(0f, 0f, pitchSize.y / 2f), Quaternion.LookRotation(Vector3.back));
+            GoalFrame goal = root.AddComponent<GoalFrame>();
+            goal.Configure(gw, gh, true);
+
+            // Direkler (Cylinder: yükseklik 2 birim → y ölçeği h/2) ve üst direk; yerel x = kalenin yanı
+            float px = gw / 2f + r;
+            Primitive(PrimitiveType.Cylinder, "Direk", root.transform, new Vector3(-px, gh / 2f + r / 2f, 0f), new Vector3(2 * r, (gh + r) / 2f, 2 * r), Color.white, true);
+            Primitive(PrimitiveType.Cylinder, "Direk", root.transform, new Vector3(px, gh / 2f + r / 2f, 0f), new Vector3(2 * r, (gh + r) / 2f, 2 * r), Color.white, true);
+            GameObject bar = Primitive(PrimitiveType.Cylinder, "Üst Direk", root.transform, new Vector3(0f, gh + r, 0f), new Vector3(2 * r, px + r, 2 * r), Color.white, true);
+            bar.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+
+            // Ağ: arka yüz, tavan ve yanlar (zikzak çizgilerle tek LineRenderer'lar)
+            var pts = new List<Vector3>();
+            for (float x = -px; x <= px + 1e-3f; x += 0.5f) { pts.Add(new Vector3(x, 0f, -depth)); pts.Add(new Vector3(x, gh, -depth)); pts.Add(new Vector3(x, gh, 0f)); pts.Add(new Vector3(x, gh, -depth)); }
+            NetLine(root.transform, pts);
+            pts.Clear();
+            for (float y = 0f; y <= gh + 1e-3f; y += 0.5f) { pts.Add(new Vector3(-px, y, 0f)); pts.Add(new Vector3(-px, y, -depth)); pts.Add(new Vector3(px, y, -depth)); pts.Add(new Vector3(px, y, 0f)); pts.Add(new Vector3(px, y, -depth)); pts.Add(new Vector3(-px, y, -depth)); }
+            NetLine(root.transform, pts);
+            return goal;
+        }
+
+        private void NetLine(Transform parent, List<Vector3> localPoints)
+        {
+            var lr = new GameObject("Ağ").AddComponent<LineRenderer>();
+            lr.transform.SetParent(parent, false);
+            lr.sharedMaterial = lineMaterial;
+            lr.useWorldSpace = false;
+            lr.widthMultiplier = 0.025f;
+            lr.startColor = lr.endColor = new Color(1f, 1f, 1f, 0.55f);
+            lr.shadowCastingMode = ShadowCastingMode.Off;
+            lr.positionCount = localPoints.Count;
+            lr.SetPositions(localPoints.ToArray());
+        }
+
+        /// <summary>Kaleci: kök yerde, gövde (kapsül + collider) çocuk; dalışta gövde yana yatar.</summary>
+        private GoalkeeperAI CreateKeeper(GoalFrame goal)
+        {
+            var root = new GameObject("Kaleci");
+            root.transform.SetParent(transform, false);
+            root.transform.SetPositionAndRotation(goal.Center + goal.Normal * 0.5f, Quaternion.LookRotation(goal.Normal));
+            GameObject body = Primitive(PrimitiveType.Capsule, "Gövde", root.transform, new Vector3(0f, 0.95f, 0f), new Vector3(0.85f, 0.95f, 0.85f), new Color(0.75f, 0.95f, 0.15f), false);
+            Primitive(PrimitiveType.Cube, "Yön", body.transform, new Vector3(0f, 0.35f, 0.45f), new Vector3(0.35f, 0.15f, 0.3f), Color.white, true);
+            Rigidbody rb = root.AddComponent<Rigidbody>();
+            rb.isKinematic = true;
+            rb.useGravity = false;
+            GoalkeeperAI gk = root.AddComponent<GoalkeeperAI>();
+            gk.Setup(goal, body.transform, keeperSkill);
+            return gk;
         }
 
         private void Line(Vector3 center, Vector3 size)
@@ -335,12 +421,14 @@ namespace FootballCareer.Passing.Demo
             switch (manager.State)
             {
                 case PassState.Idle: hint = "Pas moduna geçmek için ekrana dokun ya da SPACE'e bas."; break;
-                case PassState.Aiming: hint = "Ağır çekim! Topa dokun ve arkadaşına doğru (istersen kavisli) bir çizgi çiz."; break;
-                case PassState.Drawing: hint = "Parmağını kaldırınca pas atılır. Yeşil = temiz, turuncu = rakip yolda. Acele et!"; break;
-                case PassState.InFlight: hint = "Pas yolda…"; break;
+                case PassState.Aiming: hint = "Ağır çekim! Topa dokun, arkadaşına (istersen kavisli) çizgi çiz. Kaleye çizersen ŞUT!"; break;
+                case PassState.Drawing: hint = manager.IsShotAimed
+                        ? "Sarı = şut. Köşelere ve falsolu vur, kaleciyi şaşırt!"
+                        : "Parmağını kaldırınca pas atılır. Yeşil = temiz, turuncu = rakip yolda. Acele et!"; break;
+                case PassState.InFlight: hint = manager.IsShotAimed ? "Şut!" : "Pas yolda…"; break;
                 default: hint = ""; break;
             }
-            GUI.Box(new Rect(12f, 12f, Mathf.Min(w - 24f, 560f), 64f), hint + "\nİsabetli pas: " + completed + " / " + attempts, boxStyle);
+            GUI.Box(new Rect(12f, 12f, Mathf.Min(w - 24f, 560f), 64f), hint + "\nİsabetli pas: " + completed + " / " + attempts + "   ·   Gol: " + goals + " / " + shots, boxStyle);
 
             // Baskı çubuğu
             if (manager.State == PassState.Aiming || manager.State == PassState.Drawing)

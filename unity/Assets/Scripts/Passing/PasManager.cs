@@ -16,12 +16,15 @@ namespace FootballCareer.Passing
     ///     arkasına süzülür (PassCameraController.SetAim). Fizik adımı da ölçeklenir → ağır çekimde de akıcı.
     ///  2) ÇİZİM + KAVİS: Parmak/fare yerdeki düzleme ışınlanır, noktalar toplanır, her karede kübik Bezier
     ///     (PassPath) uydurulur ve LineRenderer ile canlı gösterilir. Çizgi rengi: yeşil = temiz hedef,
-    ///     turuncu = rakip yolda, beyaz = hedefte arkadaş yok.
+    ///     turuncu = rakip yolda, beyaz = hedefte arkadaş yok, sarı = kaleye şut.
     ///  3) BASKI: Çizim başladığı an en yakın 2 rakip (EnemyAI) koşmaya başlar: biri pasöre, biri tahmini iniş
     ///     noktasına. Ağır çekim yüzünden yavaşlar ama durmazlar; oyuncu oyalanırsa top kapılır (Stolen).
     ///  4) SONUÇ: Parmak kalkınca zaman ANINDA 1.0'a döner ve top çizilen yolda fırlar (BallController).
     ///     Arkadaşa ulaşırsa başarılı (alan oyuncu yeni pasör olur); rakibe çarparsa/kesilirse ya da
     ///     dışarı çıkarsa başarısız.
+    ///  5) ŞUT: Çizgi kale ağzına (GoalFrame'in dikey düzlemine) değerse pas değil ŞUT olur: hedef yüksekliği
+    ///     çizimden alınır (üst köşe, yerden…), top daha sert gider, kaleci (GoalkeeperAI) plonjon yapar.
+    ///     Sonuç: GOL, kurtarış, direk ya da aut.
     /// </summary>
     [DefaultExecutionOrder(-20)] // girdi + zaman ölçeği, diğer oyun nesnelerinden önce
     [DisallowMultipleComponent]
@@ -38,7 +41,11 @@ namespace FootballCareer.Passing
         [SerializeField] private LineRenderer line;
         [SerializeField] private List<PassReceiver> teammates = new List<PassReceiver>();
         [SerializeField] private List<EnemyAI> enemies = new List<EnemyAI>();
-        [Tooltip("Listeler boşsa sahnedeki tüm PassReceiver / EnemyAI bileşenlerini bulur.")]
+        [Tooltip("Şut çekilen kale (boşsa sahnedeki 'hücum hedefi' kale).")]
+        [SerializeField] private GoalFrame targetGoal;
+        [Tooltip("Rakip kaleci (boşsa hedef kaleyi koruyan kaleci bulunur).")]
+        [SerializeField] private GoalkeeperAI keeper;
+        [Tooltip("Listeler boşsa sahnedeki tüm PassReceiver / EnemyAI / GoalFrame / GoalkeeperAI bileşenlerini bulur.")]
         [SerializeField] private bool autoFindPlayers = true;
 
         [Header("Ağır çekim")]
@@ -68,6 +75,20 @@ namespace FootballCareer.Passing
         [SerializeField] private float speedPerMeter = 0.45f;
         [SerializeField] private float maxPassSpeed = 26f;
 
+        [Header("Şut")]
+        [SerializeField] private float minShotSpeed = 18f;
+        [Tooltip("Şut mesafesinin her metresi için eklenen hız.")]
+        [SerializeField] private float shotSpeedPerMeter = 0.5f;
+        [SerializeField] private float maxShotSpeed = 32f;
+        [Tooltip("Şutta metre başına yay (paslardan çok daha düz).")]
+        [SerializeField] private float shotLoftPerMeter = 0.012f;
+        [Tooltip("Kale çerçevesinin bu kadar dışına çizilen nişan da şut sayılır (auta vurabilmek için).")]
+        [SerializeField] private float goalAimMargin = 2.5f;
+        [Tooltip("Şut hedefi kale çizgisinin bu kadar arkasına uzatılır (top çizgiyi yolun sonundan ÖNCE geçsin).")]
+        [SerializeField] private float shotOvershoot = 0.3f;
+        [Tooltip("Gol ya da şut sonrası diziliş yeniden kurulur.")]
+        [SerializeField] private bool resetAfterShot = true;
+
         [Header("Önizleme")]
         [SerializeField, Range(8, 96)] private int previewSamples = 40;
         [Tooltip("İniş noktasına bu kadar yakın arkadaş hedef sayılır (metre).")]
@@ -77,6 +98,7 @@ namespace FootballCareer.Passing
         [SerializeField] private Color clearColor = new Color(0.35f, 1f, 0.45f, 1f);
         [SerializeField] private Color contestedColor = new Color(1f, 0.62f, 0.15f, 1f);
         [SerializeField] private Color noTargetColor = new Color(1f, 1f, 1f, 0.85f);
+        [SerializeField] private Color shotColor = new Color(1f, 0.85f, 0.2f, 1f);
 
         [Header("Baskı")]
         [Tooltip("Çizim başlayınca baskıya koşan rakip sayısı.")]
@@ -120,6 +142,10 @@ namespace FootballCareer.Passing
         public float Pressure { get { return pressure; } }
         public bool IsSlowMotion { get { return Time.timeScale < 0.999f; } }
         public PassResult LastResult { get { return lastResult; } }
+        /// <summary>Çizilen çizgi kaleye mi (şut)?</summary>
+        public bool IsShotAimed { get { return shotAimed; } }
+        public GoalFrame TargetGoal { get { return targetGoal; } }
+        public GoalkeeperAI Keeper { get { return keeper; } }
         /// <summary>Pas moduna girilebilir mi? (top pasörün ayağında ve sistem boşta)</summary>
         public bool CanEnterPassMode { get { return state == PassState.Idle && HasBall; } }
 
@@ -139,6 +165,9 @@ namespace FootballCareer.Passing
         private Vector3 predictedLanding;
         private PassReceiver target;
         private bool contested;
+        private bool tailOnGoal;            // çizginin canlı ucu kale ağzında mı
+        private bool shotAimed;             // kurulan yol bir şut mu
+        private bool launchedShot;
         private bool pressureActive;
         private float pressureStartDistance;
         private float pressure;
@@ -201,6 +230,14 @@ namespace FootballCareer.Passing
             if (initialized) Initialize();
         }
 
+        /// <summary>Kodla kurulum: şut çekilecek kale ve onu koruyan kaleci.</summary>
+        public void SetGoal(GoalFrame goal, GoalkeeperAI goalkeeper)
+        {
+            targetGoal = goal;
+            keeper = goalkeeper;
+            if (keeper != null && ball != null) keeper.Track(ball.transform);
+        }
+
         public void AddTeammate(PassReceiver r) { if (r != null && !teammates.Contains(r)) teammates.Add(r); }
         public void AddEnemy(EnemyAI e) { if (e != null && !enemies.Contains(e)) enemies.Add(e); }
 
@@ -212,6 +249,16 @@ namespace FootballCareer.Passing
             {
                 if (teammates.Count == 0) teammates.AddRange(FindAll<PassReceiver>());
                 if (enemies.Count == 0) enemies.AddRange(FindAll<EnemyAI>());
+                if (targetGoal == null)
+                {
+                    GoalFrame[] goals = FindAll<GoalFrame>();
+                    for (int i = 0; i < goals.Length && targetGoal == null; i++) if (goals[i].IsAttackTarget) targetGoal = goals[i];
+                }
+                if (keeper == null && targetGoal != null)
+                {
+                    GoalkeeperAI[] keepers = FindAll<GoalkeeperAI>();
+                    for (int i = 0; i < keepers.Length && keeper == null; i++) if (keepers[i].Goal == targetGoal) keeper = keepers[i];
+                }
             }
             teammates.RemoveAll(IsNull);
             enemies.RemoveAll(IsNull);
@@ -223,6 +270,7 @@ namespace FootballCareer.Passing
             {
                 ball.SetPitchBounds(pitchBounds);
                 if (passer != null && ball.Carrier == null) ball.AttachTo(passer, OffsetFor(passer));
+                if (keeper != null) keeper.Track(ball.transform);
             }
             startPasser = passer;
             if (passer != null)
@@ -357,14 +405,28 @@ namespace FootballCareer.Passing
         }
 
         /// <summary>
-        /// Ekran noktasını yer düzlemine ışınlar ve çizime ekler.
+        /// Ekran noktasını sahaya ışınlar ve çizime ekler.
+        ///  • Işın, yere değmeden önce kale ağzının dikey düzlemine çarpıyorsa uç KALEDEDİR (şut; yükseklik dahil).
+        ///  • Değilse yerdeki düzleme düşer (pas).
         /// Son eleman "canlı uç"tur: parmağı her karede izler; önceki noktadan yeterince uzaklaşınca kalıcı olur.
         /// </summary>
         private void AddScreenPoint(Vector2 screenPos)
         {
             Ray ray = cam.ScreenPointToRay(screenPos);
             float enter;
-            if (!groundPlane.Raycast(ray, out enter) || enter > cam.farClipPlane) return; // ufkun üstü
+            bool groundHit = groundPlane.Raycast(ray, out enter) && enter <= cam.farClipPlane;
+
+            Vector3 goalPoint;
+            float goalEnter;
+            if (targetGoal != null && targetGoal.RaycastMouth(ray, goalAimMargin, out goalPoint, out goalEnter)
+                && (!groundHit || goalEnter < enter)
+                && HorizontalDistance(drawn[0], goalPoint) <= maxPassDistance)
+            {
+                // Hedef ağlara doğru biraz uzatılır: top çizgiyi yolun bitiminden ÖNCE, nişan yüksekliğinde geçsin
+                SetTail(goalPoint - targetGoal.Normal * shotOvershoot, true);
+                return;
+            }
+            if (!groundHit) return; // ufkun üstü
 
             Vector3 p = ray.GetPoint(enter);
             p.y = drawn[0].y;
@@ -373,7 +435,12 @@ namespace FootballCareer.Passing
             Vector3 fromBall = p - drawn[0];
             fromBall.y = 0f;
             if (fromBall.sqrMagnitude > maxPassDistance * maxPassDistance) p = drawn[0] + fromBall.normalized * maxPassDistance;
+            SetTail(p, false);
+        }
 
+        private void SetTail(Vector3 p, bool onGoal)
+        {
+            tailOnGoal = onGoal;
             if (drawn.Count == 1)
             {
                 drawn.Add(p);
@@ -381,7 +448,8 @@ namespace FootballCareer.Passing
             }
             int last = drawn.Count - 1;
             drawn[last] = p; // canlı ucu taşı
-            if (HorizontalDistance(drawn[last - 1], p) >= spacing)
+            // Kale ağzındaki uç kalıcı yapılmaz: parmak kaleden çıkarsa çizgi yere geri döner
+            if (!onGoal && HorizontalDistance(drawn[last - 1], p) >= spacing)
             {
                 drawn.Add(p); // ucu kalıcı yap, yeni canlı uç aç
                 if (drawn.Count >= maxDrawPoints) Decimate();
@@ -406,14 +474,18 @@ namespace FootballCareer.Passing
                 HideLine();
                 return;
             }
-            path.Build(drawn, drawn[0].y, loftPerMeter, maxLoft);
+            float ballY = drawn[0].y;
+            shotAimed = tailOnGoal && targetGoal != null;
+            if (shotAimed) path.Build(drawn, ballY, shotLoftPerMeter, maxLoft, drawn[drawn.Count - 1].y - ballY);
+            else path.Build(drawn, ballY, loftPerMeter, maxLoft);
             predictedLanding = path.P3;
 
-            SetTarget(FindReceiverNear(predictedLanding, targetRadius));
+            SetTarget(shotAimed ? null : FindReceiverNear(predictedLanding, targetRadius));
             contested = IsContested();
 
             if (line == null) return;
-            Color c = target == null ? noTargetColor : (contested ? contestedColor : clearColor);
+            Color c = shotAimed ? (contested ? contestedColor : shotColor)
+                                : target == null ? noTargetColor : (contested ? contestedColor : clearColor);
             path.SampleInto(previewBuffer);
             line.positionCount = previewBuffer.Length;
             line.SetPositions(previewBuffer);
@@ -467,9 +539,13 @@ namespace FootballCareer.Passing
             // Parmak kalktı: zaman ANINDA normale döner
             SetTimeScaleImmediate(1f);
 
-            launchSpeed = Mathf.Clamp(minPassSpeed + speedPerMeter * path.Length, minPassSpeed, maxPassSpeed);
+            launchedShot = shotAimed;
+            launchSpeed = launchedShot
+                ? Mathf.Clamp(minShotSpeed + shotSpeedPerMeter * path.Length, minShotSpeed, maxShotSpeed)
+                : Mathf.Clamp(minPassSpeed + speedPerMeter * path.Length, minPassSpeed, maxPassSpeed);
             launchPasser = passer;
-            ball.Launch(path, launchSpeed, passer);
+            ball.Launch(path, launchSpeed, passer, launchedShot);
+            if (launchedShot && keeper != null) keeper.OnShot(path, launchSpeed);
 
             // Pasör vuruş yönüne döner
             Vector3 t = path.TangentAtDistance(0f);
@@ -491,24 +567,30 @@ namespace FootballCareer.Passing
                 if (enemies[i] != null && enemies[i].isActiveAndEnabled) enemies[i].StartIntercept(path, launchSpeed, ball.transform);
             }
 
-            // Hedeflenen arkadaş (yoksa inişe en yakın olan) topu karşılamaya koşar
-            PassReceiver runner = target != null ? target : FindReceiverNear(predictedLanding, float.MaxValue);
+            // Hedeflenen arkadaş (yoksa inişe en yakın olan) topu karşılamaya koşar (şutta değil)
+            PassReceiver runner = launchedShot ? null : target != null ? target : FindReceiverNear(predictedLanding, float.MaxValue);
             if (runner != null && HorizontalDistance(runner.transform.position, predictedLanding) <= runner.RunRange + targetRadius)
             {
                 runner.OnPassLaunched(predictedLanding);
             }
         }
 
-        private void OnFlightFinished(PassOutcome outcome, PassReceiver receiver, EnemyAI interceptor)
+        private void OnFlightFinished(BallContact contact)
         {
             if (state != PassState.InFlight) return;
 
+            PassOutcome outcome = contact.outcome;
+            PassReceiver receiver = contact.receiver;
+            EnemyAI interceptor = contact.interceptor;
             PassResult r = new PassResult
             {
                 outcome = outcome,
                 passer = launchPasser,
                 receiver = receiver,
                 interceptor = interceptor,
+                keeper = contact.keeper,
+                isShot = launchedShot,
+                point = contact.point,
                 pathLength = path.Length,
                 curve = path.Curve,
                 flightTime = ball.FlightTime,
@@ -525,6 +607,10 @@ namespace FootballCareer.Passing
             else if (outcome == PassOutcome.Intercepted && interceptor != null)
             {
                 ball.AttachTo(interceptor.transform, interceptor.BallOffset);
+            }
+            else if (outcome == PassOutcome.Saved && contact.keeper != null)
+            {
+                ball.AttachTo(contact.keeper.transform, new Vector3(0f, 0f, 0.5f));
             }
             FinishPass(r);
         }
@@ -610,7 +696,7 @@ namespace FootballCareer.Passing
             stateClock += Time.unscaledDeltaTime;
             if (stateClock < resultHoldTime) return;
 
-            if (!lastResult.Success && autoResetOnFail)
+            if ((lastResult.isShot && resetAfterShot) || (!lastResult.Success && autoResetOnFail))
             {
                 ResetPlay();
                 return;
@@ -630,6 +716,7 @@ namespace FootballCareer.Passing
 
             for (int i = 0; i < teammates.Count; i++) if (teammates[i] != null) teammates[i].ResetHome();
             for (int i = 0; i < enemies.Count; i++) if (enemies[i] != null) enemies[i].ResetToHome(true);
+            if (keeper != null) keeper.ResetToHome();
 
             passer = startPasser;
             if (passer != null && passer.GetComponent<PassReceiver>() == null)
@@ -742,6 +829,12 @@ namespace FootballCareer.Passing
                 if (r == null || r.transform == passer || !r.isActiveAndEnabled) continue;
                 sum += r.transform.position;
                 n++;
+            }
+            // Kale yakınsa (şut mesafesi) kamera kaleyi de kadraja alsın
+            if (targetGoal != null && HorizontalDistance(passer.position, targetGoal.Center) < 40f)
+            {
+                sum += targetGoal.Center * 2f;
+                n += 2;
             }
             Vector3 dir = n > 0 ? sum / n - passer.position : passer.forward;
             dir.y = 0f;

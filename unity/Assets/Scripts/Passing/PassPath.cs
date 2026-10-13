@@ -9,6 +9,8 @@ namespace FootballCareer.Passing
     ///  • Yatay düzlemde (XZ) eğri, oyuncunun parmağıyla çizdiği hattan uydurulur:
     ///    eğri, çizimin %0'ından (top), %33'ünden, %66'sından ve %100'ünden (hedef) GEÇER.
     ///  • Dikeyde (Y) pas uzunluğuyla orantılı bir parabol yayı (loft) eklenir.
+    ///  • Şutlarda bitiş noktası yerden yüksekte olabilir (EndLift: üst köşe, orta yükseklik…);
+    ///    yükseklik yol boyunca doğrusal artar.
     ///  • Yay uzunluğu tablosu (LUT) sayesinde top eğri boyunca SABİT hızla ilerler
     ///    (Bezier'in t parametresi eşit aralıklı değildir; doğrudan t ile ilerlemek topu hızlandırıp yavaşlatırdı).
     ///
@@ -23,6 +25,8 @@ namespace FootballCareer.Passing
         public Vector3 P0, P1, P2, P3;
         /// <summary>Yolun ortasındaki ek yükseklik (metre).</summary>
         public float Loft;
+        /// <summary>Bitişteki ek yükseklik (metre). Paslarda 0, şutlarda kale ağzındaki hedef yüksekliği.</summary>
+        public float EndLift;
 
         /// <summary>3B yay uzunluğu (metre).</summary>
         public float Length { get; private set; }
@@ -43,8 +47,10 @@ namespace FootballCareer.Passing
         /// <param name="ballY">Topun zemindeki merkez yüksekliği (yarıçap).</param>
         /// <param name="loftPerMeter">Her metre için yay yüksekliği (0.06 → 30 m pasta 1.8 m).</param>
         /// <param name="maxLoft">En fazla yay yüksekliği.</param>
-        public void Build(List<Vector3> drawn, float ballY, float loftPerMeter, float maxLoft)
+        /// <param name="endLift">Bitişte yerden ek yükseklik (şut hedefi). Paslarda 0.</param>
+        public void Build(List<Vector3> drawn, float ballY, float loftPerMeter, float maxLoft, float endLift = 0f)
         {
+            EndLift = Mathf.Max(0f, endLift);
             int n = drawn.Count;
             P0 = Flat(drawn[0], ballY);
             P3 = Flat(drawn[n - 1], ballY);
@@ -86,7 +92,7 @@ namespace FootballCareer.Passing
         {
             float u = 1f - t;
             Vector3 p = (u * u * u) * P0 + (3f * u * u * t) * P1 + (3f * u * t * t) * P2 + (t * t * t) * P3;
-            p.y += 4f * Loft * t * u; // parabol yay: t=0.5'te +Loft
+            p.y += 4f * Loft * t * u + EndLift * t; // parabol yay (t=0.5'te +Loft) + bitişe doğru yükselme
             return p;
         }
 
@@ -95,7 +101,7 @@ namespace FootballCareer.Passing
         {
             float u = 1f - t;
             Vector3 d = (3f * u * u) * (P1 - P0) + (6f * u * t) * (P2 - P1) + (3f * t * t) * (P3 - P2);
-            d.y += 4f * Loft * (1f - 2f * t);
+            d.y += 4f * Loft * (1f - 2f * t) + EndLift;
             return d;
         }
 

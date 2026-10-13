@@ -11,6 +11,8 @@ Namespace: `FootballCareer.Passing` · Unity 2021.3 LTS ve üstü (Unity 6 dahil
 | `PasManager.cs` | Akışı yönetir: durum makinesi, ağır çekim, girdi ve çizim, Bezier önizleme (LineRenderer), baskı ve top kapma, sonuç olayları |
 | `BallController.cs` | Topu yol üzerinde sabit hızla taşır, falso dönüşünü uygular, çarpışma ve ulaşma kontrolünü yapar (SphereCast + OverlapSphere, NonAlloc) |
 | `EnemyAI.cs` | Rakip yapay zekâsı (NavMeshAgent): bekleme, pasöre baskı, iniş noktasına baskı, araya girme, yerine dönme |
+| `GoalFrame.cs` | Kale: kale çizgisi, direkler ve üst direk analitik olarak tanımlanır (collider gerekmez). Gol, direk ve aut kararını verir; kale ağzına nişan alınmasını sağlar |
+| `GoalkeeperAI.cs` | Kaleci: topa göre konum alır, çizgiden çıkıp açıyı daraltır. Şutun geçeceği noktayı ve süresini hesaplayıp plonjon yapar |
 | `PassReceiver.cs` | Takım arkadaşı: hedef halkası, pası karşılamak için koşu. Pası atan oyuncuda da bulunur |
 | `PassCameraController.cs` | Üç kamera modu arasında gerçek zamanlı yumuşak geçiş: yayın, oyuncu arkası (3. şahıs) ve top takibi |
 | `PassPath.cs` | Çizimden kübik Bezier üretir, yay uzunluğu tablosunu tutar (sabit hız için) ve falso açısını hesaplar |
@@ -25,6 +27,7 @@ Namespace: `FootballCareer.Passing` · Unity 2021.3 LTS ve üstü (Unity 6 dahil
 3. Play'e basın. Saha, NavMesh, oyuncular, top, kamera ve pas çizgisi çalışma anında kurulur.
    - **Space** tuşuna basın ya da ekrana dokunun: ağır çekim başlar ve kamera oyuncunun arkasına geçer.
    - Topa tıklayın, sürükleyin ve bırakın: pas atılır.
+   - Çizgiyi kale ağzına çekerseniz şut olur. Kalenin neresine çizerseniz (köşe, üst, yerden) oraya vurulur.
    - **Esc**: rakip baskısı başlamadıysa pas modundan çıkar.
 
 ## Kendi sahnenize kurulum
@@ -62,14 +65,23 @@ Namespace: `FootballCareer.Passing` · Unity 2021.3 LTS ve üstü (Unity 6 dahil
   - URP: `Universal Render Pipeline/Particles/Unlit`
 - Genişlik: 0.25. İsteğe bağlı: Width eğrisi 1 → 0.5, End Cap Vertices 4.
 
-### 6. PasManager
+### 6. Kale ve kaleci (şut için)
+- Kale çizgisinin ortasına, zemin hizasında boş bir nesne koyun ve `GoalFrame` ekleyin.
+  - Mavi ok (forward) **sahaya** baksın.
+  - Hücum ettiğiniz kalede `attackTarget` açık olsun.
+- Kaleciye `GoalkeeperAI` ekleyin ve `goal` alanına bu kaleyi bağlayın.
+  - `body`: dalışta yana yatan gövde, collider'ı da taşır.
+  - `skill` (0–1): zor toplarda kurtarma olasılığı.
+- Kalecide `EnemyAI` **olmasın**: kaleci baskıya çıkmaz, kalesini korur.
+
+### 7. PasManager
 - Sahnede tek bir nesneye `PasManager` ekleyin ve alanları bağlayın:
   - `ball`, `passer` (topu ilk alan oyuncu), `cameraRig`, `line`
   - `cam` boşsa Main Camera kullanılır.
   - `teammates` / `enemies` listeleri boşsa sahnedekiler otomatik bulunur (`autoFindPlayers`).
   - `pitchBounds`: sahanın sınırları. Varsayılan 68 × 105 m ve (0, 0, 0) merkezli. Dışına çıkan top **OutOfBounds** sayılır.
 
-### 7. (İsteğe bağlı) Katmanlar
+### 8. (İsteğe bağlı) Katmanlar
 - Oyuncuları bir **Players** katmanına alın ve `BallController > playerMask` alanında yalnızca o katmanı seçin.
 - Böylece fizik sorguları zemini ve dekoru hiç görmez. Zorunlu değildir; filtreleme bileşene göre de yapılır.
 
@@ -131,6 +143,26 @@ public class PassStats : MonoBehaviour
   - yan dönüş (falso): dikey eksende, eğrinin toplam dönüş açısıyla orantılı. Sola kıvrılan pas sola döner.
 - Her fizik adımında önceki konumdan yenisine SphereCast atılır. Hızlı top oyuncuların içinden geçmez.
 - Yol bitince kimse almadıysa top yerde yuvarlanır ve yavaşlar. Yine kimse almazsa sonuç **Missed** olur.
+
+**Şut.**
+- Çizginin ucu kale ağzına (kalenin dikey düzlemine) değerse çizgi **sarı** olur ve pas değil şut atılır.
+- Hedefin **yüksekliği** de çizimden alınır: üst köşe, orta, yerden.
+- Şut daha sert (18–32 m/sn) ve daha düz gider.
+- Yoldan geçen takım arkadaşları şutu almaz; rakipler ise önüne atlayıp şutu bloklayabilir.
+- **Kaleci:**
+  - Topun kendi hizasından geçeceği noktayı ve varış süresini hesaplar.
+  - Tepki süresinden sonra plonjon yapar. Falsolu şutlar tepki süresini uzatır.
+  - Rahat topları tutar. Zor toplarda yeteneğine göre ya yetişir ya parmak ucuyla kaçırır. Köşeler ve yakın mesafeden sert şutlar çoğu zaman gol olur.
+- **Sonuçlar:**
+
+| Durum | Sonuç |
+|---|---|
+| Top direklerin arasından geçti | **Goal** (top ağlarda durur) |
+| Kaleci tuttu | **Saved** |
+| Direğe ya da üst direğe çarptı | **HitFrame** (top seker) |
+| Kalenin yanından ya da üstünden gitti | **Wide** |
+
+- Şuttan sonra diziliş baştan kurulur (`resetAfterShot`).
 
 **Rakipler.**
 - Çizim başlayınca en yakın 2 rakip baskıya koşar (`pressersCount`):
