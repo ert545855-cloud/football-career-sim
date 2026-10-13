@@ -154,7 +154,7 @@ export function playShot(host, opts) {
       S.outcome = outcome;
       S.phase = 'flight';
       sfx('kick');
-      buzz(15);
+      buzz('shot');
     }
 
     function finish() {
@@ -180,7 +180,7 @@ export function playShot(host, opts) {
         S.net = { x: b.x, y: b.y, t: 0 };
         big.show('ISKA!', '#ff5d6c', 64);
         sfx('miss');
-        buzz(30);
+        buzz('miss');
         S.after = { vx: (b.x - L.cx) * 0.1, vy: -20, shrink: 0.996 };
       } else if (o === 'goal' && target) {
         S.net = { x: b.x, y: b.y, t: 0 };
@@ -189,7 +189,7 @@ export function playShot(host, opts) {
         particles.burst(b.x, b.y, { n: 36, colors: ['#c6ff3d', '#ffcf3d', '#fff'], speed: 340, gravity: 500, life: 1.2, size: 5 });
         stage.shake(8);
         sfx('levelup');
-        buzz([40, 30, 80]);
+        buzz('goal');
         S.after = { vx: (b.x - L.cx) * 0.1, vy: -20, shrink: 0.996 };
       } else if (o === 'goal') {
         S.net = { x: b.x, y: b.y, t: 0 };
@@ -198,29 +198,31 @@ export function playShot(host, opts) {
         particles.burst(b.x, b.y, { n: 40, colors: ['#c6ff3d', '#ffcf3d', '#fff', myKit[0]], speed: 380, gravity: 500, life: 1.4, size: 5 });
         stage.shake(14);
         sfx('goal');
-        buzz([60, 40, 140]);
+        buzz('goal');
         S.after = { vx: (b.x - L.cx) * 0.1, vy: -20, shrink: 0.996 };
       } else if (o === 'save') {
         big.show('KURTARDI!', '#38bdf8', 60);
         sfx('save');
-        buzz(40);
+        buzz('save');
         const caught = S.shot.v < 0.55 && Math.abs(S.shot.u - S.k.to) < 0.12;
         S.after = caught ? { caught: true } : { vx: (b.x < gx(S.k.u) ? -1 : 1) * 260, vy: 160, grow: 1.01 };
         particles.burst(b.x, b.y, { n: 14, colors: ['#fff', keeperColor], speed: 200, life: 0.6 });
       } else if (o === 'post') {
         big.show('DİREK!', '#ffcf3d', 64);
         sfx('post');
-        buzz([30, 30, 30]);
+        buzz('post');
         stage.shake(8);
         S.after = { vx: (b.x < L.cx ? 1 : -1) * 120, vy: 300, grow: 1.012 };
       } else if (o === 'block') {
         big.show('BLOK!', '#ff5d6c', 60);
         sfx('tackle');
+        buzz('bump');
         S.after = { vx: (Math.random() - 0.5) * 400, vy: 260, grow: 1.01 };
         if (L.def) L.def.jump = 1;
       } else {
         big.show(o === 'over' ? 'ÜSTTEN!' : 'AUT!', '#ff5d6c', 60);
         sfx('miss');
+        buzz('miss');
         S.after = { vx: (S.shot.xg - L.bx) * 0.9, vy: -L.H * 0.35, shrink: 0.985 };
       }
     }
@@ -479,7 +481,13 @@ export function playShot(host, opts) {
         } else if (kind === 'move' && S.drag) {
           S.drag.x = p.x;
           S.drag.y = p.y;
+          // Güç dolarken her kademede hafif tık: şutun gerildiğini hisset
+          const a = aimFromDrag(S.drag);
+          const lv = a ? Math.floor(Math.min(a.power, 1.44) / 0.36) : 0;
+          if (lv > (S.chargeLv || 0)) buzz('charge');
+          S.chargeLv = lv;
         } else if (kind === 'up' && S.drag) {
+          S.chargeLv = 0;
           S.drag.x = p.x;
           S.drag.y = p.y;
           const aim = aimFromDrag(S.drag);

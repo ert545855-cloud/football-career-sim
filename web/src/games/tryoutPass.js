@@ -58,10 +58,10 @@ export function playTryoutPass(host, opts) {
       if (success) {
         particles.burst(S.ball.x, S.ball.y, { n: 22, colors: ['#c6ff3d', '#fff'], speed: 220, life: 0.8 });
         sfx('levelup');
-        buzz(25);
+        buzz('pass');
       } else {
         sfx('miss');
-        buzz([40, 30, 40]);
+        buzz('miss');
       }
       const res = opts.onAttempt(success);
       rep += res.warmup ? 0 : 1;
@@ -186,7 +186,7 @@ export function playTryoutPass(host, opts) {
         S.pass = { x0: S.ball.x, y0: S.ball.y, tx, ty, t: 0, T: Math.max(0.18, d / L.vb) };
         S.phase = 'flight';
         sfx('kick');
-        buzz(12);
+        buzz('kick');
       },
     });
   });

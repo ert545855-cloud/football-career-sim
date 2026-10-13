@@ -37,6 +37,7 @@ export function playTackle(host, opts) {
       const len = Math.hypot(dx, dy) || 1;
       S.slide = { t: 0, dur: 0.3, fx: d.x, fy: d.y, dx: dx / len, dy: dy / len, hit: false, startDist: len };
       sfx('swish');
+      buzz('kick');
       S.hint = 0;
     }
 
@@ -49,14 +50,14 @@ export function playTackle(host, opts) {
         big.show('TOPU KAPTIN!', '#c6ff3d', 54);
         particles.burst(L.ball.x, L.ball.y, { n: 30, colors: ['#c6ff3d', '#fff', '#3a2a1a'], speed: 260, life: 0.9 });
         sfx('tackle');
-        buzz([40, 20, 60]);
+        buzz('tackle');
         stage.shake(10);
         L.ball.vx = (Math.random() - 0.5) * 500;
         L.ball.vy = -380;
       } else {
         big.show(outcome === 'early' ? 'ERKEN DALDIN!' : 'GEÇİLDİN!', '#ff5d6c', 48);
         sfx('miss');
-        buzz(60);
+        buzz('tackleLost');
       }
     }
 

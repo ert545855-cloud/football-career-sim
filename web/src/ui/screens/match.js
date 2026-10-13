@@ -85,8 +85,13 @@ export function matchScreen(app, { match }) {
       };
       const push = (ln) => {
         line(ln.minute, ln.text, ln.kind);
-        if (ln.kind === 'goal-my' || ln.kind === 'goal-me') { momentum = Math.min(85, momentum + 18); pop(); sfx('goal'); buzz([50, 40, 90]); }
-        else if (ln.kind === 'goal-opp') { momentum = Math.max(15, momentum - 18); pop(); sfx('miss'); }
+        if (ln.kind === 'goal-my' || ln.kind === 'goal-me') {
+          momentum = Math.min(85, momentum + 18);
+          pop();
+          sfx('goal');
+          // Golün mini oyunda 'gol' desenini zaten verdi; burada tribün kutlaması. Asist: pas+gol. Takım golü: kısa.
+          buzz(ln.kind === 'goal-me' ? 'celebrate' : ln.assist ? 'assist' : [30, 50, 60]);
+        } else if (ln.kind === 'goal-opp') { momentum = Math.max(15, momentum - 18); pop(); sfx('miss'); buzz('heartBreak'); }
         else if (ln.kind === 'save' || ln.kind === 'chance' || ln.kind === 'post') sfx('swish');
       };
       const setMom = () => {
@@ -145,6 +150,7 @@ export function matchScreen(app, { match }) {
           finished = true;
           line(item.minute, `Maç sona erdi! ${scoreText()}`, 'whistle');
           sfx('whistle');
+          buzz('whistle');
           cancelAnimationFrame(raf);
           await sleep(900);
           app.finishMatch(match);

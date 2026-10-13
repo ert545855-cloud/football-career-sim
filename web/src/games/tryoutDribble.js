@@ -56,6 +56,7 @@ export function playTryoutDribble(host, opts) {
       if (success) {
         big.show(row.warm ? 'SÜPER!' : 'TEMİZ!', '#c6ff3d', 46);
         sfx('swish');
+        buzz('dribble');
       }
       if (res.stationOver) S.over = true;
     }
@@ -101,7 +102,7 @@ export function playTryoutDribble(host, opts) {
                   S.stumble = 0.55;
                   big.show(row.warm ? 'DİKKAT!' : 'ÇARPTIN!', '#ff5d6c', 48);
                   sfx('tackle');
-                  buzz([40, 30, 60]);
+                  buzz('bump');
                   stage.shake(9);
                   particles.burst(c.x, L.py - dy, { n: 12, colors: ['#f97316', '#fff'], speed: 180, life: 0.5 });
                 }

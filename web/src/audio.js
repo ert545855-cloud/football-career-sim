@@ -1,14 +1,17 @@
 // SES — tamamen WebAudio ile sentezlenir (dosya indirmez, çevrimdışı çalışır).
 // iOS'ta ses ancak ilk dokunuştan sonra açılabilir; unlock() bunu halleder.
 
+import { configureHaptics, haptic } from './haptics.js';
+
 let ctx = null;
 let enabled = true;
 let vibrateOn = true;
 let master = null;
 
-export function configureAudio({ sound, vibrate }) {
+export function configureAudio({ sound, vibrate, haptic: level }) {
   enabled = sound !== false;
   vibrateOn = vibrate !== false;
+  configureHaptics({ vibrate, haptic: level });
 }
 
 export function unlock() {
@@ -92,11 +95,8 @@ export function sfx(name) {
 }
 
 /** Titreşim: Android'de çalışır; iOS Safari desteklemez (sessizce yok sayılır). */
+/** Titreşim: desen adı (haptics.js HAPTICS) ya da ham desen. iPhone'da tık geri bildirimine çevrilir. */
 export function buzz(pattern = 30) {
   if (!vibrateOn) return;
-  try {
-    navigator.vibrate?.(pattern);
-  } catch {
-    /* yok */
-  }
+  haptic(pattern);
 }

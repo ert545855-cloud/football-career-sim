@@ -141,7 +141,8 @@ export function playOuting(app, outing) {
       choicesEl.querySelectorAll('.choice').forEach((x) => x.classList.toggle('picked', x === b));
       choicesEl.querySelectorAll('.choice').forEach((x) => (x.disabled = true));
       sfx(r.mood === 'positive' ? 'coin' : r.mood === 'negative' ? 'error' : 'tick');
-      if (r.mood === 'positive') buzz(12);
+      if (r.mood === 'positive') buzz('heart');
+      else if (r.mood === 'negative') buzz('error');
       deltaEl.textContent = `${r.delta > 0 ? '+' : ''}${r.delta} ${r.mood === 'positive' ? '♥' : ''}`;
       deltaEl.className = `npc-delta show ${r.mood}`;
       await sleep(450);
@@ -162,7 +163,7 @@ export async function outingResultSheets(app, result, outing) {
   if (!result) return;
   if (result.stage?.partner) {
     sfx('levelup');
-    buzz([20, 40, 20, 40, 60]);
+    buzz('celebrate');
   }
   await sheet({
     center: true,

@@ -88,7 +88,7 @@ export async function runTryoutStation(o) {
       const lost = hearts[r.hearts];
       lost?.classList.remove('on');
       lost?.classList.add('off', 'break');
-      buzz([60, 40, 60]);
+      buzz('heartBreak');
     }
     label();
     return r;

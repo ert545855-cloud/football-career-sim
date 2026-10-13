@@ -1,5 +1,6 @@
 import { clearSave, exportSave, importSave, saveSettings } from '../../core/storage.js';
-import { configureAudio, sfx } from '../../audio.js';
+import { buzz, configureAudio, sfx } from '../../audio.js';
+import { hapticSupport } from '../../haptics.js';
 import { icon } from '../art.js';
 import { toast } from '../dom.js';
 import { cloudSectionPlaceholder, mountCloudSection } from '../cloudView.js';
@@ -23,7 +24,8 @@ export function settingsScreen(app) {
       </div>
       <div class="card list">
         ${toggle('sound', 'Ses efektleri', 'sound', 'Vuruş, düdük, tribün sesleri')}
-        ${toggle('vibrate', 'Titreşim', 'vibrate', 'Gol ve müdahalede titreşim (Android)')}
+        ${toggle('vibrate', 'Titreşim', 'vibrate', hapticSupport() === 'none' ? 'Bu cihaz/tarayıcı titreşimi desteklemiyor.' : hapticSupport() === 'ios' ? 'Golü, pası, kurtarışı hisset (iPhone: dokunsal tıklar)' : 'Golü, pası, kurtarışı ve müdahaleyi elinde hisset')}
+        ${st.vibrate ? `<div class="li"><span class="ic"></span><div class="grow"><b>Titreşim gücü</b><div class="seg" style="margin-top:8px">${[['soft', 'Hafif'], ['normal', 'Normal'], ['strong', 'Güçlü']].map(([k, l]) => `<button class="${(st.haptic || 'normal') === k ? 'on' : ''}" data-haptic-level="${k}">${l}</button>`).join('')}</div><div class="muted small" style="margin-top:6px">Seçince gol titreşimini dener.</div></div></div>` : ''}
         ${toggle('easyPass', 'Kolay pas', 'target', 'Pas anlarında çizmek yerine arkadaşa dokun')}
         <div data-unity-toggle hidden>${toggle('unity3d', '3B mod (Unity)', 'ball', 'Maçtaki pas ve şut anları 3B sahnede oynanır (ilk açılışta indirme yapar)')}</div>
       </div>
@@ -55,11 +57,20 @@ export function settingsScreen(app) {
         const t = e.target.closest('button');
         if (!t || t.dataset.cloudAct) return;
         app.click();
+        if (t.dataset.hapticLevel) {
+          st.haptic = t.dataset.hapticLevel;
+          saveSettings(st);
+          configureAudio(st);
+          buzz('goal');
+          app.go('settings');
+          return;
+        }
         if (t.dataset.toggle) {
           st[t.dataset.toggle] = !st[t.dataset.toggle];
           saveSettings(st);
           configureAudio(st);
           if (t.dataset.toggle === 'sound' && st.sound) sfx('coin');
+          if (t.dataset.toggle === 'vibrate' && st.vibrate) buzz('pass');
           app.go('settings');
         } else if (t.dataset.act === 'back') {
           app.back();

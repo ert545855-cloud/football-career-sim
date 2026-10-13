@@ -220,7 +220,7 @@ export function resolveMoment(match, moment, result, playerName) {
         match.score.my += 1;
         t.assists += 1;
         t.rating += 0.7;
-        lines.push({ minute: m, kind: 'goal-my', text: `${playerName} ölçülü bir pas çıkardı, takım arkadaşı golü attı! ASİST! ${scoreLine(match)}` });
+        lines.push({ minute: m, kind: 'goal-my', assist: true, text: `${playerName} ölçülü bir pas çıkardı, takım arkadaşı golü attı! ASİST! ${scoreLine(match)}` });
       } else {
         const curved = Math.abs(result.curve || 0) >= 0.25;
         if (curved) t.rating += 0.1;

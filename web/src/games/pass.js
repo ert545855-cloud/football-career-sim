@@ -73,7 +73,7 @@ export function playPass(host, opts) {
       S.pass = { i, tx: m.x, ty: m.y - 8 * L.k, clearance, t0: S.t };
       S.phase = 'flight';
       sfx('kick');
-      buzz(12);
+      buzz('kick');
     }
 
     function end(outcome) {
@@ -85,11 +85,11 @@ export function playPass(host, opts) {
         big.show('İSABETLİ PAS!', '#c6ff3d', 52);
         particles.burst(S.ball.x, S.ball.y, { n: 24, colors: ['#c6ff3d', '#fff'], speed: 220, life: 0.8 });
         sfx('levelup');
-        buzz(30);
+        buzz('pass');
       } else if (outcome === 'intercept') {
         big.show('ARAYA GİRDİ!', '#ff5d6c', 50);
         sfx('tackle');
-        buzz([40, 30, 40]);
+        buzz('intercept');
         stage.shake(8);
       } else {
         big.show('TOP KAPTIRILDI', '#ff5d6c', 44);

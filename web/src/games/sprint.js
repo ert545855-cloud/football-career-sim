@@ -31,7 +31,7 @@ export function playSprint(host, opts) {
         S.v *= 0.55;
         S.stumble = 0.35;
         sfx('error');
-        buzz(25);
+        buzz('error');
       } else {
         let imp = IMP;
         if (endurance) {
@@ -41,6 +41,7 @@ export function playSprint(host, opts) {
         if (S.stumble > 0) imp *= 0.5;
         S.v += imp;
         S.steps++;
+        buzz('step');
         if (S.steps % 2 === 0) sfx('step');
       }
       S.last = side;
@@ -64,7 +65,7 @@ export function playSprint(host, opts) {
         big.show('REKOR!', '#c6ff3d', 64);
         particles.burst(stage.W * 0.32, stage.H * 0.55, { n: 40, colors: ['#c6ff3d', '#ffcf3d', '#fff'], speed: 300, life: 1.2 });
         sfx('levelup');
-        buzz([40, 30, 80]);
+        buzz('record');
       } else {
         big.show('YAKALAYAMADIN', '#ff5d6c', 44);
         sfx('miss');

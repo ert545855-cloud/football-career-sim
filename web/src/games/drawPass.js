@@ -156,7 +156,7 @@ export function playDrawPass(host, opts) {
       rebuild();
       S.tsTarget = sk.slow;
       if (!S.pressure) startPressure();
-      buzz(8);
+      buzz('touch');
       sfx('tick');
     }
 
@@ -227,7 +227,7 @@ export function playDrawPass(host, opts) {
         m.run = { x: m.x + (dx / d) * go, y: m.y + (dy / d) * go };
       }
       sfx('kick');
-      buzz(18);
+      buzz('kick');
     }
 
     // ─────────────── Sonuç ───────────────
@@ -243,25 +243,25 @@ export function playDrawPass(host, opts) {
         big.show(curved ? 'FALSOLU PAS!' : 'İSABETLİ PAS!', '#c6ff3d', 50);
         particles.burst(S.ball.x, S.ball.y, { n: curved ? 34 : 24, colors: ['#c6ff3d', '#fff'], speed: 220, life: 0.8 });
         sfx('levelup');
-        buzz(curved ? [14, 40, 14, 40, 30] : [12, 40, 16]);
+        buzz(curved ? 'passCurve' : 'pass');
       } else if (outcome === 'intercept') {
         big.show('ARAYA GİRDİ!', '#ff5d6c', 50);
         sfx('tackle');
-        buzz([40, 30, 40]);
+        buzz('intercept');
         stage.shake(8);
       } else if (outcome === 'stolen') {
         big.show('TOP KAPTIRILDI', '#ff5d6c', 44);
         sfx('tackle');
-        buzz([60, 40, 60]);
+        buzz('bump');
         stage.shake(6);
       } else if (outcome === 'out') {
         big.show('TOP DIŞARIDA', '#ff5d6c', 46);
         sfx('miss');
-        buzz([50, 40, 50]);
+        buzz('miss');
       } else {
         big.show('BOŞA GİTTİ', '#ff5d6c', 46);
         sfx('miss');
-        buzz([50, 40, 50]);
+        buzz('miss');
       }
     }
 
