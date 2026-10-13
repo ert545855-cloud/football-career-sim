@@ -234,15 +234,6 @@ export const EVENTS = [
     choices: [{ label: 'Harika!', fx: { fans: 6, fame: 3, morale: 5 }, note: 'Takipçi sayın patladı.' }],
   },
   {
-    id: 'national_call', icon: 'flag', title: 'Milli Takım Çağrısı!',
-    when: (s) => ovr(s.player) >= 60 && form(s.player) >= 7 && s.flags.nationalSeason !== s.calendar.season, weight: 4,
-    text: () => 'Milli takım teknik direktörü seni aday kadroya çağırdı!',
-    choices: [{
-      label: 'Gurur duyuyorum!',
-      fx: (s) => { s.flags.nationalSeason = s.calendar.season; s.career.caps = (s.career.caps || 0) + 1; return { fx: { fame: 8, fans: 8, morale: 12, energy: -10 }, note: 'Ay-yıldızlı formayı giymek paha biçilemez.' }; },
-    }],
-  },
-  {
     id: 'documentary', icon: 'camera', title: 'Belgesel Teklifi',
     when: (s) => s.player.fame >= 55, weight: 0.8,
     text: () => 'Bir dijital platform hayatını anlatan bir belgesel çekmek istiyor.',

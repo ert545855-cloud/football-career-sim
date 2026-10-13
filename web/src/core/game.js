@@ -22,6 +22,7 @@ import {
 } from './onboarding/index.js';
 import { random } from './rng.js';
 import { agentNetworkOffers, agentSponsorMult, ensureAgent } from './agent.js';
+import { ensureNational, nationalWindow } from './national.js';
 import { achievementsOnMatch, achievementsOnTraining, checkAchievements, ensureAchievements } from './achievements.js';
 
 export const SAVE_VERSION = 1;
@@ -59,7 +60,7 @@ export function newGame(setup) {
     calendar: { season: 1, week: 1, slots: WEEK_SLOTS, trainings: 0, phase: 'week' },
     world,
     flags: { cooldowns: {}, benchStreak: 0, rivalOffset: randInt(-3, 3), injuredWeeks: 0, suspendedWeeks: 0, trainBoostWeeks: 0, nationalSeason: 0 },
-    pending: { match: null, event: null, offers: null, seasonReport: null },
+    pending: { match: null, event: null, offers: null, seasonReport: null, national: null, tournament: null },
   };
   state.career.numberHistory = [];
   state.career.loan = null;
@@ -74,6 +75,7 @@ export function newGame(setup) {
   ensureMentor(state);
   ensureAchievements(state);
   ensureAgent(state);
+  ensureNational(state);
   // Forma numarası: seçilmez, kulüp boştaki genç numaralarından verir
   if (!setup.number) assignYouthNumber(state, random);
   else state.career.numberHistory.push({ season: 1, clubId: state.career.clubId, number: player.number, reason: 'Başlangıç' });
@@ -300,6 +302,10 @@ function endWeek(state, ctx) {
     chirpTweets.push(...chirpOnOffers(state, offers));
   }
 
+  // Milli ara: bu hafta çağrı varsa kulüp maçından sonra kampa gidilir
+  const national = nationalWindow(state);
+  if (national) addNews(state, `Milli takım çağrısı: ${national.level === 'A' ? 'A Milli Takım' : national.level === 'U21' ? 'U-21' : 'U-19'} kadrosundasın!`, 'good');
+
   const seasonOver = calendar.week >= SEASON_WEEKS;
   if (seasonOver) calendar.phase = 'seasonEnd';
   else {
@@ -307,7 +313,7 @@ function endWeek(state, ctx) {
     calendar.slots = WEEK_SLOTS;
     calendar.trainings = 0;
   }
-  return { finance: fin, changes: diffChanges(before, snapshot(state)), event, offers: state.pending.offers, seasonOver, discipline, chirp: chirpTweets, mentor };
+  return { finance: fin, changes: diffChanges(before, snapshot(state)), event, offers: state.pending.offers, seasonOver, discipline, chirp: chirpTweets, mentor, national };
 }
 
 // ─────────────────────────────────────────────────────────────

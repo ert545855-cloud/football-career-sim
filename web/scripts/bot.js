@@ -7,6 +7,7 @@ import { getEvent } from '../src/core/events.js';
 import { buyItem } from '../src/core/economy.js';
 import { clubRating } from '../src/core/league.js';
 import { MentorManager } from '../src/core/mentor/index.js';
+import { finishTournament, playNationalMatch, startTournament, tournamentEligible } from '../src/core/national.js';
 
 /** Mentorluk kararları: sezon başı en iyi adayı seç (Çalışkan öncelikli), haftada bir buluş, gençleri kabul et. */
 export function playMentor(state) {
@@ -72,8 +73,14 @@ export function playWeek(state, humanSkill = 0.5) {
     const ev = getEvent(state.pending.event.id);
     chooseEvent(state, Math.floor(Math.random() * ev.choices.length));
   }
+  // Milli ara: her çağrıya katıl (enerji çok düşükse reddetmez; bot basit)
+  if (state.pending.national) playNationalMatch(state, fakeGame(0.5, humanSkill));
   handleOffers(state);
   if (out.weekEnd.seasonOver) {
+    if (tournamentEligible(state)) {
+      startTournament(state);
+      finishTournament(state, fakeGame(0.5, humanSkill));
+    }
     const report = endSeason(state);
     handleOffers(state);
     return { out, report };

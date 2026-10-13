@@ -92,3 +92,17 @@
 .odds { display: flex; height: 8px; border-radius: 99px; overflow: hidden; margin-top: 6px; background: rgba(255, 255, 255, 0.06); }
 .odds i { display: block; height: 100%; min-width: 0; transition: flex 0.25s; }
 .odds .acc { background: var(--good); } .odds .ctr { background: var(--warn); } .odds .walk { background: var(--bad); }
+
+/* ─────────────── Milli takım ─────────────── */
+.crest.xl { width: 84px; height: 102px; }
+.nation-badge { --sz: 40px; width: var(--sz); height: var(--sz); flex: none; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(135deg, var(--a) 0 55%, var(--b) 55% 100%); border: 2px solid rgba(255, 255, 255, 0.85); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35); }
+.nation-badge b { font-size: calc(var(--sz) * 0.28); font-weight: 900; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8), 0 0 4px rgba(0, 0, 0, 0.6); letter-spacing: 0.02em; }
+.score-big { font-size: 34px; font-weight: 900; font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
+.nat-res { width: 6px; align-self: stretch; border-radius: 4px; background: var(--muted); flex: none; }
+.nat-res.good { background: var(--good); } .nat-res.warn { background: var(--warn); } .nat-res.bad { background: var(--bad); }
+.nat-hero { background: linear-gradient(150deg, rgba(227, 10, 23, 0.22), var(--panel) 65%); border-color: rgba(227, 10, 23, 0.35); }
+.nat-levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.nat-level { padding: 10px 6px; border-radius: 14px; background: var(--panel); border: 1px solid var(--line); text-align: center; }
+.nat-level.on { border-color: rgba(227, 10, 23, 0.6); background: rgba(227, 10, 23, 0.12); }
+.nat-level b { display: block; font-size: 20px; font-weight: 900; }
+.nat-level span { font-size: 11px; color: var(--muted); font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }

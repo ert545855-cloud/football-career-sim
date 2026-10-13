@@ -36,6 +36,9 @@ import { showAchievementToasts } from './achievementsView.js';
 import { AGENT_RULES, currentAgent } from '../core/agent.js';
 import { agentAvatar, negotiationSheet } from './agentView.js';
 import { agentScreen } from './screens/agent.js';
+import { nationalScreen } from './screens/national.js';
+import { nationalFlow, tournamentFlow } from './nationalView.js';
+import { tournamentEligible } from '../core/national.js';
 import { runTryoutStation, heartsHTML } from '../games/tryoutStation.js';
 import { POSITIONS as POS } from '../core/data.js';
 import { createWorld } from '../core/league.js';
@@ -70,6 +73,7 @@ export function createApp(rootEl) {
     tryouts: tryoutsScreen,
     achievements: achievementsScreen,
     agent: agentScreen,
+    national: nationalScreen,
     retired: retiredScreen,
   };
 
@@ -280,6 +284,8 @@ export function createApp(rootEl) {
 
     resume() {
       if (!this.state) return this.go('title');
+      // Bekleyen pencereler (olay, milli çağrı…) ana ekranın üstünde açılsın
+      if (this.state.calendar.phase === 'week') this.go('hub');
       this.runPending();
     },
 
@@ -479,7 +485,10 @@ export function createApp(rootEl) {
       const s = this.state;
       if (!s) return this.go('title');
       if (s.pending.event) await this.eventFlow();
+      if (s.pending.national) await nationalFlow(this);
       if (s.pending.offers && s.pending.offers.kind === 'mid') await this.offersFlow();
+      // Çift sezonların sonunda büyük turnuva (A takımdaysan); sezon raporundan önce oynanır
+      if (s.calendar.phase === 'seasonEnd' && (s.pending.tournament || tournamentEligible(s))) await tournamentFlow(this);
       if (s.calendar.phase === 'seasonEnd') {
         endSeason(s);
         this.save();

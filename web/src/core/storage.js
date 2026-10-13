@@ -4,6 +4,7 @@ import { migrateChirp } from './chirp/index.js';
 import { ensureMentor } from './mentor/index.js';
 import { ensureAchievements } from './achievements.js';
 import { ensureAgent } from './agent.js';
+import { ensureNational } from './national.js';
 
 const KEY = 'krampon.save.v1';
 const SETTINGS_KEY = 'krampon.settings';
@@ -53,7 +54,7 @@ export function migrate(state) {
   if (!state || !state.player || !state.career) return null;
   state.version = SAVE_VERSION;
   state.flags = { cooldowns: {}, benchStreak: 0, rivalOffset: 0, injuredWeeks: 0, trainBoostWeeks: 0, nationalSeason: 0, ...(state.flags || {}) };
-  state.pending = { match: null, event: null, offers: null, seasonReport: null, ...(state.pending || {}) };
+  state.pending = { match: null, event: null, offers: null, seasonReport: null, national: null, tournament: null, ...(state.pending || {}) };
   state.career.items = state.career.items || [];
   state.career.news = state.career.news || [];
   state.career.awards = state.career.awards || [];
@@ -67,6 +68,7 @@ export function migrate(state) {
   ensureMentor(state);
   ensureAchievements(state);
   ensureAgent(state);
+  ensureNational(state);
   return state;
 }
 

@@ -82,7 +82,9 @@ export const ACHIEVEMENTS = [
   { id: 'golden_boot', cat: 'honors', tier: 'gold', title: 'Gol Kralı', desc: 'Ligin gol kralı ol.', icon: 'boot', sprite: 'golden_boot', goal: 1, value: (s) => awardCount(s, 'Gol Kralı') },
   { id: 'player_season', cat: 'honors', tier: 'gold', title: 'Sezonun Yıldızı', desc: 'Sezonun oyuncusu ödülünü kazan.', icon: 'star', sprite: 'golden_ball', goal: 1, value: (s) => awardCount(s, 'Sezonun Oyuncusu') },
   { id: 'young_star', cat: 'honors', tier: 'silver', title: 'Geleceğin Yıldızı', desc: 'Yılın genç oyuncusu seçil.', icon: 'medal', sprite: 'medal_gold', goal: 1, value: (s) => awardCount(s, 'Genç') },
+  { id: 'youth_cap', cat: 'honors', tier: 'bronze', title: 'Genç Milli', desc: 'U-19 ya da U-21 milli takımında forma giy.', icon: 'flag', goal: 1, value: (s) => (s.national?.caps?.U19 || 0) + (s.national?.caps?.U21 || 0) },
   { id: 'cap', cat: 'honors', tier: 'silver', title: 'Ay-Yıldızlı Forma', desc: 'Milli takımda forma giy.', icon: 'flag', goal: 1, value: (s) => s.career.caps || 0 },
+  { id: 'intl_trophy', cat: 'honors', tier: 'platinum', title: 'Ay-Yıldızlı Zafer', desc: 'Milli takımla büyük bir turnuva kazan.', icon: 'trophy', sprite: 'cup_gold', goal: 1, value: (s) => (s.national?.tournaments || []).filter((t) => t.result === 'champion').length },
   { id: 'caps50', cat: 'honors', tier: 'platinum', title: 'Milli Efsane', desc: 'Milli takımda 50 maça çık.', icon: 'flag', goal: 50, value: (s) => s.career.caps || 0 },
 
   // ── Yaşam ──
