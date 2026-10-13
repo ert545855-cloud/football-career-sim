@@ -36,6 +36,8 @@ import { showAchievementToasts } from './achievementsView.js';
 import { AGENT_RULES, currentAgent } from '../core/agent.js';
 import { agentAvatar, negotiationSheet } from './agentView.js';
 import { agentScreen } from './screens/agent.js';
+import { socialScreen } from './screens/social.js';
+import { homeScreen } from './screens/home.js';
 import { nationalScreen } from './screens/national.js';
 import { ballonCeremony, ballonScreen } from './ballonView.js';
 import { afterCareerClick, afterCareerSection, coachScreen, punditScreen } from './screens/afterCareer.js';
@@ -76,6 +78,8 @@ export function createApp(rootEl) {
     tryouts: tryoutsScreen,
     achievements: achievementsScreen,
     agent: agentScreen,
+    social: socialScreen,
+    home: homeScreen,
     national: nationalScreen,
     ballon: ballonScreen,
     coach: coachScreen,

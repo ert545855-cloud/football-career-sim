@@ -26,6 +26,7 @@ import { ensureNational, nationalWindow } from './national.js';
 import { ballonOnMatch, ballonRank, ballonSeasonEnd, ensureBallon } from './ballondor.js';
 import { ChirpTriggerEngine, FABRICIO } from './chirp/index.js';
 import { achievementsOnMatch, achievementsOnTraining, checkAchievements, ensureAchievements } from './achievements.js';
+import { ensureSocial, homeScore, socialOnWeekEnd } from './social/index.js';
 
 export const SAVE_VERSION = 1;
 
@@ -79,6 +80,7 @@ export function newGame(setup) {
   ensureAgent(state);
   ensureNational(state);
   ensureBallon(state);
+  ensureSocial(state);
   // Forma numarası: seçilmez, kulüp boştaki genç numaralarından verir
   if (!setup.number) assignYouthNumber(state, random);
   else state.career.numberHistory.push({ season: 1, clubId: state.career.clubId, number: player.number, reason: 'Başlangıç' });
@@ -214,7 +216,9 @@ export function finishTraining(state, stat, result) {
   const { player, flags } = state;
   // Altyapı (Seçenek C): dev kulübün tesisleri antrenman gelişimini artırır
   const academyBonus = state.career.academy && state.calendar.season <= state.career.academy.untilSeason ? state.career.academy.trainingBonus || 0 : 0;
-  const bonus = itemEffects(state).train + (flags.trainBoostWeeks > 0 ? 0.25 : 0) + academyBonus;
+  // Evdeki spor aleti (Ev dizaynı) küçük bir antrenman bonusu verir
+  const homeTrain = state.social ? homeScore(state).train : 0;
+  const bonus = itemEffects(state).train + (flags.trainBoostWeeks > 0 ? 0.25 : 0) + academyBonus + homeTrain;
   const before = player.stats[stat];
   const progressBefore = player.progress[stat];
   // Çalışkan mentor: antrenman gelişim hızı ×1.2
@@ -300,6 +304,10 @@ function endWeek(state, ctx) {
   const mentor = mentorOnWeekEnd(state);
   if (mentor.signing) addNews(state, `${currentClub(state).short} kadrosuna genç transfer: ${mentor.signing.name} (${mentor.signing.age}).`, 'info');
 
+  // Sosyal yaşam: sevgili ilişkisi, ev konforu (haftalık enerji/moral)
+  const social = socialOnWeekEnd(state);
+  if (social.breakup) addNews(state, `${social.breakup} ile yollarınız ayrıldı. Uzun süre görüşmediniz.`, 'bad');
+
   const event = pickEvent(state, ctx);
   state.pending.event = event;
 
@@ -322,7 +330,7 @@ function endWeek(state, ctx) {
     calendar.slots = WEEK_SLOTS;
     calendar.trainings = 0;
   }
-  return { finance: fin, changes: diffChanges(before, snapshot(state)), event, offers: state.pending.offers, seasonOver, discipline, chirp: chirpTweets, mentor, national };
+  return { finance: fin, changes: diffChanges(before, snapshot(state)), event, offers: state.pending.offers, seasonOver, discipline, chirp: chirpTweets, mentor, national, social };
 }
 
 // ─────────────────────────────────────────────────────────────

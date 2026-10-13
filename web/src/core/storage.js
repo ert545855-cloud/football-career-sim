@@ -6,6 +6,7 @@ import { ensureAchievements } from './achievements.js';
 import { ensureAgent } from './agent.js';
 import { ensureNational } from './national.js';
 import { ensureBallon } from './ballondor.js';
+import { ensureSocial } from './social/index.js';
 
 const KEY = 'krampon.save.v1';
 const SETTINGS_KEY = 'krampon.settings';
@@ -71,6 +72,7 @@ export function migrate(state) {
   ensureAgent(state);
   ensureNational(state);
   ensureBallon(state);
+  ensureSocial(state);
   return state;
 }
 

@@ -100,6 +100,9 @@ export const ACHIEVEMENTS = [
   { id: 'pundit_star', cat: 'life', tier: 'silver', title: 'Yılın Yorumcusu', desc: 'TV yorumculuğunda yılın yorumcusu seçil.', icon: 'mic', sprite: 'tv_mic', goal: 1, value: (s) => (s.after?.awards || []).filter((x) => x.role === 'pundit').length },
   { id: 'mentored', cat: 'life', tier: 'bronze', title: 'Çırak', desc: 'Bir mentor seç.', icon: 'mentor', goal: 1, value: (s) => (s.mentor?.current || (s.mentor?.history || []).length ? 1 : 0) },
   { id: 'mentor_others', cat: 'life', tier: 'gold', title: 'Akıl Hocası', desc: 'Bir gence mentorluk yap.', icon: 'sprout', goal: 1, value: (s) => (s.mentor?.legacy?.mentees || []).length },
+  { id: 'social10', cat: 'life', tier: 'bronze', title: 'Sosyal Kelebek', desc: 'Kafe, bar ya da ev partisinde 10 kez buluş.', icon: 'coffee', goal: 10, value: (s) => s.social?.outings || 0 },
+  { id: 'in_love', cat: 'life', tier: 'silver', title: 'Kalbim Sende', desc: 'Bir sevgilin olsun.', icon: 'heartFill', goal: 1, value: (s) => (s.social?.partner ? 1 : 0) },
+  { id: 'interior', cat: 'life', tier: 'gold', title: 'İç Mimar', desc: 'Evine 12 mobilya yerleştir.', icon: 'sofa', goal: 12, value: (s) => s.social?.home?.placed?.length || 0 },
 ];
 
 export const ACHIEVEMENT_BY_ID = Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, a]));

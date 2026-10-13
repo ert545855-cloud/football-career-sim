@@ -93,8 +93,30 @@ function hairSVG(style, c) {
       return `<path d="M38 50 C37 36 46 27 60 27 C74 27 83 36 82 50 C79 42 72 38 60 38 C48 38 41 42 38 50 Z" fill="${c}" opacity=".35"/><path d="M53 14 C56 10 64 10 67 14 L67 40 C64 37 56 37 53 40 Z" fill="${c}"/>`;
     case 'bald':
       return `<ellipse cx="52" cy="34" rx="8" ry="4" fill="#fff" opacity=".18"/>`;
+    case 'wavy':
+      return `<path d="M36 56 C32 30 46 19 61 19 C77 19 89 31 84 56 C82 46 77 38 70 35 C62 40 50 38 44 34 C40 40 38 48 36 56 Z" fill="${c}"/><path d="M47 25 q12 -5 26 1" stroke="${shade(c, 0.3)}" stroke-width="2" fill="none" opacity=".55"/>`;
+    case 'bob':
+      return `<path d="M35 62 C31 32 45 20 60 20 C76 20 90 32 85 62 L80 62 C80 48 76 38 66 34 C58 39 47 38 42 36 C40 44 40 54 40 62 Z" fill="${c}"/><path d="M48 25 q12 -4 24 1" stroke="${shade(c, 0.3)}" stroke-width="2" fill="none" opacity=".55"/>`;
+    case 'ponytail':
+      return `<path d="M37 50 C36 30 47 21 60 21 C74 21 85 30 83 50 C80 41 73 35 60 35 C48 35 41 41 37 50 Z" fill="${c}"/><path d="M49 26 q11 -4 22 0" stroke="${shade(c, 0.3)}" stroke-width="2" fill="none" opacity=".55"/>`;
     default:
       return `<path d="M36 50 C35 29 47 20 60 20 C75 20 86 29 84 50 C81 40 75 33 61 33 C55 38 45 40 36 50 Z" fill="${c}"/><path d="M60 21 C66 24 74 27 79 35" stroke="${shade(c, 0.35)}" stroke-width="2" fill="none" opacity=".5"/>`;
+  }
+}
+
+/** Uzun saçların başın ARKASINDA kalan kısmı (yüzden önce çizilir) */
+function hairBackSVG(style, c) {
+  switch (style) {
+    case 'long':
+      return `<path d="M34 54 C30 80 33 98 40 104 L80 104 C87 98 90 80 86 54 Z" fill="${shade(c, -0.12)}"/>`;
+    case 'wavy':
+      return `<path d="M33 52 C27 70 34 80 30 92 C34 100 42 104 48 102 L72 102 C78 104 86 100 90 92 C86 80 93 70 87 52 Z" fill="${shade(c, -0.12)}"/><path d="M33 70 q5 6 0 12 M87 70 q-5 6 0 12" stroke="${shade(c, 0.2)}" stroke-width="2" fill="none" opacity=".5"/>`;
+    case 'bob':
+      return `<path d="M35 52 C33 64 35 70 38 74 L82 74 C85 70 87 64 85 52 Z" fill="${shade(c, -0.12)}"/>`;
+    case 'ponytail':
+      return `<path d="M80 34 C94 36 98 52 94 70 C92 78 86 82 82 80 C88 70 88 52 78 42 Z" fill="${shade(c, -0.08)}"/><circle cx="80" cy="35" r="3.5" fill="#e11d48"/>`;
+    default:
+      return '';
   }
 }
 
@@ -113,17 +135,19 @@ export function avatarSVG(avatar = {}, kit = {}, number = 9, cls = '') {
     <g clip-path="url(#${id})">${patternFill(pattern, colors, 0, 80, 120, 42)}<rect x="0" y="80" width="120" height="42" fill="#000" opacity=".12"/></g>
     <path d="M47 87 L60 100 L73 87" fill="none" stroke="${colors[1]}" stroke-width="4" stroke-linejoin="round"/>
     <text x="60" y="117" text-anchor="middle" font-size="14" font-weight="900" fill="${numColor}" font-family="system-ui,sans-serif">${number}</text>
+    ${hairBackSVG(style, hairC)}
     <rect x="51" y="68" width="18" height="22" rx="7" fill="${skinD}"/>
     <circle cx="38" cy="55" r="5.5" fill="${skinD}"/><circle cx="82" cy="55" r="5.5" fill="${skinD}"/>
     <ellipse cx="60" cy="52" rx="22.5" ry="26.5" fill="${skin}"/>
     <ellipse cx="60" cy="52" rx="22.5" ry="26.5" fill="url(#${id}f)"/>
-    <path d="M45 46 q6 -4 12 -1" stroke="${shade(hairC, -0.1)}" stroke-width="2.6" fill="none" stroke-linecap="round"/>
-    <path d="M63 45 q6 -3 12 1" stroke="${shade(hairC, -0.1)}" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+    <path d="M45 46 q6 -4 12 -1" stroke="${shade(hairC, -0.1)}" stroke-width="${avatar.fem ? 1.7 : 2.6}" fill="none" stroke-linecap="round"/>
+    <path d="M63 45 q6 -3 12 1" stroke="${shade(hairC, -0.1)}" stroke-width="${avatar.fem ? 1.7 : 2.6}" fill="none" stroke-linecap="round"/>
     <ellipse cx="51" cy="54" rx="3.2" ry="3.7" fill="#1b1410"/><ellipse cx="69" cy="54" rx="3.2" ry="3.7" fill="#1b1410"/>
     <circle cx="52.1" cy="52.8" r="1" fill="#fff"/><circle cx="70.1" cy="52.8" r="1" fill="#fff"/>
+    ${avatar.fem ? '<path d="M47.6 51.5 l-2.2 -1.6 M72.4 51.5 l2.2 -1.6 M48.2 50.4 l-1.4 -2" stroke="#1b1410" stroke-width="1.3" stroke-linecap="round"/><circle cx="38.5" cy="61" r="1.8" fill="#fcd34d"/><circle cx="81.5" cy="61" r="1.8" fill="#fcd34d"/>' : ''}
     <path d="M60 57 Q56.5 64 60 66" stroke="${skinD}" stroke-width="2" fill="none" stroke-linecap="round"/>
-    <path d="M52.5 70 Q60 76 67.5 70" stroke="#8a3d2f" stroke-width="2.4" fill="none" stroke-linecap="round"/>
-    <ellipse cx="46" cy="64" rx="4" ry="2.5" fill="#ff8a7a" opacity=".18"/><ellipse cx="74" cy="64" rx="4" ry="2.5" fill="#ff8a7a" opacity=".18"/>
+    ${avatar.fem ? '<path d="M53.5 70 Q60 75.5 66.5 70 Q60 72.5 53.5 70 Z" fill="#c2416b" stroke="#a3324f" stroke-width="1.4" stroke-linejoin="round"/>' : '<path d="M52.5 70 Q60 76 67.5 70" stroke="#8a3d2f" stroke-width="2.4" fill="none" stroke-linecap="round"/>'}
+    <ellipse cx="46" cy="64" rx="4" ry="2.5" fill="#ff8a7a" opacity="${avatar.fem ? 0.32 : 0.18}"/><ellipse cx="74" cy="64" rx="4" ry="2.5" fill="#ff8a7a" opacity="${avatar.fem ? 0.32 : 0.18}"/>
     ${hairSVG(style, hairC)}
   </svg>`;
 }
@@ -233,6 +257,12 @@ const P = {
   music: '<path d="M9 18V6l11-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/>',
   handshake: '<path d="M2.5 11.5 6 8l3 1 3-2.5 3 .5 3.5-1 3 3.5"/><path d="M6 8v5l4 4c.8.8 2 .8 2.6 0M12.6 17l1.4 1.2c.8.7 2 .6 2.6-.2M16.6 18l.9.4c.9.3 1.9-.4 1.9-1.4V13M9.5 13.5l2 2M12 11l3 3"/>',
   globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.7 5.6 3.7 9s-1.2 6.4-3.7 9c-2.5-2.6-3.7-5.6-3.7-9S9.5 5.6 12 3z"/>',
+  chat: '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1.1-4.6A8 8 0 1 1 21 12z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01"/>',
+  rotate: '<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/>',
+  trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+  box: '<path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8M12 13v8"/>',
+  newspaper: '<path d="M4 5h13v14a2 2 0 0 0 2 2H6a2 2 0 0 1-2-2V5z"/><path d="M17 9h3v10a2 2 0 0 1-2 2M8 9h5M8 13h5M8 17h3"/>',
+  party: '<path d="M4 20l5-14 9 9-14 5z"/><path d="M14 4l1 2M19 9l2-1M17 3l-1 3M20 13l-2 .5"/>',
 };
 
 export function icon(name, cls = 'ico') {
