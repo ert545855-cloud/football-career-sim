@@ -1,6 +1,6 @@
 // Çevrimdışı oynama için service worker.
 // Sayfa (index.html) önce ağdan gelir (güncellemeler hemen görünsün), diğer dosyalar önbellekten.
-const CACHE = 'krampon-v3';
+const CACHE = 'krampon-v4';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
@@ -18,7 +18,10 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   const req = e.request;
-  if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
+  const url = new URL(req.url);
+  if (req.method !== 'GET' || url.origin !== self.location.origin) return;
+  // Bulut kayıt API'si her zaman ağdan (önbellek eski kayıt döndürmesin); Unity 3B derlemesi çok büyük, önbelleğe alınmaz
+  if (url.pathname.includes('/api/') || url.pathname.includes('/unity/')) return;
 
   if (req.mode === 'navigate') {
     e.respondWith(

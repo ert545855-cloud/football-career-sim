@@ -26,8 +26,12 @@ const MIME = {
   '.ico': 'image/x-icon',
   '.txt': 'text/plain; charset=utf-8',
   '.woff2': 'font/woff2',
+  // Unity WebGL derlemesi (public/unity/Build)
+  '.wasm': 'application/wasm',
+  '.data': 'application/octet-stream',
+  '.unityweb': 'application/octet-stream',
 };
-const COMPRESSIBLE = new Set(['.html', '.js', '.mjs', '.css', '.json', '.webmanifest', '.svg', '.txt']);
+const COMPRESSIBLE = new Set(['.html', '.js', '.mjs', '.css', '.json', '.webmanifest', '.svg', '.txt', '.wasm', '.data']);
 const NO_CACHE = new Set(['/index.html', '/sw.js', '/manifest.webmanifest']);
 
 /** Küçük bellek önbelleği: dosya → { body, gz } */

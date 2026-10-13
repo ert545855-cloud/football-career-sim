@@ -3,6 +3,7 @@ import { configureAudio, sfx } from '../../audio.js';
 import { icon } from '../art.js';
 import { toast } from '../dom.js';
 import { cloudSectionPlaceholder, mountCloudSection } from '../cloudView.js';
+import { unityBuildAvailable } from '../../games/unity3d.js';
 
 export function settingsScreen(app) {
   const st = app.settings;
@@ -24,6 +25,7 @@ export function settingsScreen(app) {
         ${toggle('sound', 'Ses efektleri', 'sound', 'Vuruş, düdük, tribün sesleri')}
         ${toggle('vibrate', 'Titreşim', 'vibrate', 'Gol ve müdahalede titreşim (Android)')}
         ${toggle('easyPass', 'Kolay pas', 'target', 'Pas anlarında çizmek yerine arkadaşa dokun')}
+        <div data-unity-toggle hidden>${toggle('unity3d', '3B mod (Unity)', 'ball', 'Maçtaki pas ve şut anları 3B sahnede oynanır (ilk açılışta indirme yapar)')}</div>
       </div>
 
       <div class="h-sec">Kayıt</div>
@@ -44,6 +46,11 @@ export function settingsScreen(app) {
       <p class="muted small center" style="margin-top:18px">Krampon v1.0 · Kulüpler ve isimler kurgusaldır.</p>`,
     mount(el) {
       mountCloudSection(app, el);
+      // 3B mod yalnızca sunucuda Unity derlemesi varsa görünür
+      unityBuildAvailable().then((ok) => {
+        const row = el.querySelector('[data-unity-toggle]');
+        if (ok && row) row.hidden = false;
+      });
       el.addEventListener('click', async (e) => {
         const t = e.target.closest('button');
         if (!t || t.dataset.cloudAct) return;

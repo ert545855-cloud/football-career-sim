@@ -147,3 +147,9 @@
 .cloud-code { font-size: 20px; font-weight: 900; letter-spacing: 0.14em; font-variant-numeric: tabular-nums; color: var(--accent); }
 .cloud-code.big { font-size: 30px; margin: 8px 0; }
 .cloud-conflict { padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(251, 191, 36, 0.5); background: rgba(251, 191, 36, 0.08); display: grid; gap: 6px; }
+
+/* ─────────────── Unity 3B ─────────────── */
+.unity-parking { position: fixed; left: -10000px; top: 0; width: 360px; height: 640px; overflow: hidden; pointer-events: none; }
+.game-stage .unity-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; background: #0b1712; touch-action: none; }
+.unity-parking .unity-canvas { width: 360px; height: 640px; }
+.unity-loading { position: absolute; inset: auto 24px 45% 24px; display: grid; gap: 10px; text-align: center; z-index: 2; }

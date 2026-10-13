@@ -28,6 +28,10 @@ namespace FootballCareer.Passing.Demo
         public Material LineMaterial { get { return lineMaterial; } }
         public Vector2 PitchSize { get { return pitchSize; } }
         public GoalFrame Goal { get { return goal; } }
+        /// <summary>Spawn'da kullanılan forma renkleri (web köprüsü kulüp renklerini verir).</summary>
+        public Color TeamColor = Blue;
+        public Color OppColor = Red;
+
         public Bounds PitchBounds { get { return new Bounds(Vector3.zero, new Vector3(pitchSize.x, 20f, pitchSize.y)); } }
 
         public PitchBuilder(Transform parent, Material material, Vector2 size)
@@ -248,18 +252,18 @@ namespace FootballCareer.Passing.Demo
                 enemies = new List<EnemyAI>(level.enemies.Length),
             };
 
-            GameObject p = CreatePlayer("Pasör", level.passer, Face(level.passer, goalPos), Blue, false);
+            GameObject p = CreatePlayer("Pasör", level.passer, Face(level.passer, goalPos), TeamColor, false);
             h.passer = p.transform;
             h.teammates.Add(p.GetComponent<PassReceiver>());
             for (int i = 0; i < level.teammates.Length; i++)
             {
                 Vector3 pos = level.teammates[i];
-                h.teammates.Add(CreatePlayer("Arkadaş " + (i + 1), pos, Face(pos, level.passer), Blue, false).GetComponent<PassReceiver>());
+                h.teammates.Add(CreatePlayer("Arkadaş " + (i + 1), pos, Face(pos, level.passer), TeamColor, false).GetComponent<PassReceiver>());
             }
             for (int i = 0; i < level.enemies.Length; i++)
             {
                 Vector3 pos = level.enemies[i];
-                h.enemies.Add(CreatePlayer("Rakip " + (i + 1), pos, Face(pos, level.passer), Red, true).GetComponent<EnemyAI>());
+                h.enemies.Add(CreatePlayer("Rakip " + (i + 1), pos, Face(pos, level.passer), OppColor, true).GetComponent<EnemyAI>());
             }
             if (level.hasKeeper && goal != null) h.keeper = CreateKeeper(goal, level.keeperSkill);
             return h;

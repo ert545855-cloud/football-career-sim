@@ -8,6 +8,7 @@ import { playDrawPass } from './drawPass.js';
 import { loadSettings } from '../core/storage.js';
 import { playTackle } from './tackle.js';
 import { playSprint } from './sprint.js';
+import { playUnityMoment, unityBuildAvailable } from './unity3d.js';
 
 /**
  * @param {{type:'shot'|'pass'|'tackle'|'sprint'|'endurance', skill:number, context?:string, title:string, text:string,
@@ -65,7 +66,11 @@ export async function runMiniGame(o) {
     result = { success, accuracy: success ? Math.random() : 0, outcome: success ? 'goal' : 'save' };
   } else {
     const common = { skill: o.skill, context: o.context, myKit: o.myKit, oppKit: o.oppKit, number: o.number, skin: o.skin, tempo: big ? big.tempo : 1, nerves: big ? big.nerves : 0 };
-    switch (o.type) {
+    // 3B mod (Ayarlar): pas ve şut anları Unity WebGL derlemesinde oynanır; yüklenemezse 2B oyuna düşer
+    if ((o.type === 'pass' || o.type === 'shot') && loadSettings().unity3d && (await unityBuildAvailable())) {
+      result = await playIn3D(host, o, big).catch(() => null);
+    }
+    if (!result) switch (o.type) {
       case 'shot': result = await playShot(host, { ...common, keeper: o.keeper }); break;
       // Varsayılan: çizerek kavisli pas. Ayarlardan 'Kolay pas' seçilirse eski dokunarak pas.
       case 'pass': result = await (loadSettings().easyPass ? playPass(host, common) : playDrawPass(host, common)); break;
@@ -80,4 +85,33 @@ export async function runMiniGame(o) {
   await sleep(250);
   layer.remove();
   return result;
+}
+
+/** Unity 3B: yükleme çubuğu gösterir, anı oynatır, sonucu web biçiminde döndürür. */
+async function playIn3D(host, o, big) {
+  const bar = el('<div class="unity-loading"><b>3B sahne yükleniyor…</b><div class="bar"><i style="--c:var(--accent);width:0%"></i></div></div>');
+  host.appendChild(bar);
+  const fill = bar.querySelector('i');
+  const s = Math.max(0, Math.min(1, o.skill ?? 0.5));
+  try {
+    const r = await playUnityMoment(host, {
+      type: o.type,
+      context: o.type === 'shot' ? (o.context === 'penalty' ? 'penalty' : 'box') : o.context === 'final' ? 'final' : 'buildup',
+      passing: o.type === 'pass' ? s : s * 0.9,
+      shooting: o.type === 'shot' ? s : s * 0.9,
+      speed: s,
+      nerves: big ? big.nerves : 0,
+      keeper: o.keeper ?? 0.5,
+      myColor: o.myKit?.colors?.[0],
+      oppColor: o.oppKit?.colors?.[0],
+    }, (p) => {
+      fill.style.width = `${Math.round(p * 100)}%`;
+      if (p >= 1) bar.remove();
+    });
+    bar.remove();
+    return { success: !!r.success, accuracy: Number(r.accuracy) || 0, outcome: r.outcome || (r.success ? 'success' : 'missed'), curve: Number(r.curve) || 0 };
+  } catch (e) {
+    bar.remove();
+    throw e;
+  }
 }

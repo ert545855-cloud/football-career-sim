@@ -115,7 +115,7 @@ export function importSave(code) {
 }
 
 export function loadSettings() {
-  const defaults = { sound: true, vibrate: true, speed: 1, easyPass: false };
+  const defaults = { sound: true, vibrate: true, speed: 1, easyPass: false, unity3d: false };
   try {
     return { ...defaults, ...(JSON.parse(storage()?.getItem(SETTINGS_KEY) || '{}')) };
   } catch {
