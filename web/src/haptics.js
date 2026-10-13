@@ -35,6 +35,8 @@ export const HAPTICS = {
   levelup: [20, 40, 20, 40, 80],
   error: [40, 30, 40],
   celebrate: [30, 50, 30, 50, 30, 50, 160],
+  rev: [40, 25, 60, 25, 90, 25, 140, 40, 60], // motor gazı
+  flash: [12, 60, 12, 60, 12], // flaş patlamaları (paparazzi)
 };
 
 const LEVELS = { soft: 0.6, normal: 1, strong: 1.6 };

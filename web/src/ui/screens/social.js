@@ -8,6 +8,9 @@ import { avatarSVG, icon } from '../art.js';
 import { animateBars, esc, sheet, toast } from '../dom.js';
 import { SH, SW, drawScene } from '../pixelScenes.js';
 import { outingResultSheets, playOuting, sceneOptsFor } from '../sceneView.js';
+import { carName, carStats, currentCarId } from '../../core/garage.js';
+import { CH, CW, drawCar } from '../carCanvas.js';
+import { carLook } from './garage.js';
 
 let lastVenue = 'cafe';
 
@@ -39,6 +42,8 @@ export function socialScreen(app) {
   const hs = homeScore(s);
   const plan = homeOf(s);
   const venue = VENUES[lastVenue];
+  const carId = currentCarId(s);
+  const cs = carStats(s, carId);
 
   const tierCards = venue.tiers.map((t0) => {
     const t = venueTier(s, lastVenue, t0.id);
@@ -90,6 +95,16 @@ export function socialScreen(app) {
         </span>
       </button>
 
+      <div class="h-sec">Garaj</div>
+      <button class="card home-card" data-act="garage">
+        ${carId ? `<canvas width="${CW}" height="${CH}" data-car></canvas>` : `<span class="se-ic" style="width:64px;height:64px">${icon('car')}</span>`}
+        <span class="grow" style="min-width:0;text-align:left">
+          <b>${carId ? esc(carName(carId)) : 'Garajın boş'}</b>
+          ${carId ? `<span class="chips" style="margin-top:6px"><span class="chip">${icon('wrench', 'ico xs')} ${cs.installed} modifiye</span><span class="chip gold">Stil ${cs.style}</span><span class="chip bad">Güç ${cs.perf}</span></span>` : ''}
+          <span class="muted small" style="display:block;margin-top:6px">${carId ? 'Boya, jant, body kit, neon, motor' : 'Önce Mağaza › Araçlar\'dan bir araba al'} ${icon('chev', 'ico xs')}</span>
+        </span>
+      </button>
+
       ${log ? `<div class="h-sec">Son etkinlikler</div><div class="card list">${log}</div>` : ''}`,
     mount(node) {
       animateBars(node);
@@ -99,12 +114,16 @@ export function socialScreen(app) {
         drawScene(cv.getContext('2d'), 0.6, sceneOptsFor(s, venueId, cv.dataset.palette, null));
       });
 
+      const carCv = node.querySelector('canvas[data-car]');
+      if (carCv && carId) drawCar(carCv.getContext('2d'), 0.4, carLook(s, carId));
+
       node.addEventListener('click', async (e) => {
         const t = e.target.closest('[data-act],[data-venue],[data-tier],[data-contact]');
         if (!t) return;
         app.click();
         if (t.dataset.act === 'back') return app.go('hub');
         if (t.dataset.act === 'home') return app.go('home');
+        if (t.dataset.act === 'garage') return app.go('garage');
         if (t.dataset.venue) {
           lastVenue = t.dataset.venue;
           return app.go('social');

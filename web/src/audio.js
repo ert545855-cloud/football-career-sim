@@ -83,6 +83,9 @@ const SFX = {
   swish: () => noise(0.25, { gain: 0.2, freq: 3000, q: 0.7, sweep: -1500 }),
   step: () => noise(0.05, { gain: 0.08, freq: 400, type: 'lowpass' }),
   tick: () => tone(1200, 0.03, { type: 'square', gain: 0.04 }),
+  engine: () => { tone(62, 1.1, { type: 'sawtooth', gain: 0.13, slide: 150, attack: 0.05 }); tone(124, 1.1, { type: 'square', gain: 0.04, slide: 260, attack: 0.05 }); noise(1.1, { gain: 0.16, freq: 260, type: 'lowpass', sweep: 380, attack: 0.05 }); },
+  backfire: () => { noise(0.12, { gain: 0.5, freq: 500, type: 'lowpass' }); tone(70, 0.12, { gain: 0.4, slide: -30 }); },
+  camera: () => { noise(0.04, { gain: 0.35, freq: 4000 }); tone(1800, 0.05, { type: 'square', gain: 0.05, delay: 0.05 }); noise(0.05, { gain: 0.25, freq: 3000, delay: 0.09 }); },
 };
 
 export function sfx(name) {

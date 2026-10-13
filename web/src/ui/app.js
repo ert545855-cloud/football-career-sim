@@ -38,6 +38,7 @@ import { agentAvatar, negotiationSheet } from './agentView.js';
 import { agentScreen } from './screens/agent.js';
 import { socialScreen } from './screens/social.js';
 import { homeScreen } from './screens/home.js';
+import { garageScreen } from './screens/garage.js';
 import { nationalScreen } from './screens/national.js';
 import { ballonCeremony, ballonScreen } from './ballonView.js';
 import { afterCareerClick, afterCareerSection, coachScreen, punditScreen } from './screens/afterCareer.js';
@@ -80,6 +81,7 @@ export function createApp(rootEl) {
     agent: agentScreen,
     social: socialScreen,
     home: homeScreen,
+    garage: garageScreen,
     national: nationalScreen,
     ballon: ballonScreen,
     coach: coachScreen,

@@ -297,3 +297,30 @@
 .fin-swatch small { color: var(--muted); font-size: 10px; }
 .fin-swatch.on { border-color: var(--accent); }
 @media (min-width: 720px) { .furn-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+/* ─────────────── Garaj ─────────────── */
+.home-card canvas[data-car] { aspect-ratio: 192 / 104; }
+.car-stage { position: relative; margin-top: 12px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); background: #0f172a; }
+.car-canvas { display: block; width: 100%; aspect-ratio: 192 / 104; image-rendering: pixelated; }
+.car-plate { position: absolute; left: 10px; top: 10px; padding: 3px 8px 3px 16px; border-radius: 5px; background: #f8fafc; color: #111827; font: 800 12px/1.2 ui-monospace, monospace; letter-spacing: 1px; border: 2px solid #111827; }
+.car-plate::before { content: 'TR'; position: absolute; left: 0; top: 0; bottom: 0; width: 12px; background: #1d4ed8; color: #fff; font-size: 6px; display: grid; place-items: end center; padding-bottom: 2px; border-radius: 2px 0 0 2px; }
+.car-rev { position: absolute; right: 10px; top: 10px; background: rgba(0, 0, 0, 0.6); }
+.car-stats { display: grid; gap: 7px; margin-top: 10px; }
+.gs { display: grid; grid-template-columns: 86px 1fr 30px; align-items: center; gap: 10px; font-size: 13px; }
+.gs span { color: var(--muted); }
+.gs b { text-align: right; }
+.gs .bar > i { transition: none; }
+.mod-tabs { display: flex; gap: 6px; overflow-x: auto; margin-top: 12px; padding-bottom: 4px; scrollbar-width: none; }
+.mod-tabs::-webkit-scrollbar { display: none; }
+.mod-tabs button { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 99px; border: 1px solid var(--line); background: var(--panel); color: var(--muted); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.mod-tabs button.on { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.mod-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+.mod { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 10px; border-radius: 14px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font: inherit; text-align: left; cursor: pointer; min-height: 92px; }
+.mod b { font-size: 13.5px; line-height: 1.2; }
+.mod small { color: var(--muted); font-size: 11px; }
+.mod .chip { margin-top: auto; font-size: 11px; padding: 2px 8px; }
+.mod.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.mod.off { opacity: 0.5; }
+.mod-sw { display: block; width: 28px; height: 16px; border-radius: 5px; border: 1px solid rgba(255, 255, 255, 0.25); }
+.mod-sw.glow { background: var(--g); box-shadow: 0 0 12px var(--g); }
+@media (min-width: 720px) { .mod-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

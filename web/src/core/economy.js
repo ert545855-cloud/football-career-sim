@@ -3,6 +3,7 @@ import { clamp, roundTo, chance, randInt, shuffle } from './rng.js';
 import { clubRating } from './league.js';
 import { ovr, form } from './player.js';
 import { RelationshipService } from './chirp/relationships.js';
+import { onCarSold } from './garage.js';
 
 /** Haftalık maaş: kulüp gücüyle üstel artar, oyuncunun kulübe göre seviyesi çarpan olur. */
 export function wageFor(clubR, playerOvr) {
@@ -71,7 +72,9 @@ export function sellItem(state, id) {
   if (item.kind === 'sub') return { ok: true, msg: `${item.name} aboneliği iptal edildi.` };
   const refund = Math.round(item.price * 0.5);
   state.career.money += refund;
-  return { ok: true, msg: `${item.name} satıldı: +€${refund.toLocaleString('tr-TR')}` };
+  // Modifiyeli araba: parçaların bir kısmı da para eder
+  const modRefund = item.cat === 'vehicle' ? onCarSold(state, id) : 0;
+  return { ok: true, msg: `${item.name} satıldı: +€${(refund + modRefund).toLocaleString('tr-TR')}${modRefund ? ' (modifiyeler dahil)' : ''}` };
 }
 
 /**

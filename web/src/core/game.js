@@ -27,6 +27,7 @@ import { ballonOnMatch, ballonRank, ballonSeasonEnd, ensureBallon } from './ball
 import { ChirpTriggerEngine, FABRICIO } from './chirp/index.js';
 import { achievementsOnMatch, achievementsOnTraining, checkAchievements, ensureAchievements } from './achievements.js';
 import { ensureSocial, homeScore, socialOnWeekEnd } from './social/index.js';
+import { ensureGarage, garageOnWeekEnd } from './garage.js';
 
 export const SAVE_VERSION = 1;
 
@@ -81,6 +82,7 @@ export function newGame(setup) {
   ensureNational(state);
   ensureBallon(state);
   ensureSocial(state);
+  ensureGarage(state);
   // Forma numarası: seçilmez, kulüp boştaki genç numaralarından verir
   if (!setup.number) assignYouthNumber(state, random);
   else state.career.numberHistory.push({ season: 1, clubId: state.career.clubId, number: player.number, reason: 'Başlangıç' });
@@ -307,6 +309,7 @@ function endWeek(state, ctx) {
   // Sosyal yaşam: sevgili ilişkisi, ev konforu (haftalık enerji/moral)
   const social = socialOnWeekEnd(state);
   if (social.breakup) addNews(state, `${social.breakup} ile yollarınız ayrıldı. Uzun süre görüşmediniz.`, 'bad');
+  garageOnWeekEnd(state); // modifiyeli araba: moral, taraftar ilgisi
 
   const event = pickEvent(state, ctx);
   state.pending.event = event;
