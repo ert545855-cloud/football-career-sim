@@ -3,3 +3,5 @@ web/dist
 unity
 .git
 *.log
+web/assets-src
+**/__pycache__

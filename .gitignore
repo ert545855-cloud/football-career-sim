@@ -8,3 +8,6 @@ unity/Temp/
 unity/Obj/
 unity/Logs/
 unity/UserSettings/
+# Satın alınan/indirilen ham asset paketleri (lisans gereği repoya girmez; atlas buradan üretilir)
+web/assets-src/
+__pycache__/

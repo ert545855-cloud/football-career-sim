@@ -1,4 +1,5 @@
 // MİNİ OYUN MOTORU — tuval, retina ölçekleme, döngü, dokunma/fare girdisi, parçacıklar, çizim yardımcıları.
+import { drawSprite, spritePattern } from '../assets/sprites.js';
 
 export const ease = {
   outCubic: (t) => 1 - Math.pow(1 - t, 3),
@@ -272,13 +273,27 @@ export function drawTopPlayer(ctx, x, y, s, kit, { number = '', facing = 0, phas
   }
 }
 
-/** Kuşbakışı çim (şeritli) + saha çizgileri. */
+/** Kuşbakışı çim (şeritli) + saha çizgileri. Atlas hazırsa piksel çim dokusu kullanılır. */
 export function drawPitchTop(ctx, W, H, { box = 'none', circle = false } = {}) {
   const band = Math.max(40, H / 9);
+  const grass = spritePattern(ctx, 'grass', 72);
   let i = 0;
-  for (let y = 0; y < H; y += band, i++) {
-    ctx.fillStyle = i % 2 === 0 ? '#1f7a3a' : '#23873f';
-    ctx.fillRect(0, y, W, band + 1);
+  if (grass) {
+    // Piksel çim dokusu + oyunun koyu yeşil tonu + biçilmiş şeritler
+    ctx.fillStyle = grass;
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = 'rgba(6, 46, 22, 0.42)';
+    ctx.fillRect(0, 0, W, H);
+    for (let y = 0; y < H; y += band, i++) {
+      if (i % 2) continue;
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+      ctx.fillRect(0, y, W, band + 1);
+    }
+  } else {
+    for (let y = 0; y < H; y += band, i++) {
+      ctx.fillStyle = i % 2 === 0 ? '#1f7a3a' : '#23873f';
+      ctx.fillRect(0, y, W, band + 1);
+    }
   }
   // doku
   const g = ctx.createRadialGradient(W / 2, H * 0.4, 10, W / 2, H * 0.5, Math.max(W, H));
@@ -305,6 +320,9 @@ export function drawPitchTop(ctx, W, H, { box = 'none', circle = false } = {}) {
     // kale
     ctx.fillStyle = 'rgba(255,255,255,.18)';
     ctx.fillRect(W / 2 - W * 0.13, H - 8, W * 0.26, 8);
+    // köşe bayrakları (kale çizgisinin iki ucu)
+    drawSprite(ctx, 'corner_flag', 14, H - 2, { h: 34, anchor: 'bottom' });
+    drawSprite(ctx, 'corner_flag', W - 14, H - 2, { h: 34, anchor: 'bottom', flip: true });
   }
   if (circle) {
     ctx.beginPath(); ctx.arc(W / 2, H * 0.95, W * 0.2, 0, Math.PI * 2); ctx.stroke();

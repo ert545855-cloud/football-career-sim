@@ -1,0 +1,100 @@
+{
+  "_doc": "Oyunda kullanılan sprite'lar: ad → [sayfa, satır, sütun]. Adresler slice.py hata ayıklama görsellerindeki 'satır,sütun' etiketleridir. max: en uzun kenar sınırı (px).",
+  "groups": {
+    "icons": {
+      "max": 112,
+      "sprites": {
+        "ball": [11, 0, 2],
+        "ball_retro": [11, 0, 1],
+        "cone": [12, 0, 0],
+        "medkit": [11, 1, 0],
+        "briefcase": [11, 1, 5],
+        "jersey": [11, 1, 3],
+        "gloves": [11, 3, 6],
+        "boots": [11, 3, 7],
+        "pump": [11, 3, 8],
+        "stopwatch": [12, 3, 7],
+        "bottle_crate": [11, 2, 7],
+        "bottle_energy": [11, 2, 4],
+        "card_yellow": [13, 0, 0],
+        "card_red": [13, 0, 1],
+        "flag_linesman": [13, 0, 5],
+        "whistle": [13, 1, 6],
+        "megaphone": [13, 1, 8],
+        "clipboard": [13, 1, 2],
+        "sub_board": [13, 2, 3],
+        "added_time": [13, 2, 4],
+        "mini_goal": [12, 2, 0],
+        "ring": [12, 1, 0],
+        "mannequin": [12, 1, 4],
+        "ladder": [12, 1, 7],
+        "hurdle": [12, 0, 11],
+        "disc_cones": [12, 3, 0],
+        "tactics_board": [6, 6, 0],
+        "bench_wood": [6, 4, 6],
+        "tv_camera": [17, 0, 0],
+        "tv_mic": [17, 2, 1],
+        "press_badge": [17, 3, 7],
+        "cup_gold": [14, 0, 0],
+        "cup_silver": [14, 0, 1],
+        "cup_bronze": [14, 0, 2],
+        "trophy_star": [14, 0, 6],
+        "medal_gold": [14, 1, 0],
+        "medal_silver": [14, 1, 1],
+        "golden_boot": [14, 2, 3],
+        "golden_ball": [14, 2, 4],
+        "pennant": [14, 2, 6],
+        "laurel_gold": [20, 2, 1],
+        "firework_gold": [20, 0, 6],
+        "firework_red": [20, 0, 5],
+        "popper": [20, 4, 0],
+        "confetti": [20, 4, 5],
+        "goal_frame": [4, 0, 1],
+        "corner_flag": [5, 0, 10],
+        "corner_flag_red": [5, 3, 0]
+      }
+    },
+    "scenes": {
+      "max": 168,
+      "sprites": {
+        "bench_covered": [6, 0, 0],
+        "tunnel_players": [9, 1, 4],
+        "tunnel_home": [9, 0, 0],
+        "merch_blue": [18, 0, 0],
+        "merch_red": [18, 0, 1],
+        "merch_cart": [18, 0, 6],
+        "merch_jerseys": [18, 2, 0],
+        "podium": [20, 1, 5]
+      }
+    },
+    "stadium": {
+      "max": 300,
+      "sprites": {
+        "light_tower": [16, 1, 2],
+        "light_panel": [16, 0, 0]
+      }
+    },
+    "crowd": {
+      "max": 72,
+      "sprites": {
+        "fan_0": [19, 0, 0], "fan_1": [19, 0, 1], "fan_2": [19, 0, 2], "fan_3": [19, 0, 3], "fan_4": [19, 0, 4],
+        "fan_5": [19, 0, 5], "fan_6": [19, 0, 6], "fan_7": [19, 0, 7], "fan_8": [19, 0, 8], "fan_9": [19, 0, 9],
+        "fan_10": [19, 0, 10], "fan_11": [19, 0, 11], "fan_12": [19, 0, 12], "fan_13": [19, 0, 13],
+        "fan_14": [19, 1, 0], "fan_15": [19, 1, 1], "fan_16": [19, 1, 2], "fan_17": [19, 1, 3], "fan_18": [19, 1, 4],
+        "fan_19": [19, 1, 5], "fan_20": [19, 1, 6], "fan_21": [19, 1, 7], "fan_22": [19, 1, 8], "fan_23": [19, 1, 9],
+        "fan_24": [19, 1, 10], "fan_25": [19, 1, 11], "fan_26": [19, 1, 12], "fan_27": [19, 1, 13]
+      }
+    },
+    "flags": {
+      "max": 96,
+      "sprites": {
+        "fan_flag_0": [19, 3, 0], "fan_flag_1": [19, 3, 1], "fan_flag_2": [19, 3, 2], "fan_flag_3": [19, 3, 3], "fan_flag_4": [19, 3, 4],
+        "fan_flag_5": [19, 3, 5], "fan_flag_6": [19, 3, 6], "fan_flag_7": [19, 3, 8], "fan_flag_8": [19, 3, 9],
+        "scarf_0": [19, 4, 0], "scarf_1": [19, 4, 1], "scarf_2": [19, 4, 2], "scarf_3": [19, 4, 6], "scarf_4": [19, 4, 8]
+      }
+    }
+  },
+  "tiles": {
+    "grass": { "src": [1, 0, 0], "inset": 12, "mirror": true, "size": 192 }
+  }
+}

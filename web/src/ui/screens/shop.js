@@ -2,6 +2,7 @@ import { SHOP_CATEGORIES, SHOP_ITEMS } from '../../core/data.js';
 import { buyItem, canBuy, money, sellItem, weeklyFinance } from '../../core/economy.js';
 import { icon, itemArt } from '../art.js';
 import { esc, toast } from '../dom.js';
+import { sprite } from '../../assets/sprites.js';
 import { sfx } from '../../audio.js';
 
 const FX_LABEL = { morale: 'Moral', energy: 'Enerji', fans: 'Taraftar', fame: 'Ün', train: 'Antrenman' };
@@ -44,6 +45,7 @@ export function shopScreen(app) {
         <h1 class="h-title">Mağaza</h1>
         <span class="money-pill">${icon('coin')} <span class="tnum">${money(s.career.money)}</span></span>
       </div>
+      <div class="shop-street" aria-hidden="true">${['merch_red', 'merch_cart', 'merch_blue', 'merch_jerseys'].map((n) => sprite(n, { h: 74, w: 96 })).join('')}</div>
       <div class="card" style="margin-top:12px">
         <div class="row between small"><span class="muted">Haftalık maaş</span><b class="tnum">${money(fin.income)}</b></div>
         <div class="row between small" style="margin-top:6px"><span class="muted">Yaşam + eşya giderleri</span><b class="tnum" style="color:var(--bad)">−${money(fin.living + fin.upkeep)}</b></div>

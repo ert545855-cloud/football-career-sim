@@ -516,12 +516,36 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.01em; }
 @keyframes heartbeat { 0%, 100% { opacity: 0.35; } 14% { opacity: 1; } 28% { opacity: 0.5; } 42% { opacity: 0.9; } 70% { opacity: 0.4; } }
 @keyframes goldPulse { 0%, 100% { box-shadow: 0 0 0 1px rgba(255, 207, 61, 0.35), 0 10px 30px rgba(255, 207, 61, 0.08); } 50% { box-shadow: 0 0 0 1px rgba(255, 207, 61, 0.6), 0 10px 34px rgba(255, 207, 61, 0.2); } }
 
+
+/* ───────── Sprite atlası (Football Championship Megapack) ───────── */
+.spr { display: inline-block; flex: none; vertical-align: middle; background-image: var(--atlas, none); background-repeat: no-repeat; }
+.spr-ic .spr { filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35)); }
+.action .ic.spr-ic { background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.06); width: 44px; height: 44px; }
+.event-art.spr-art { background: radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.02)); width: 84px; height: 84px; }
+.event-art.spr-art .spr { filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.45)); }
+.award .tro.spr-tro { display: grid; place-items: center; width: 44px; height: 44px; }
+.train-art { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; flex: none; background: color-mix(in srgb, var(--c) 14%, transparent); border: 1px solid color-mix(in srgb, var(--c) 35%, transparent); }
+.prematch-art { display: grid; place-items: center; margin-top: 12px; filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.4)); }
+.celebrate { display: flex; justify-content: center; align-items: flex-end; gap: 6px; margin-bottom: 8px; }
+.celebrate .spr:first-child, .celebrate .spr:last-child { animation: floaty 2.4s ease-in-out infinite; }
+.celebrate .spr:last-child { animation-delay: -1.2s; }
+.feed .ln { grid-template-columns: 34px 24px 1fr; align-items: center; }
+.feed .ln .ln-ic { display: grid; place-items: center; width: 24px; height: 24px; }
+.feed .ln.sub { border-color: rgba(56, 189, 248, 0.35); }
+.feed .ln.big { background: rgba(255, 93, 108, 0.1); border-color: rgba(255, 93, 108, 0.3); }
+.shop-street { display: flex; justify-content: space-between; align-items: flex-end; gap: 4px; margin-top: 12px; padding: 10px 8px 0; border-radius: 16px 16px 0 0; background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.04)); border-bottom: 3px solid rgba(255, 255, 255, 0.08); overflow: hidden; }
+.title-tower { position: absolute; top: calc(var(--safe-top) + 168px); z-index: 0; opacity: 0.8; pointer-events: none; }
+.title-tower.l { left: -38px; }
+.title-tower.r { right: -38px; transform: scaleX(-1); }
+.title-tower .spr { filter: drop-shadow(0 0 18px rgba(255, 255, 230, 0.35)); }
+
 @media (max-width: 360px) {
   .actions { gap: 6px; }
   .action { min-height: 84px; padding: 10px 4px 8px; }
   .action b { font-size: 11.5px; }
   .h-title { font-size: 22px; }
   .meet span { font-size: 9.5px; }
+  .title-tower { opacity: 0.55; }
   .scoreboard .sc { font-size: 34px; }
   .logo .word { font-size: 44px; }
 }

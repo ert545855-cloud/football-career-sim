@@ -1,5 +1,6 @@
 // SÜRAT / DAYANIKLILIK KOŞUSU — yandan görünüm. SOL-SAĞ tuşlarına sırayla bas; hedef koşucuyu geç.
 import { createStage, Particles, BigText, clamp, lerp, roundRect } from './engine.js';
+import { drawSprite } from '../assets/sprites.js';
 import { sfx, buzz } from '../audio.js';
 
 export function playSprint(host, opts) {
@@ -157,11 +158,14 @@ export function playSprint(host, opts) {
         }
         const poleOff = -(camX * 0.25) % 180;
         for (let x = poleOff - 180; x < W + 180; x += 180) {
-          ctx.fillStyle = '#1e293b';
-          ctx.fillRect(x + 88, H * 0.12, 4, st - H * 0.12);
-          ctx.fillStyle = 'rgba(255,255,220,.9)';
-          roundRect(ctx, x + 74, H * 0.1, 32, 10, 3);
-          ctx.fill();
+          // Piksel ışık direği (atlas); yoksa basit çizim
+          if (!drawSprite(ctx, 'light_panel', x + 90, st + 2, { h: st - H * 0.15, anchor: 'bottom', alpha: 0.92 })) {
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(x + 88, H * 0.12, 4, st - H * 0.12);
+            ctx.fillStyle = 'rgba(255,255,220,.9)';
+            roundRect(ctx, x + 74, H * 0.1, 32, 10, 3);
+            ctx.fill();
+          }
           const g = ctx.createRadialGradient(x + 90, H * 0.11, 2, x + 90, H * 0.11, 70);
           g.addColorStop(0, 'rgba(255,255,220,.35)');
           g.addColorStop(1, 'rgba(255,255,220,0)');
@@ -188,6 +192,7 @@ export function playSprint(host, opts) {
           ctx.fillStyle = 'rgba(255,255,255,.75)';
           ctx.fillRect(x - 1, H * 0.5, 2, H * 0.06);
           ctx.fillText(`${m}m`, x, H * 0.49);
+          drawSprite(ctx, 'cone', x + 10, H * 0.5 + 4, { h: 16, anchor: 'bottom' });
         }
         // bitiş çizgisi
         const fx = distance * ppm - camX;

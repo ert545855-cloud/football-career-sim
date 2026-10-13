@@ -1,5 +1,6 @@
 import { ballSVG, icon } from '../art.js';
 import { hasSave } from '../../core/storage.js';
+import { sprite } from '../../assets/sprites.js';
 
 export function titleScreen(app) {
   const canContinue = hasSave() && app.state;
@@ -11,6 +12,8 @@ export function titleScreen(app) {
     html: `
       <div class="title-screen">
         <div class="floodlight l"></div><div class="floodlight r"></div>
+        <div class="title-tower l">${sprite('light_tower', { h: 190 })}</div>
+        <div class="title-tower r">${sprite('light_tower', { h: 190 })}</div>
         <div class="logo">
           <div class="word">KRAMPON</div>
           <div class="tag">Futbol Kariyeri</div>

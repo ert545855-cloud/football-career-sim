@@ -46,9 +46,33 @@ web/src/
     chirp/        Sosyal medya: modeller, tetikleyiciler, paylaşımlar, ilişkiler, duygu analizi
     mentor/       Mentorluk: MentorManager, kadro (yapay zekâ oyuncular), diyaloglar, büyük maçlar
   games/     Canvas mini oyunları (shot, pass, tackle, sprint)
+  assets/    Sprite atlası ve yükleyicisi
   ui/        Ekranlar, SVG çizimler (avatar, arma, ikonlar), akışlar
 web/tests/   Birim testleri (node --test)
-web/scripts/ Denge simülasyonu ve ikon üretici
+web/scripts/ Denge simülasyonu, ikon üretici ve sprite atlası üretici (scripts/atlas/)
+```
+
+## Görsel paket (sprite atlası)
+
+Oyundaki piksel görseller **Football Championship Megapack – Top-Down Pixel Art Sports Collection** paketinden gelir. Paket 20 serbest yerleşimli önizleme sayfasından oluşur (≈31 MB). Oyuna sayfaların tamamı değil, seçilen ~100 sprite tek bir atlas olarak girer:
+
+| Dosya | Görevi |
+|---|---|
+| `web/assets-src/` | Ham paket (ZIP ya da PNG'ler). **Repoya girmez** (`.gitignore`). |
+| `web/scripts/atlas/slice.py` | Sayfalardaki sprite'ları alfa kanalından bulur, satır/sütun adresi verir. |
+| `web/scripts/atlas/manifest.json` | Oyunda kullanılan sprite'lar: `ad → [sayfa, satır, sütun]` ve boyut sınırı. |
+| `web/scripts/atlas/build_atlas.py` | Seçilenleri kırpar, küçültür, tek dokuya paketler. |
+| `web/src/assets/sprites/atlas.webp` · `.png` · `.json` | Üretilen atlas (~180 KB) ve çerçeve koordinatları. |
+| `web/src/assets/sprites.js` | Çalışma zamanı: `sprite()` (DOM), `drawSprite()` / `spritePattern()` (Canvas). |
+| `web/src/ui/spriteMap.js` | Oyun kavramı → sprite eşlemesi (aksiyonlar, antrenman, ödüller, olaylar, maç anlatımı). |
+
+Yeni sprite eklemek için:
+
+```bash
+cd web
+python3 scripts/atlas/slice.py assets-src/ /tmp/slices    # numaralı önizlemeler: /tmp/slices/debug-NN.png
+# manifest.json'a "ad": [sayfa, satır, sütun] ekle
+npm run atlas -- assets-src/football-megapack.zip          # atlası yeniden üret
 ```
 
 ## Geliştirme

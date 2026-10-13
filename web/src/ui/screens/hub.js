@@ -8,6 +8,7 @@ import { energyColor, meter, moraleColor, ratingColor } from '../components.js';
 import { RELATIONS } from '../../core/chirp/index.js';
 import { shareCard, shareFlow } from '../chirpView.js';
 import { bigMatchChip, hubMentorCard, meetingFlow, requestsSheet, selectionSheet } from '../mentorView.js';
+import { actionArt } from '../spriteMap.js';
 
 export function hubScreen(app) {
   const s = app.state;
@@ -25,7 +26,7 @@ export function hubScreen(app) {
     let sub = act.cost;
     if (act.id === 'train') sub = `${calendar.trainings}/${MAX_TRAININGS_PER_WEEK} · −18 enerji`;
     return `<button class="action ${c.ok ? '' : 'off'}" data-action="${act.id}" title="${esc(c.reason || act.desc)}">
-      <span class="ic">${icon(act.icon)}</span><b>${act.name}</b><span>${sub}</span></button>`;
+      <span class="ic spr-ic">${actionArt(act.id, act.icon)}</span><b>${act.name}</b><span>${sub}</span></button>`;
   }).join('');
 
   const status = flags.injuredWeeks > 0

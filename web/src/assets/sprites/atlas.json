@@ -1,0 +1,716 @@
+{
+ "image": {
+  "w": 1024,
+  "h": 1164
+ },
+ "frames": {
+  "added_time": {
+   "x": 4,
+   "y": 427,
+   "w": 98,
+   "h": 112,
+   "group": "icons"
+  },
+  "ball": {
+   "x": 522,
+   "y": 308,
+   "w": 110,
+   "h": 112,
+   "group": "icons"
+  },
+  "ball_retro": {
+   "x": 176,
+   "y": 775,
+   "w": 112,
+   "h": 102,
+   "group": "icons"
+  },
+  "bench_covered": {
+   "x": 407,
+   "y": 659,
+   "w": 168,
+   "h": 106,
+   "group": "scenes"
+  },
+  "bench_wood": {
+   "x": 899,
+   "y": 1047,
+   "w": 112,
+   "h": 40,
+   "group": "icons"
+  },
+  "boots": {
+   "x": 4,
+   "y": 882,
+   "w": 112,
+   "h": 84,
+   "group": "icons"
+  },
+  "bottle_crate": {
+   "x": 862,
+   "y": 775,
+   "w": 112,
+   "h": 85,
+   "group": "icons"
+  },
+  "bottle_energy": {
+   "x": 667,
+   "y": 543,
+   "w": 71,
+   "h": 112,
+   "group": "icons"
+  },
+  "briefcase": {
+   "x": 579,
+   "y": 659,
+   "w": 112,
+   "h": 106,
+   "group": "icons"
+  },
+  "card_red": {
+   "x": 434,
+   "y": 543,
+   "w": 75,
+   "h": 112,
+   "group": "icons"
+  },
+  "card_yellow": {
+   "x": 513,
+   "y": 543,
+   "w": 73,
+   "h": 112,
+   "group": "icons"
+  },
+  "clipboard": {
+   "x": 352,
+   "y": 543,
+   "w": 78,
+   "h": 112,
+   "group": "icons"
+  },
+  "cone": {
+   "x": 602,
+   "y": 427,
+   "w": 87,
+   "h": 112,
+   "group": "icons"
+  },
+  "confetti": {
+   "x": 836,
+   "y": 882,
+   "w": 112,
+   "h": 73,
+   "group": "icons"
+  },
+  "corner_flag": {
+   "x": 955,
+   "y": 543,
+   "w": 61,
+   "h": 112,
+   "group": "icons"
+  },
+  "corner_flag_red": {
+   "x": 4,
+   "y": 659,
+   "w": 60,
+   "h": 112,
+   "group": "icons"
+  },
+  "cup_bronze": {
+   "x": 784,
+   "y": 427,
+   "w": 86,
+   "h": 112,
+   "group": "icons"
+  },
+  "cup_gold": {
+   "x": 874,
+   "y": 427,
+   "w": 85,
+   "h": 112,
+   "group": "icons"
+  },
+  "cup_silver": {
+   "x": 4,
+   "y": 543,
+   "w": 85,
+   "h": 112,
+   "group": "icons"
+  },
+  "disc_cones": {
+   "x": 861,
+   "y": 308,
+   "w": 102,
+   "h": 112,
+   "group": "icons"
+  },
+  "fan_0": {
+   "x": 336,
+   "y": 970,
+   "w": 49,
+   "h": 72,
+   "group": "crowd"
+  },
+  "fan_1": {
+   "x": 866,
+   "y": 970,
+   "w": 48,
+   "h": 72,
+   "group": "crowd"
+  },
+  "fan_10": {
+   "x": 389,
+   "y": 970,
+   "w": 49,
+   "h": 72,
+   "group": "crowd"
+  },
+  "fan_11": {
+   "x": 442,
+   "y": 970,
+   "w": 49,
+   "h": 72,
+   "group": "crowd"
+  },
+  "fan_12": {
+   "x": 732,
+   "y": 1047,
+   "w": 47,
+   "h": 72,
+   "group": "crowd"
+  },
+  "fan_13": {
+   "x": 918,
+   "y": 970,
+   "w": 48,
+   "h": 72,
+   "group": "crowd"
+  },
+  "fan_14": {
+   "x": 970,
+   "y": 970,
+   "w": 48,
+   "h": 72,
+   "group": "crowd"
+  },
+  "fan_15": {
+   "x": 4,
+   "y": 1047,
+   "w": 48,
+   "h": 72,
+   "group": "crowd"
+  },
+  "fan_16": {
+   "x": 56,
+   "y": 1047,
+   "w": 48,
+   "h": 72,
+   "group": "crowd"
+  },
+  "fan_17": {
+   "x": 108,
+   "y": 1047,
+   "w": 48,
+   "h": 72,
+   "group": "crowd"
+  },
+  "fan_18": {
+   "x": 160,
+   "y": 1047,
+   "w": 48,
+   "h": 72,
+   "group": "crowd"
+  },
+  "fan_19": {
+   "x": 212,
+   "y": 1047,
+   "w": 48,
+   "h": 72,
+   "group": "crowd"
+  },
+  "fan_2": {
+   "x": 495,
+   "y": 970,
+   "w": 49,
+   "h": 72,
+   "group": "crowd"
+  },
+  "fan_20": {
+   "x": 548,
+   "y": 970,
+   "w": 49,
+   "h": 72,
+   "group": "crowd"
+  },
+  "fan_21": {
+   "x": 264,
+   "y": 1047,
+   "w": 48,
+   "h": 72,
+   "group": "crowd"
+  },
+  "fan_22": {
+   "x": 316,
+   "y": 1047,
+   "w": 48,
+   "h": 72,
+   "group": "crowd"
+  },
+  "fan_23": {
+   "x": 368,
+   "y": 1047,
+   "w": 48,
+   "h": 72,
+   "group": "crowd"
+  },
+  "fan_24": {
+   "x": 601,
+   "y": 970,
+   "w": 49,
+   "h": 72,
+   "group": "crowd"
+  },
+  "fan_25": {
+   "x": 654,
+   "y": 970,
+   "w": 49,
+   "h": 72,
+   "group": "crowd"
+  },
+  "fan_26": {
+   "x": 420,
+   "y": 1047,
+   "w": 48,
+   "h": 72,
+   "group": "crowd"
+  },
+  "fan_27": {
+   "x": 472,
+   "y": 1047,
+   "w": 48,
+   "h": 72,
+   "group": "crowd"
+  },
+  "fan_3": {
+   "x": 707,
+   "y": 970,
+   "w": 49,
+   "h": 72,
+   "group": "crowd"
+  },
+  "fan_4": {
+   "x": 524,
+   "y": 1047,
+   "w": 48,
+   "h": 72,
+   "group": "crowd"
+  },
+  "fan_5": {
+   "x": 576,
+   "y": 1047,
+   "w": 48,
+   "h": 72,
+   "group": "crowd"
+  },
+  "fan_6": {
+   "x": 760,
+   "y": 970,
+   "w": 49,
+   "h": 72,
+   "group": "crowd"
+  },
+  "fan_7": {
+   "x": 628,
+   "y": 1047,
+   "w": 48,
+   "h": 72,
+   "group": "crowd"
+  },
+  "fan_8": {
+   "x": 680,
+   "y": 1047,
+   "w": 48,
+   "h": 72,
+   "group": "crowd"
+  },
+  "fan_9": {
+   "x": 813,
+   "y": 970,
+   "w": 49,
+   "h": 72,
+   "group": "crowd"
+  },
+  "fan_flag_0": {
+   "x": 320,
+   "y": 882,
+   "w": 96,
+   "h": 79,
+   "group": "flags"
+  },
+  "fan_flag_1": {
+   "x": 736,
+   "y": 882,
+   "w": 96,
+   "h": 74,
+   "group": "flags"
+  },
+  "fan_flag_2": {
+   "x": 420,
+   "y": 882,
+   "w": 96,
+   "h": 77,
+   "group": "flags"
+  },
+  "fan_flag_3": {
+   "x": 592,
+   "y": 775,
+   "w": 94,
+   "h": 86,
+   "group": "flags"
+  },
+  "fan_flag_4": {
+   "x": 492,
+   "y": 775,
+   "w": 96,
+   "h": 86,
+   "group": "flags"
+  },
+  "fan_flag_5": {
+   "x": 120,
+   "y": 882,
+   "w": 96,
+   "h": 82,
+   "group": "flags"
+  },
+  "fan_flag_6": {
+   "x": 220,
+   "y": 882,
+   "w": 96,
+   "h": 80,
+   "group": "flags"
+  },
+  "fan_flag_7": {
+   "x": 636,
+   "y": 882,
+   "w": 96,
+   "h": 76,
+   "group": "flags"
+  },
+  "fan_flag_8": {
+   "x": 236,
+   "y": 970,
+   "w": 96,
+   "h": 72,
+   "group": "flags"
+  },
+  "firework_gold": {
+   "x": 192,
+   "y": 659,
+   "w": 46,
+   "h": 112,
+   "group": "icons"
+  },
+  "firework_red": {
+   "x": 242,
+   "y": 659,
+   "w": 45,
+   "h": 112,
+   "group": "icons"
+  },
+  "flag_linesman": {
+   "x": 106,
+   "y": 427,
+   "w": 98,
+   "h": 112,
+   "group": "icons"
+  },
+  "gloves": {
+   "x": 520,
+   "y": 882,
+   "w": 112,
+   "h": 76,
+   "group": "icons"
+  },
+  "goal_frame": {
+   "x": 4,
+   "y": 970,
+   "w": 112,
+   "h": 73,
+   "group": "icons"
+  },
+  "golden_ball": {
+   "x": 742,
+   "y": 543,
+   "w": 70,
+   "h": 112,
+   "group": "icons"
+  },
+  "golden_boot": {
+   "x": 292,
+   "y": 775,
+   "w": 112,
+   "h": 98,
+   "group": "icons"
+  },
+  "grass": {
+   "x": 309,
+   "y": 4,
+   "w": 192,
+   "h": 192,
+   "group": "tiles"
+  },
+  "hurdle": {
+   "x": 120,
+   "y": 970,
+   "w": 112,
+   "h": 72,
+   "group": "icons"
+  },
+  "jersey": {
+   "x": 208,
+   "y": 427,
+   "w": 95,
+   "h": 112,
+   "group": "icons"
+  },
+  "ladder": {
+   "x": 182,
+   "y": 543,
+   "w": 83,
+   "h": 112,
+   "group": "icons"
+  },
+  "laurel_gold": {
+   "x": 636,
+   "y": 308,
+   "w": 109,
+   "h": 112,
+   "group": "icons"
+  },
+  "light_panel": {
+   "x": 177,
+   "y": 4,
+   "w": 128,
+   "h": 300,
+   "group": "stadium"
+  },
+  "light_tower": {
+   "x": 4,
+   "y": 4,
+   "w": 169,
+   "h": 300,
+   "group": "stadium"
+  },
+  "mannequin": {
+   "x": 68,
+   "y": 659,
+   "w": 58,
+   "h": 112,
+   "group": "icons"
+  },
+  "medal_gold": {
+   "x": 886,
+   "y": 543,
+   "w": 65,
+   "h": 112,
+   "group": "icons"
+  },
+  "medal_silver": {
+   "x": 816,
+   "y": 543,
+   "w": 66,
+   "h": 112,
+   "group": "icons"
+  },
+  "medkit": {
+   "x": 176,
+   "y": 308,
+   "w": 112,
+   "h": 112,
+   "group": "icons"
+  },
+  "megaphone": {
+   "x": 292,
+   "y": 308,
+   "w": 111,
+   "h": 112,
+   "group": "icons"
+  },
+  "merch_blue": {
+   "x": 674,
+   "y": 4,
+   "w": 163,
+   "h": 168,
+   "group": "scenes"
+  },
+  "merch_cart": {
+   "x": 841,
+   "y": 4,
+   "w": 147,
+   "h": 168,
+   "group": "scenes"
+  },
+  "merch_jerseys": {
+   "x": 4,
+   "y": 775,
+   "w": 168,
+   "h": 103,
+   "group": "scenes"
+  },
+  "merch_red": {
+   "x": 505,
+   "y": 4,
+   "w": 165,
+   "h": 168,
+   "group": "scenes"
+  },
+  "mini_goal": {
+   "x": 783,
+   "y": 1047,
+   "w": 112,
+   "h": 59,
+   "group": "icons"
+  },
+  "pennant": {
+   "x": 93,
+   "y": 543,
+   "w": 85,
+   "h": 112,
+   "group": "icons"
+  },
+  "podium": {
+   "x": 690,
+   "y": 775,
+   "w": 168,
+   "h": 85,
+   "group": "scenes"
+  },
+  "popper": {
+   "x": 406,
+   "y": 427,
+   "w": 94,
+   "h": 112,
+   "group": "icons"
+  },
+  "press_badge": {
+   "x": 269,
+   "y": 543,
+   "w": 79,
+   "h": 112,
+   "group": "icons"
+  },
+  "pump": {
+   "x": 590,
+   "y": 543,
+   "w": 73,
+   "h": 112,
+   "group": "icons"
+  },
+  "ring": {
+   "x": 749,
+   "y": 308,
+   "w": 108,
+   "h": 112,
+   "group": "icons"
+  },
+  "scarf_0": {
+   "x": 204,
+   "y": 1123,
+   "w": 96,
+   "h": 35,
+   "group": "flags"
+  },
+  "scarf_1": {
+   "x": 4,
+   "y": 1123,
+   "w": 96,
+   "h": 37,
+   "group": "flags"
+  },
+  "scarf_2": {
+   "x": 304,
+   "y": 1123,
+   "w": 96,
+   "h": 34,
+   "group": "flags"
+  },
+  "scarf_3": {
+   "x": 104,
+   "y": 1123,
+   "w": 96,
+   "h": 36,
+   "group": "flags"
+  },
+  "scarf_4": {
+   "x": 404,
+   "y": 1123,
+   "w": 96,
+   "h": 32,
+   "group": "flags"
+  },
+  "stopwatch": {
+   "x": 307,
+   "y": 427,
+   "w": 95,
+   "h": 112,
+   "group": "icons"
+  },
+  "sub_board": {
+   "x": 504,
+   "y": 427,
+   "w": 94,
+   "h": 112,
+   "group": "icons"
+  },
+  "tactics_board": {
+   "x": 408,
+   "y": 775,
+   "w": 80,
+   "h": 95,
+   "group": "icons"
+  },
+  "trophy_star": {
+   "x": 130,
+   "y": 659,
+   "w": 58,
+   "h": 112,
+   "group": "icons"
+  },
+  "tunnel_home": {
+   "x": 4,
+   "y": 308,
+   "w": 168,
+   "h": 115,
+   "group": "scenes"
+  },
+  "tunnel_players": {
+   "x": 695,
+   "y": 659,
+   "w": 168,
+   "h": 105,
+   "group": "scenes"
+  },
+  "tv_camera": {
+   "x": 407,
+   "y": 308,
+   "w": 111,
+   "h": 112,
+   "group": "icons"
+  },
+  "tv_mic": {
+   "x": 693,
+   "y": 427,
+   "w": 87,
+   "h": 112,
+   "group": "icons"
+  },
+  "whistle": {
+   "x": 291,
+   "y": 659,
+   "w": 112,
+   "h": 111,
+   "group": "icons"
+  }
+ },
+ "source": "Football Championship Megapack - Top-Down Pixel Art Sports Collection"
+}

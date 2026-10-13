@@ -1,4 +1,5 @@
 import { CLUB_BY_ID, LEAGUES } from '../../core/data.js';
+import { awardArt } from '../spriteMap.js';
 import { ovr } from '../../core/player.js';
 import { crestSVG, icon } from '../art.js';
 import { esc } from '../dom.js';
@@ -9,7 +10,7 @@ export function careerScreen(app) {
   const se = c.season;
   const avg = se.apps ? (se.ratingSum / se.apps).toFixed(1).replace('.', ',') : '–';
   const tot = c.totals;
-  const awards = c.awards.slice().reverse().map((a) => `<div class="award"><span class="tro">${icon(a.icon || 'trophy', 'tro')}</span><div class="grow"><b>${esc(a.title)}</b><div class="muted small">Sezon ${a.season}</div></div></div>`).join('');
+  const awards = c.awards.slice().reverse().map((a) => `<div class="award">${awardArt(a.icon || 'trophy')}<div class="grow"><b>${esc(a.title)}</b><div class="muted small">Sezon ${a.season}</div></div></div>`).join('');
   const history = c.history.slice().reverse().map((h) => `<tr>
       <td class="pos">S${h.season}</td>
       <td><div class="team-cell">${crestSVG(CLUB_BY_ID[h.clubId], 'crest sm')}<span>${CLUB_BY_ID[h.clubId].short}</span></div></td>

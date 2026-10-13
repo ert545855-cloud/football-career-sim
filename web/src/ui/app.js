@@ -27,6 +27,8 @@ import { mentorScreen } from './screens/mentor.js';
 import { unreadCount } from '../core/chirp/index.js';
 import { MENTOR_TRAITS, MentorManager } from '../core/mentor/index.js';
 import { legacyShiftSheet, requestsSheet, selectionSheet } from './mentorView.js';
+import { ACTION_SPRITES, ROLE_SPRITES, TRAINING_SPRITES, awardArt, eventArt } from './spriteMap.js';
+import { sprite, spriteOr } from '../assets/sprites.js';
 
 const TABS = [
   { id: 'home', screen: 'hub', label: 'Ana Sayfa', icon: 'home' },
@@ -172,7 +174,7 @@ export function createApp(rootEl) {
       const act = ACTIONS.find((a) => a.id === id);
       await sheet({
         center: true,
-        html: `<div class="event-art">${icon(act.icon)}</div><h3 class="center">${esc(r.title)}</h3><p class="lead center">${esc(r.text)}</p>${changeChips(r.changes)}<button class="btn primary block" style="margin-top:16px" data-close>Tamam</button>`,
+        html: `${eventArt(act.icon, { spriteName: ACTION_SPRITES[id] })}<h3 class="center">${esc(r.title)}</h3><p class="lead center">${esc(r.text)}</p>${changeChips(r.changes)}<button class="btn primary block" style="margin-top:16px" data-close>Tamam</button>`,
       });
       this.go('hub');
     },
@@ -190,7 +192,7 @@ export function createApp(rootEl) {
         const setup = trainingSetup(s, k);
         const mult = growthMult(s.player, k);
         return `<button class="btn block" style="justify-content:space-between;min-height:62px;text-align:left" data-close="${k}">
-          <span class="row" style="gap:12px"><span style="width:12px;height:12px;border-radius:50%;background:${STATS[k].color};box-shadow:0 0 10px ${STATS[k].color}"></span>
+          <span class="row" style="gap:12px"><span class="train-art" style="--c:${STATS[k].color}">${spriteOr(TRAINING_SPRITES[k], `<span style="width:12px;height:12px;border-radius:50%;background:${STATS[k].color};box-shadow:0 0 10px ${STATS[k].color}"></span>`, { size: 34 })}</span>
           <span><b>${STATS[k].name}</b> <span class="muted">${s.player.stats[k]}</span><br><span class="muted small">${TRAINING[k].title} · yetenek %${Math.round(setup.skill * 100)}</span></span></span>
           <span class="chip ${mult > 1 ? 'accent' : ''}">×${mult}</span></button>`;
       }).join('');
@@ -226,7 +228,7 @@ export function createApp(rootEl) {
           if (res.gained) countUp(node.querySelector('[data-val]'), res.after, { from: res.before, duration: 900 });
         },
         html: `
-          <div class="event-art">${icon(res.success ? 'star' : 'dumbbell')}</div>
+          ${eventArt(res.success ? 'star' : 'dumbbell', { spriteName: TRAINING_SPRITES[stat] })}
           <h3 class="center">${res.success ? 'Harika antrenman!' : 'Zorlu bir gün'}</h3>
           <p class="lead center">${res.gained ? `<b style="color:var(--accent)">${res.name} +${res.gained}!</b> Çalışmanın karşılığını aldın.` : `${res.name} gelişiyor. Bir sonraki puana az kaldı.`}</p>
           <div class="card">
@@ -259,6 +261,8 @@ export function createApp(rootEl) {
       const away = CLUB_BY_ID[match.awayId];
       const myR = clubRating(s.world, match.myId);
       const oppR = clubRating(s.world, match.oppId);
+      const roleKey = match.role === 'out' ? (match.reason === 'suspended' ? 'suspended' : 'injured') : match.role;
+      const roleArt = spriteOr(ROLE_SPRITES[roleKey], '', { h: roleKey === 'starter' ? 92 : 70, w: 150 });
       let decision;
       if (match.role === 'starter') decision = `<span class="chip accent">${icon('check')} İlk 11'desin</span><p class="lead" style="margin-top:10px">Hoca: "Bugün sana güveniyorum. Fırsat geldiğinde değerlendir."</p>`;
       else if (match.role === 'out' && match.reason === 'suspended') decision = `<span class="chip bad">${icon('shield')} Cezalısın</span><p class="lead" style="margin-top:10px">PFDK cezası nedeniyle bu maçta forma giyemezsin.</p>`;
@@ -279,6 +283,7 @@ export function createApp(rootEl) {
             <div class="bar"><i style="--c:var(--bad)" data-w="${oppR}"></i></div>
           </div>
           ${match.big ? `<div class="big-banner ${match.big.cool ? 'cool' : ''}" style="margin-top:12px">${icon(match.big.kind === 'derby' ? 'fire' : match.big.kind === 'final' ? 'trophy' : 'star', 'ico sm')}<b>${esc(match.big.title)}</b><span>Heyecan %${Math.round(match.big.nerves * 100)}${match.big.cool ? ' · Soğukkanlı mentor' : ''}</span></div>` : ''}
+          ${roleArt ? `<div class="prematch-art">${roleArt}</div>` : ''}
           <div style="margin-top:14px">${decision}</div>
           <div class="chips"><span class="chip">${icon('bolt')} Enerji ${s.player.energy}</span><span class="chip">${icon('smile')} Moral ${s.player.morale}</span></div>
           <button class="btn primary lg block" style="margin-top:16px" data-close="go">${icon('whistle')} Maça Çık</button>
@@ -373,7 +378,7 @@ export function createApp(rootEl) {
       const choice = await sheet({
         center: true,
         dismissable: false,
-        html: `<div class="event-art">${icon(ev.icon)}</div><h3 class="center">${esc(ev.title)}</h3><p class="lead center">${esc(evp.text)}</p><div class="stack">${ev.choices.map((c, i) => `<button class="btn block ${i === 0 ? 'primary' : ''}" data-close="${i}">${esc(c.label)}</button>`).join('')}</div>`,
+        html: `${eventArt(ev.icon)}<h3 class="center">${esc(ev.title)}</h3><p class="lead center">${esc(evp.text)}</p><div class="stack">${ev.choices.map((c, i) => `<button class="btn block ${i === 0 ? 'primary' : ''}" data-close="${i}">${esc(c.label)}</button>`).join('')}</div>`,
       });
       const out = chooseEvent(s, Number(choice) || 0);
       this.save();
@@ -423,7 +428,7 @@ export function createApp(rootEl) {
     async seasonFlow(r) {
       const s = this.state;
       const lg = LEAGUES[r.leagueId];
-      const champs = Object.entries(r.champions).map(([lid, cid]) => `<div class="li">${crestSVG(CLUB_BY_ID[cid], 'crest sm')}<div class="grow"><b>${esc(CLUB_BY_ID[cid].name)}</b><div class="muted small">${LEAGUES[lid].name} şampiyonu</div></div>${icon('trophy', 'ico')}</div>`).join('');
+      const champs = Object.entries(r.champions).map(([lid, cid]) => `<div class="li">${crestSVG(CLUB_BY_ID[cid], 'crest sm')}<div class="grow"><b>${esc(CLUB_BY_ID[cid].name)}</b><div class="muted small">${LEAGUES[lid].name} şampiyonu</div></div>${spriteOr('cup_gold', icon('trophy', 'ico'), { size: 30 })}</div>`).join('');
       const ageCh = Object.entries(r.ageChanges).map(([k, v]) => `<span class="chip ${v > 0 ? 'good' : 'bad'}">${STATS[k].name} ${v > 0 ? '+' : ''}${v}</span>`).join('');
       if (r.awards.length) {
         confetti();
@@ -432,6 +437,7 @@ export function createApp(rootEl) {
       const choice = await sheet({
         dismissable: false,
         html: `
+          ${r.awards.length ? `<div class="celebrate">${sprite('firework_gold', { h: 64 })}${sprite(r.awards.some((a) => a.icon === 'trophy') ? 'podium' : 'laurel_gold', { h: 64, w: 130 })}${sprite('firework_red', { h: 64 })}</div>` : ''}
           <div class="center"><span class="chip accent">SEZON ${r.season} BİTTİ</span></div>
           <h3 class="center" style="margin-top:10px">${lg.name}: ${r.position}. sıra</h3>
           <div class="kpis" style="margin-top:14px">
@@ -440,7 +446,7 @@ export function createApp(rootEl) {
             <div class="kpi"><b>${r.record.assists}</b><span>Asist</span></div>
             <div class="kpi"><b>${r.record.avg ? r.record.avg.toFixed(1) : '–'}</b><span>Not</span></div>
           </div>
-          ${r.awards.length ? `<div class="h-sec">Ödüllerin</div>${r.awards.map((a) => `<div class="award"><span class="tro">${icon(a.icon, 'tro')}</span><b>${esc(a.title)}</b></div>`).join('')}` : ''}
+          ${r.awards.length ? `<div class="h-sec">Ödüllerin</div>${r.awards.map((a) => `<div class="award">${awardArt(a.icon)}<b>${esc(a.title)}</b></div>`).join('')}` : ''}
           ${r.mentor?.farewell ? `<div class="h-sec">Mentorun</div><div class="card"><p class="small" style="margin:0 0 8px">${esc(r.mentor.farewell.text)}</p><div class="chips"><span class="chip">İlişki ${r.mentor.farewell.relationship}</span>${r.mentor.farewell.influence ? `<span class="chip gold">Mentorun mirası: Nüfuz +${r.mentor.farewell.influence}</span>` : ''}</div></div>` : ''}
           ${r.influenceGain ? `<div class="chips" style="margin-top:8px"><span class="chip gold">${icon('flag', 'ico sm')} Kulüp Nüfuzu +${r.influenceGain}</span></div>` : ''}
           <div class="h-sec">Şampiyonlar</div><div class="card list" style="padding:4px 12px">${champs}</div>
@@ -489,7 +495,7 @@ export function createApp(rootEl) {
           <div class="kpi"><b>${c.awards.length}</b><span>Ödül</span></div>
         </div>
         <div class="h-sec">Kupa dolabı</div>
-        ${c.awards.map((aw) => `<div class="award"><span class="tro">${icon(aw.icon, 'tro')}</span><div class="grow"><b>${esc(aw.title)}</b><div class="muted small">Sezon ${aw.season}</div></div></div>`).join('') || '<div class="card muted small">Kupa kazanamadın ama taraftarın kalbinde yerin var.</div>'}
+        ${c.awards.map((aw) => `<div class="award">${awardArt(aw.icon)}<div class="grow"><b>${esc(aw.title)}</b><div class="muted small">Sezon ${aw.season}</div></div></div>`).join('') || '<div class="card muted small">Kupa kazanamadın ama taraftarın kalbinde yerin var.</div>'}
         <div class="h-sec">Kariyer</div>
         <div class="card list">${c.history.map((h) => `<div class="li">${crestSVG(CLUB_BY_ID[h.clubId], 'crest sm')}<div class="grow"><b>${esc(CLUB_BY_ID[h.clubId].name)}</b><div class="muted small">Sezon ${h.season} · ${h.apps} maç · ${h.goals} gol · OVR ${h.ovr}</div></div></div>`).join('')}</div>
         <p class="center muted" style="margin-top:14px">Son OVR: ${ovr(s.player)} · Kasa: ${money(c.money)}</p>

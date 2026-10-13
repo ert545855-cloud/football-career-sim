@@ -7,6 +7,8 @@ import { runMiniGame } from '../../games/index.js';
 import { buzz, sfx } from '../../audio.js';
 import { crestSVG, icon } from '../art.js';
 import { confetti, el, esc, sleep } from '../dom.js';
+import { sprite } from '../../assets/sprites.js';
+import { FEED_SPRITES } from '../spriteMap.js';
 
 export function matchScreen(app, { match }) {
   const s = app.state;
@@ -76,7 +78,7 @@ export function matchScreen(app, { match }) {
         scoreEl.classList.add('score-pop');
       };
       const line = (minuteN, text, kind = '') => {
-        const n = el(`<div class="ln ${kind}"><span class="m">${minuteN}'</span><span class="tx"></span></div>`);
+        const n = el(`<div class="ln ${kind}"><span class="m">${minuteN}'</span><span class="ln-ic">${FEED_SPRITES[kind] ? sprite(FEED_SPRITES[kind], { size: 22 }) : ''}</span><span class="tx"></span></div>`);
         n.querySelector('.tx').textContent = (kind === 'goal-me' ? '⭐ ' : '') + text;
         feed.prepend(n);
         if (feed.children.length > 40) feed.lastElementChild.remove();
@@ -94,7 +96,7 @@ export function matchScreen(app, { match }) {
       };
 
       line(0, `Hakemin düdüğüyle maç başladı! ${home.name} - ${away.name}.`, 'whistle');
-      if (match.big) line(0, `${match.big.title}! Tribünler ayakta, atmosfer elektrik yüklü.`, 'tackle');
+      if (match.big) line(0, `${match.big.title}! Tribünler ayakta, atmosfer elektrik yüklü.`, 'big');
       sfx('whistle');
       if (match.role !== 'starter') {
         line(0, match.role === 'out' ? (match.reason === 'suspended' ? `${shortName} PFDK cezası nedeniyle bu maçta yok.` : `${shortName} sakatlığı nedeniyle bu maçta yok.`) : `${shortName} maça yedek kulübesinde başlıyor.`, '');
@@ -133,7 +135,7 @@ export function matchScreen(app, { match }) {
         if (item.kind === 'kickoff') return;
         if (item.kind === 'ht') { line(45, `İlk yarı sona erdi. ${scoreText()}`, 'whistle'); sfx('shortWhistle'); return; }
         if (item.kind === 'sub') {
-          line(item.minute, `Oyuncu değişikliği: ${shortName} oyuna giriyor!`, 'tackle');
+          line(item.minute, `Oyuncu değişikliği: ${shortName} oyuna giriyor!`, 'sub');
           roleEl.innerHTML = `${icon('user')} Oyundasın (${item.minute}')`;
           roleEl.className = 'chip accent';
           sfx('shortWhistle');

@@ -1,6 +1,7 @@
 // ŞUT — oyuncunun arkasından kaleye bakış. Kaydır: yön + güç. Kaleci tepki verir.
 import { createStage, Particles, BigText, drawBall, drawShadow, makeCrowd, drawCrowd, drawTimer, ease, clamp, lerp, gaussian, roundRect } from './engine.js';
 import { sfx, buzz } from '../audio.js';
+import { FAN_SPRITES, FLAG_SPRITES, drawSprite, spriteSize } from '../assets/sprites.js';
 
 const persp = (p) => 1 - Math.pow(1 - clamp(p, 0, 1), 1.5);
 
@@ -27,6 +28,8 @@ export function playShot(host, opts) {
     const big = new BigText();
     let L = null;
     let crowd = null;
+    let fans = [];
+    let flags = [];
     const S = {
       phase: 'aim', t: 0, drag: null, shot: null, outcome: null, afterT: 0, excite: 0,
       k: { u: 0, from: 0, to: 0, angle: 0, lift: 0, idle: Math.random() * 6 },
@@ -42,6 +45,19 @@ export function playShot(host, opts) {
       const r0 = W * (type === 'edge' ? 0.05 : type === 'penalty' ? 0.04 : 0.045);
       L = { W, H, hy, gl, gw, gh, cx: W / 2, by, bx: W / 2 + ballOffset * W, r0, r1: gw * 0.034, boxY: H * 0.83 };
       crowd = makeCrowd(W, 0, hy - 14, [myKit[0], myKit[1], oppKit[0], '#e2e8f0', '#94a3b8', '#fde68a']);
+      // Ön sıra piksel taraftarlar (atlas) — gol olunca zıplarlar
+      const fanH = Math.max(22, Math.min(34, hy * 0.27));
+      const fanW = spriteSize(FAN_SPRITES[0] || '', { h: fanH }).w || fanH * 0.65;
+      fans = [];
+      for (let x = fanW * 0.4, i = 0; x < W; x += fanW * 0.82, i++) {
+        fans.push({ name: FAN_SPRITES[Math.floor(Math.random() * FAN_SPRITES.length)], x: x + (Math.random() - 0.5) * 4, ph: Math.random() * 6.28, flip: Math.random() < 0.5, h: fanH * (0.92 + Math.random() * 0.12) });
+      }
+      // Taraftarların tuttuğu birkaç bayrak / atkı
+      flags = Array.from({ length: Math.max(2, Math.round(W / 130)) }, (_, k) => ({
+        name: FLAG_SPRITES[Math.floor(Math.random() * FLAG_SPRITES.length)],
+        x: ((k + 0.5) / Math.max(2, Math.round(W / 130))) * W + (Math.random() - 0.5) * 30,
+        ph: Math.random() * 6.28,
+      }));
       S.ball = { x: L.bx, y: L.by, r: L.r0, alt: 0 };
       if (type === 'edge') {
         const fd = 0.42;
@@ -266,7 +282,20 @@ export function playShot(host, opts) {
         sky.addColorStop(1, '#16212c');
         ctx.fillStyle = sky;
         ctx.fillRect(0, 0, W, L.hy);
+        // Işık kuleleri (tribünün arkasında)
+        const towerH = L.hy * 0.9;
+        drawSprite(ctx, 'light_tower', W * 0.06, L.hy - 10, { h: towerH, anchor: 'bottom', alpha: 0.95 });
+        drawSprite(ctx, 'light_tower', W * 0.94, L.hy - 10, { h: towerH, anchor: 'bottom', alpha: 0.95, flip: true });
         drawCrowd(ctx, crowd, t, S.excite);
+        // Ön sıra taraftarlar + bayraklar
+        for (const f of flags) {
+          const lift = S.excite > 0.2 ? Math.abs(Math.sin(t * 7 + f.ph)) * 6 * S.excite : Math.sin(t * 2 + f.ph) * 1.5;
+          drawSprite(ctx, f.name, f.x, L.hy - 14 - L.hy * 0.24 - lift, { h: L.hy * 0.16, alpha: 0.95 });
+        }
+        for (const f of fans) {
+          const jump = S.excite > 0.05 ? Math.abs(Math.sin(t * 9 + f.ph)) * 7 * S.excite : Math.abs(Math.sin(t * 1.6 + f.ph)) * 0.8;
+          drawSprite(ctx, f.name, f.x, L.hy - 12 - jump, { h: f.h, anchor: 'bottom', flip: f.flip });
+        }
         for (const fx of [W * 0.08, W * 0.92]) {
           const g = ctx.createRadialGradient(fx, 0, 2, fx, 0, W * 0.5);
           g.addColorStop(0, 'rgba(255,255,240,.35)');
@@ -325,6 +354,10 @@ export function playShot(host, opts) {
         ctx.beginPath();
         ctx.ellipse(L.cx, H * 0.7 + 6, 4, 2, 0, 0, Math.PI * 2);
         ctx.fill();
+
+        // Köşe bayrakları (kale çizgisinin uçlarında, uzakta olduğu için küçük)
+        drawSprite(ctx, 'corner_flag', 10, L.gl + 2, { h: L.gh * 0.62, anchor: 'bottom' });
+        drawSprite(ctx, 'corner_flag', W - 10, L.gl + 2, { h: L.gh * 0.62, anchor: 'bottom', flip: true });
 
         const ballBehind = S.outcome === 'goal' && S.phase === 'after';
         drawNet(ctx, t);
