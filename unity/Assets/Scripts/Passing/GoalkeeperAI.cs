@@ -105,11 +105,11 @@ namespace FootballCareer.Passing
 
         // ─────────────────────────── API ───────────────────────────
 
-        /// <summary>Kodla kurulum için.</summary>
+        /// <summary>Kodla kurulum için (bodyTransform null ise mevcut gövde korunur).</summary>
         public void Setup(GoalFrame protectedGoal, Transform bodyTransform, float keeperSkill)
         {
             goal = protectedGoal;
-            body = bodyTransform;
+            if (bodyTransform != null) body = bodyTransform;
             skill = Mathf.Clamp01(keeperSkill);
             if (body != null)
             {

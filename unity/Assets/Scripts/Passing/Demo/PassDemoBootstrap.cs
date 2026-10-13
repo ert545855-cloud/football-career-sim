@@ -1,434 +1,166 @@
-using System.Collections.Generic;
+using FootballCareer.Passing.Levels;
 using UnityEngine;
 using UnityEngine.AI;
-using UnityEngine.Rendering;
 
 namespace FootballCareer.Passing.Demo
 {
     /// <summary>
     /// TEK TIKLA DENEME SAHNESİ — boş bir sahnede boş bir GameObject'e ekleyip Play'e basın.
     ///
-    /// Çalışma anında kurar: saha + çizgiler, NavMesh (runtime bake), top, pasör + 3 arkadaş (mavi),
-    /// 5 rakip (kırmızı, NavMeshAgent + EnemyAI), kamera, pas çizgisi ve PasManager.
-    /// Ekranda yönerge, baskı çubuğu ve sonuç yazısı gösterir (OnGUI — prefab/Canvas gerektirmez).
+    /// Çalışma anında kurar: saha, kale, NavMesh, top, kamera, pas çizgisi, PasManager ve LevelRunner.
+    /// Menüden bölüm seçilir (yıldızlar kaydedilir, bölümler sırayla açılır) ya da serbest oynanır.
+    /// Arayüz OnGUI ile çizilir (prefab/Canvas gerektirmez).
     ///
     /// Gerçek oyunda bu dosyaya ihtiyaç yok: aynı bileşenleri sahnenizde Inspector'dan bağlayın (README).
     /// </summary>
     [DisallowMultipleComponent]
     public class PassDemoBootstrap : MonoBehaviour
     {
-        [Header("Saha")]
         [SerializeField] private Vector2 pitchSize = new Vector2(68f, 105f);
-
-        [Header("Diziliş (yerde, y = 0)")]
-        [SerializeField] private Vector3 passerPosition = new Vector3(0f, 0f, 8f);
-        [SerializeField] private Vector3[] teammatePositions =
-        {
-            new Vector3(-15f, 0f, 22f),
-            new Vector3(14f, 0f, 24f),
-            new Vector3(-2f, 0f, 34f),
-        };
-        [SerializeField] private Vector3[] enemyPositions =
-        {
-            new Vector3(-4f, 0f, 14f),
-            new Vector3(6f, 0f, 17f),
-            new Vector3(-9f, 0f, 28f),
-            new Vector3(6f, 0f, 31f),
-            new Vector3(1f, 0f, 42f),
-        };
-        [Tooltip("Rakip kalecinin yeteneği (0–1).")]
-        [SerializeField, Range(0f, 1f)] private float keeperSkill = 0.6f;
-
-        [Header("Görsel (boşsa otomatik)")]
         [Tooltip("Pas çizgisi ve iz için malzeme. Boşsa Sprites/Default bulunur.")]
         [SerializeField] private Material lineMaterial;
 
-        private static readonly Color Grass = new Color(0.20f, 0.55f, 0.24f);
-        private static readonly Color GrassDark = new Color(0.15f, 0.42f, 0.18f);
-        private static readonly Color Blue = new Color(0.20f, 0.45f, 0.95f);
-        private static readonly Color Red = new Color(0.85f, 0.20f, 0.20f);
-
+        private PitchBuilder builder;
         private PasManager manager;
+        private PassCameraController rig;
+        private BallController ball;
+        private LevelRunner runner;
         private NavMeshDataInstance navMesh;
+
         private string banner;
         private Color bannerColor;
         private float bannerUntil;
-        private int attempts, completed, shots, goals;
-        private GUIStyle boxStyle, bannerStyle, buttonStyle;
+        private GUIStyle boxStyle, titleStyle, bannerStyle, buttonStyle, smallStyle;
+        private Texture2D starOn, starOff;
 
         private void Awake()
         {
             transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity); // saha dünya merkezinde kurulur
-            if (lineMaterial == null) lineMaterial = CreateLineMaterial();
+            builder = new PitchBuilder(transform, lineMaterial, pitchSize);
+            builder.BuildPitch();
+            navMesh = builder.BakeNavMesh(); // oyunculardan ÖNCE: NavMeshAgent eklenirken NavMesh hazır olmalı
+            PitchBuilder.EnsureLight();
 
-            BuildPitch();
-            BakeNavMesh(); // oyunculardan ÖNCE: NavMeshAgent eklenirken NavMesh hazır olmalı
-            EnsureLight();
-
-            BallController ball = CreateBall();
-            Transform passer = CreatePlayer("Pasör", passerPosition, Quaternion.identity, Blue, false).transform;
-
-            var receivers = new List<PassReceiver>();
-            receivers.Add(passer.GetComponent<PassReceiver>());
-            for (int i = 0; i < teammatePositions.Length; i++)
-            {
-                Quaternion face = Quaternion.LookRotation(Flat(passerPosition - teammatePositions[i]));
-                receivers.Add(CreatePlayer("Arkadaş " + (i + 1), teammatePositions[i], face, Blue, false).GetComponent<PassReceiver>());
-            }
-            var enemies = new List<EnemyAI>();
-            for (int i = 0; i < enemyPositions.Length; i++)
-            {
-                Quaternion face = Quaternion.LookRotation(Flat(passerPosition - enemyPositions[i]));
-                enemies.Add(CreatePlayer("Rakip " + (i + 1), enemyPositions[i], face, Red, true).GetComponent<EnemyAI>());
-            }
-
-            Camera cam = SetupCamera();
-            PassCameraController rig = cam.GetComponent<PassCameraController>();
+            ball = builder.CreateBall();
+            GoalFrame goal = builder.BuildGoal();
+            Camera cam = PitchBuilder.SetupCamera();
+            rig = cam.GetComponent<PassCameraController>();
             if (rig == null) rig = cam.gameObject.AddComponent<PassCameraController>();
-
-            GoalFrame goal = BuildGoal();
-            GoalkeeperAI keeper = CreateKeeper(goal);
+            rig.SetDefault(ball.transform);
+            rig.Snap();
 
             manager = gameObject.AddComponent<PasManager>();
-            manager.Setup(ball, passer, cam, rig, CreatePassLine(),
-                new Bounds(Vector3.zero, new Vector3(pitchSize.x, 20f, pitchSize.y)));
-            manager.SetGoal(goal, keeper);
-            for (int i = 0; i < receivers.Count; i++) manager.AddTeammate(receivers[i]);
-            for (int i = 0; i < enemies.Count; i++) manager.AddEnemy(enemies[i]);
+            manager.Setup(ball, null, cam, rig, builder.CreatePassLine(), builder.PitchBounds);
+            manager.SetGoal(goal, null);
             manager.PassFinished += OnPassFinished;
+            manager.enabled = false; // bölüm seçilene kadar
+
+            runner = gameObject.AddComponent<LevelRunner>();
+            runner.Setup(manager, builder);
+            runner.Changed += OnRunnerChanged;
+
+            starOn = MakeStar(new Color(1f, 0.82f, 0.2f));
+            starOff = MakeStar(new Color(1f, 1f, 1f, 0.22f));
         }
 
         private void OnDestroy()
         {
             if (manager != null) manager.PassFinished -= OnPassFinished;
+            if (runner != null) runner.Changed -= OnRunnerChanged;
             if (navMesh.valid) navMesh.Remove();
+        }
+
+        /// <summary>Menüye dönülünce kamera sahayı genel plandan göstersin.</summary>
+        private void OnRunnerChanged(LevelRunner r)
+        {
+            if (r.State == LevelState.None && rig != null && ball != null)
+            {
+                ball.AttachTo(null, Vector3.zero);
+                ball.transform.position = new Vector3(0f, ball.Radius, 0f);
+                rig.SetDefault(ball.transform);
+            }
         }
 
         private void OnPassFinished(PassResult r)
         {
-            if (r.isShot)
-            {
-                shots++;
-                if (r.outcome == PassOutcome.Goal) goals++;
-            }
-            else
-            {
-                attempts++;
-                if (r.Success) completed++;
-            }
             banner = r.Describe();
             bannerColor = r.Success ? new Color(0.45f, 1f, 0.5f) : new Color(1f, 0.45f, 0.4f);
             bannerUntil = Time.unscaledTime + 1.6f;
         }
 
-        // ─────────────────────────── Sahne kurulumu ───────────────────────────
-
-        private void BuildPitch()
-        {
-            // Saha dışı (koyu çim) + saha
-            // (Collider'sız: NavMesh kutu kaynağından üretilir, top da yerle fiziksel temas kullanmaz)
-            Primitive(PrimitiveType.Plane, "Çevre", transform, new Vector3(0f, -0.01f, 0f),
-                new Vector3((pitchSize.x + 16f) / 10f, 1f, (pitchSize.y + 16f) / 10f), GrassDark, true);
-            Primitive(PrimitiveType.Plane, "Saha", transform, Vector3.zero,
-                new Vector3(pitchSize.x / 10f, 1f, pitchSize.y / 10f), Grass, true);
-
-            // Çizgiler: kenar, kale çizgileri, orta saha
-            float hx = pitchSize.x / 2f, hz = pitchSize.y / 2f, w = 0.12f;
-            Line(new Vector3(-hx, 0f, 0f), new Vector3(w, 0.02f, pitchSize.y));
-            Line(new Vector3(hx, 0f, 0f), new Vector3(w, 0.02f, pitchSize.y));
-            Line(new Vector3(0f, 0f, -hz), new Vector3(pitchSize.x, 0.02f, w));
-            Line(new Vector3(0f, 0f, hz), new Vector3(pitchSize.x, 0.02f, w));
-            Line(Vector3.zero, new Vector3(pitchSize.x, 0.02f, w));
-
-            // Hücum edilen kalenin ceza sahası (40.32 × 16.5) ve kale alanı (18.32 × 5.5)
-            BoxLines(hz, 40.32f, 16.5f, w);
-            BoxLines(hz, 18.32f, 5.5f, w);
-
-            // Orta yuvarlak
-            var circle = new GameObject("Orta Yuvarlak").AddComponent<LineRenderer>();
-            circle.transform.SetParent(transform, false);
-            circle.sharedMaterial = lineMaterial;
-            circle.useWorldSpace = true;
-            circle.loop = true;
-            circle.widthMultiplier = w;
-            circle.alignment = LineAlignment.TransformZ;
-            circle.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
-            circle.shadowCastingMode = ShadowCastingMode.Off;
-            const int seg = 64;
-            circle.positionCount = seg;
-            for (int i = 0; i < seg; i++)
-            {
-                float a = i * Mathf.PI * 2f / seg;
-                circle.SetPosition(i, new Vector3(Mathf.Cos(a) * 9.15f, 0.015f, Mathf.Sin(a) * 9.15f));
-            }
-        }
-
-        /// <summary>Kale çizgisine (z = goalZ) dayalı dikdörtgen saha çizgileri.</summary>
-        private void BoxLines(float goalZ, float width, float depth, float w)
-        {
-            float hw = width / 2f, zFront = goalZ - depth;
-            Line(new Vector3(0f, 0f, zFront), new Vector3(width, 0.02f, w));
-            Line(new Vector3(-hw, 0f, goalZ - depth / 2f), new Vector3(w, 0.02f, depth));
-            Line(new Vector3(hw, 0f, goalZ - depth / 2f), new Vector3(w, 0.02f, depth));
-        }
-
-        /// <summary>
-        /// Kale: GoalFrame (analitik direk/üst direk) + görsel direkler ve ağ çizgileri.
-        /// Kale çizgisinin ortasında, sahaya (−z) bakar.
-        /// </summary>
-        private GoalFrame BuildGoal()
-        {
-            const float gw = 7.32f, gh = 2.44f, r = 0.06f, depth = 2f;
-            var root = new GameObject("Kale");
-            root.transform.SetParent(transform, false);
-            root.transform.SetPositionAndRotation(new Vector3(0f, 0f, pitchSize.y / 2f), Quaternion.LookRotation(Vector3.back));
-            GoalFrame goal = root.AddComponent<GoalFrame>();
-            goal.Configure(gw, gh, true);
-
-            // Direkler (Cylinder: yükseklik 2 birim → y ölçeği h/2) ve üst direk; yerel x = kalenin yanı
-            float px = gw / 2f + r;
-            Primitive(PrimitiveType.Cylinder, "Direk", root.transform, new Vector3(-px, gh / 2f + r / 2f, 0f), new Vector3(2 * r, (gh + r) / 2f, 2 * r), Color.white, true);
-            Primitive(PrimitiveType.Cylinder, "Direk", root.transform, new Vector3(px, gh / 2f + r / 2f, 0f), new Vector3(2 * r, (gh + r) / 2f, 2 * r), Color.white, true);
-            GameObject bar = Primitive(PrimitiveType.Cylinder, "Üst Direk", root.transform, new Vector3(0f, gh + r, 0f), new Vector3(2 * r, px + r, 2 * r), Color.white, true);
-            bar.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
-
-            // Ağ: arka yüz, tavan ve yanlar (zikzak çizgilerle tek LineRenderer'lar)
-            var pts = new List<Vector3>();
-            for (float x = -px; x <= px + 1e-3f; x += 0.5f) { pts.Add(new Vector3(x, 0f, -depth)); pts.Add(new Vector3(x, gh, -depth)); pts.Add(new Vector3(x, gh, 0f)); pts.Add(new Vector3(x, gh, -depth)); }
-            NetLine(root.transform, pts);
-            pts.Clear();
-            for (float y = 0f; y <= gh + 1e-3f; y += 0.5f) { pts.Add(new Vector3(-px, y, 0f)); pts.Add(new Vector3(-px, y, -depth)); pts.Add(new Vector3(px, y, -depth)); pts.Add(new Vector3(px, y, 0f)); pts.Add(new Vector3(px, y, -depth)); pts.Add(new Vector3(-px, y, -depth)); }
-            NetLine(root.transform, pts);
-            return goal;
-        }
-
-        private void NetLine(Transform parent, List<Vector3> localPoints)
-        {
-            var lr = new GameObject("Ağ").AddComponent<LineRenderer>();
-            lr.transform.SetParent(parent, false);
-            lr.sharedMaterial = lineMaterial;
-            lr.useWorldSpace = false;
-            lr.widthMultiplier = 0.025f;
-            lr.startColor = lr.endColor = new Color(1f, 1f, 1f, 0.55f);
-            lr.shadowCastingMode = ShadowCastingMode.Off;
-            lr.positionCount = localPoints.Count;
-            lr.SetPositions(localPoints.ToArray());
-        }
-
-        /// <summary>Kaleci: kök yerde, gövde (kapsül + collider) çocuk; dalışta gövde yana yatar.</summary>
-        private GoalkeeperAI CreateKeeper(GoalFrame goal)
-        {
-            var root = new GameObject("Kaleci");
-            root.transform.SetParent(transform, false);
-            root.transform.SetPositionAndRotation(goal.Center + goal.Normal * 0.5f, Quaternion.LookRotation(goal.Normal));
-            GameObject body = Primitive(PrimitiveType.Capsule, "Gövde", root.transform, new Vector3(0f, 0.95f, 0f), new Vector3(0.85f, 0.95f, 0.85f), new Color(0.75f, 0.95f, 0.15f), false);
-            Primitive(PrimitiveType.Cube, "Yön", body.transform, new Vector3(0f, 0.35f, 0.45f), new Vector3(0.35f, 0.15f, 0.3f), Color.white, true);
-            Rigidbody rb = root.AddComponent<Rigidbody>();
-            rb.isKinematic = true;
-            rb.useGravity = false;
-            GoalkeeperAI gk = root.AddComponent<GoalkeeperAI>();
-            gk.Setup(goal, body.transform, keeperSkill);
-            return gk;
-        }
-
-        private void Line(Vector3 center, Vector3 size)
-        {
-            Primitive(PrimitiveType.Cube, "Çizgi", transform, center + new Vector3(0f, 0.01f, 0f), size, Color.white, true);
-        }
-
-        /// <summary>
-        /// Çalışma anında NavMesh: saha boyutunda tek bir kutu kaynağından üretilir (sahne bake etmeye gerek yok).
-        /// Kendi sahnenizde bunun yerine Window > AI > Navigation (ya da NavMeshSurface) ile bake edin.
-        /// </summary>
-        private void BakeNavMesh()
-        {
-            var sources = new List<NavMeshBuildSource>(1);
-            var src = new NavMeshBuildSource
-            {
-                shape = NavMeshBuildSourceShape.Box,
-                size = new Vector3(pitchSize.x + 12f, 0.2f, pitchSize.y + 12f),
-                transform = Matrix4x4.TRS(new Vector3(0f, -0.1f, 0f), Quaternion.identity, Vector3.one),
-                area = 0,
-            };
-            sources.Add(src);
-            var bounds = new Bounds(Vector3.zero, new Vector3(pitchSize.x + 20f, 6f, pitchSize.y + 20f));
-            NavMeshData data = NavMeshBuilder.BuildNavMeshData(NavMesh.GetSettingsByID(0), sources, bounds, Vector3.zero, Quaternion.identity);
-            if (data != null) navMesh = NavMesh.AddNavMeshData(data);
-            else Debug.LogWarning("NavMesh oluşturulamadı; rakipler NavMesh'siz modda yürüyecek.");
-        }
-
-        private static void EnsureLight()
-        {
-#if UNITY_2022_2_OR_NEWER
-            Light existing = FindFirstObjectByType<Light>();
-#else
-            Light existing = FindObjectOfType<Light>();
-#endif
-            if (existing != null) return;
-            var light = new GameObject("Güneş").AddComponent<Light>();
-            light.type = LightType.Directional;
-            light.intensity = 1.1f;
-            light.shadows = LightShadows.Soft;
-            light.transform.rotation = Quaternion.Euler(50f, -30f, 0f);
-        }
-
-        private BallController CreateBall()
-        {
-            GameObject go = Primitive(PrimitiveType.Sphere, "Top", transform, new Vector3(0f, 0.11f, 0f), Vector3.one * 0.22f, Color.white, false);
-            // Dönüş görünsün diye yüzeye siyah lekeler
-            Vector3[] spots = { Vector3.forward, Vector3.back, Vector3.left, Vector3.right, Vector3.up, Vector3.down };
-            for (int i = 0; i < spots.Length; i++)
-            {
-                Primitive(PrimitiveType.Sphere, "Leke", go.transform, spots[i] * 0.42f, Vector3.one * 0.32f, new Color(0.08f, 0.08f, 0.1f), true);
-            }
-            BallController ball = go.AddComponent<BallController>(); // Rigidbody'yi RequireComponent ekler
-
-            TrailRenderer trail = go.AddComponent<TrailRenderer>();
-            trail.sharedMaterial = lineMaterial;
-            trail.time = 0.45f;
-            trail.minVertexDistance = 0.1f;
-            trail.widthMultiplier = 0.16f;
-            trail.widthCurve = AnimationCurve.Linear(0f, 1f, 1f, 0f);
-            trail.startColor = new Color(1f, 1f, 1f, 0.7f);
-            trail.endColor = new Color(1f, 1f, 1f, 0f);
-            trail.shadowCastingMode = ShadowCastingMode.Off;
-            ball.SetVisuals(trail, go.transform);
-            return ball;
-        }
-
-        /// <summary>
-        /// Oyuncu: kök yerde (y = 0) boş nesne; gövde (kapsül + collider) çocuk. Böylece NavMeshAgent baseOffset gerektirmez.
-        /// </summary>
-        private GameObject CreatePlayer(string playerName, Vector3 position, Quaternion rotation, Color color, bool enemy)
-        {
-            var root = new GameObject(playerName);
-            root.transform.SetParent(transform, false);
-            // Konum/yön bileşenler eklenmeden ÖNCE: EnemyAI/PassReceiver dizilişi Awake'te kaydeder
-            root.transform.SetPositionAndRotation(new Vector3(position.x, 0f, position.z), rotation);
-
-            GameObject body = Primitive(PrimitiveType.Capsule, "Gövde", root.transform, new Vector3(0f, 0.9f, 0f), new Vector3(0.8f, 0.9f, 0.8f), color, false);
-            // Burun: baktığı yön görünsün
-            Primitive(PrimitiveType.Cube, "Yön", body.transform, new Vector3(0f, 0.35f, 0.45f), new Vector3(0.35f, 0.15f, 0.3f), Color.white, true);
-
-            // Hareket eden collider'lar için kinematik Rigidbody (fizik motoru için en verimli kurulum)
-            Rigidbody rb = root.AddComponent<Rigidbody>();
-            rb.isKinematic = true;
-            rb.useGravity = false;
-
-            if (enemy)
-            {
-                NavMeshAgent agent = root.AddComponent<NavMeshAgent>();
-                agent.radius = 0.4f;
-                agent.height = 1.8f;
-                agent.baseOffset = 0f;
-                EnemyAI ai = root.AddComponent<EnemyAI>();
-                ai.SetIndicator(body.GetComponent<Renderer>());
-            }
-            else
-            {
-                PassReceiver receiver = root.AddComponent<PassReceiver>();
-                // Hedef halkası (ayak altında, collider'sız)
-                GameObject ring = Primitive(PrimitiveType.Cylinder, "Hedef Halkası", root.transform, new Vector3(0f, 0.02f, 0f), new Vector3(1.8f, 0.01f, 1.8f), new Color(1f, 0.95f, 0.3f), true);
-                Renderer rr = ring.GetComponent<Renderer>();
-                rr.shadowCastingMode = ShadowCastingMode.Off;
-                receiver.SetHighlight(rr);
-            }
-            return root;
-        }
-
-        private Camera SetupCamera()
-        {
-            Camera cam = Camera.main;
-            if (cam == null)
-            {
-                var go = new GameObject("Main Camera");
-                go.tag = "MainCamera";
-                cam = go.AddComponent<Camera>();
-            }
-            cam.nearClipPlane = 0.1f;
-            cam.farClipPlane = 400f;
-            cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = new Color(0.45f, 0.65f, 0.85f);
-            return cam;
-        }
-
-        private LineRenderer CreatePassLine()
-        {
-            var lr = new GameObject("Pas Çizgisi").AddComponent<LineRenderer>();
-            lr.transform.SetParent(transform, false);
-            lr.sharedMaterial = lineMaterial;
-            lr.useWorldSpace = true;
-            lr.widthMultiplier = 0.26f;
-            lr.widthCurve = AnimationCurve.Linear(0f, 1f, 1f, 0.5f);
-            lr.numCapVertices = 4;
-            lr.numCornerVertices = 2;
-            lr.shadowCastingMode = ShadowCastingMode.Off;
-            lr.receiveShadows = false;
-            lr.positionCount = 0;
-            lr.enabled = false;
-            return lr;
-        }
-
-        private static Material CreateLineMaterial()
-        {
-            // Köşe renklerini (LineRenderer.startColor/endColor) destekleyen shader'lar, sırayla
-            string[] names = { "Sprites/Default", "Universal Render Pipeline/Particles/Unlit", "Legacy Shaders/Particles/Alpha Blended", "Unlit/Color" };
-            for (int i = 0; i < names.Length; i++)
-            {
-                Shader s = Shader.Find(names[i]);
-                if (s != null) return new Material(s);
-            }
-            Debug.LogWarning("Çizgi shader'ı bulunamadı; Inspector'dan lineMaterial atayın.");
-            return null;
-        }
-
-        private static Vector3 Flat(Vector3 v)
-        {
-            v.y = 0f;
-            return v.sqrMagnitude > 1e-6f ? v : Vector3.forward;
-        }
-
-        /// <summary>Renkli, isteğe bağlı collider'sız primitive.</summary>
-        private static GameObject Primitive(PrimitiveType type, string objName, Transform parent, Vector3 localPos, Vector3 scale, Color color, bool removeCollider)
-        {
-            GameObject go = GameObject.CreatePrimitive(type);
-            go.name = objName;
-            go.transform.SetParent(parent, false);
-            go.transform.localPosition = localPos;
-            go.transform.localScale = scale;
-            if (removeCollider)
-            {
-                Collider c = go.GetComponent<Collider>();
-                if (c != null) Destroy(c);
-            }
-            Renderer r = go.GetComponent<Renderer>();
-            if (r != null) r.material.color = color; // URP Lit ve Standard'da [MainColor]
-            return go;
-        }
-
-        // ─────────────────────────── Ekran yazıları (IMGUI) ───────────────────────────
+        // ─────────────────────────── Arayüz (IMGUI) ───────────────────────────
 
         private void OnGUI()
         {
-            if (manager == null) return;
+            if (runner == null) return;
             float scale = Mathf.Max(1f, Screen.height / 720f);
             GUI.matrix = Matrix4x4.Scale(new Vector3(scale, scale, 1f));
             float w = Screen.width / scale, h = Screen.height / scale;
             EnsureStyles();
 
-            // Yönerge
+            switch (runner.State)
+            {
+                case LevelState.None: DrawMenu(w, h); break;
+                case LevelState.Intro: DrawIntro(w, h); break;
+                case LevelState.Playing: DrawHud(w, h); break;
+                case LevelState.Won: DrawHud(w, h); DrawWon(w, h); break;
+                case LevelState.Lost: DrawHud(w, h); DrawLost(w, h); break;
+            }
+        }
+
+        private void DrawMenu(float w, float h)
+        {
+            float cw = Mathf.Min(w - 24f, 520f), x = (w - cw) / 2f, y = 24f;
+            GUI.Box(new Rect(x, y, cw, h - 48f), "", boxStyle);
+            GUI.Label(new Rect(x, y + 12f, cw, 40f), "ÇİZEREK PAS & ŞUT", titleStyle);
+            GUI.Label(new Rect(x, y + 50f, cw, 24f), "Toplam yıldız: " + LevelProgress.TotalStars(runner.Levels) + " / " + (runner.Levels.Count - 1) * 3, smallStyle);
+
+            float rowH = 54f, top = y + 86f;
+            for (int i = 0; i < runner.Levels.Count; i++)
+            {
+                PassLevel l = runner.Levels[i];
+                Rect r = new Rect(x + 16f, top + i * (rowH + 6f), cw - 32f, rowH);
+                bool unlocked = LevelProgress.IsUnlocked(runner.Levels, i);
+                GUI.enabled = unlocked;
+                string label = l.objective == LevelObjective.FreePlay ? "  " + l.title : "  " + (i + 1) + ". " + l.title;
+                if (!unlocked) label += "   (kilitli)";
+                if (GUI.Button(r, label, buttonStyle)) runner.Load(i);
+                GUI.enabled = true;
+                if (l.objective != LevelObjective.FreePlay) DrawStars(new Rect(r.xMax - 96f, r.y + 15f, 84f, 24f), LevelProgress.GetStars(l.id));
+            }
+        }
+
+        private void DrawIntro(float w, float h)
+        {
+            PassLevel l = runner.Current;
+            Rect card = Card(w, h, 300f);
+            GUI.Label(new Rect(card.x, card.y + 16f, card.width, 36f), l.title, titleStyle);
+            GUI.Label(new Rect(card.x + 20f, card.y + 60f, card.width - 40f, 70f), l.description, smallStyle);
+            GUI.Label(new Rect(card.x + 20f, card.y + 134f, card.width - 40f, 30f), "HEDEF: " + l.ObjectiveText(), boxStyle);
+            string extra = l.objective == LevelObjective.FreePlay ? "" : "Hak: " + l.lives + "   ·   2 yıldız: " + l.twoStarScore + "   ·   3 yıldız: " + l.threeStarScore + " puan";
+            GUI.Label(new Rect(card.x + 20f, card.y + 172f, card.width - 40f, 26f), extra, smallStyle);
+            if (GUI.Button(new Rect(card.x + 20f, card.yMax - 72f, card.width * 0.55f - 30f, 52f), "Başla", buttonStyle)) runner.StartPlay();
+            if (GUI.Button(new Rect(card.x + card.width * 0.55f, card.yMax - 72f, card.width * 0.45f - 20f, 52f), "Menü", buttonStyle)) runner.Quit();
+        }
+
+        private void DrawHud(float w, float h)
+        {
+            PassLevel l = runner.Current;
+            if (l == null) return;
+            bool free = l.objective == LevelObjective.FreePlay;
+
             string hint;
             switch (manager.State)
             {
                 case PassState.Idle: hint = "Pas moduna geçmek için ekrana dokun ya da SPACE'e bas."; break;
-                case PassState.Aiming: hint = "Ağır çekim! Topa dokun, arkadaşına (istersen kavisli) çizgi çiz. Kaleye çizersen ŞUT!"; break;
-                case PassState.Drawing: hint = manager.IsShotAimed
-                        ? "Sarı = şut. Köşelere ve falsolu vur, kaleciyi şaşırt!"
-                        : "Parmağını kaldırınca pas atılır. Yeşil = temiz, turuncu = rakip yolda. Acele et!"; break;
-                case PassState.InFlight: hint = manager.IsShotAimed ? "Şut!" : "Pas yolda…"; break;
-                default: hint = ""; break;
+                case PassState.Aiming: hint = "Ağır çekim! Topa dokun, arkadaşına çiz. Kaleye çizersen ŞUT!"; break;
+                case PassState.Drawing: hint = manager.IsShotAimed ? "Sarı = şut. Köşeler ve falso kaleciyi zorlar!" : "Yeşil = temiz, turuncu = rakip yolda. Acele et!"; break;
+                default: hint = runner.Message; break;
             }
-            GUI.Box(new Rect(12f, 12f, Mathf.Min(w - 24f, 560f), 64f), hint + "\nİsabetli pas: " + completed + " / " + attempts + "   ·   Gol: " + goals + " / " + shots, boxStyle);
+            string status = free ? "Serbest oyun" : "Puan: " + runner.Score + "   ·   Hak: " + runner.LivesLeft + "/" + l.lives
+                + (l.passBudget > 0 ? "   ·   Pas: " + runner.PassesUsed + "/" + l.passBudget : "");
+            GUI.Box(new Rect(12f, 12f, Mathf.Min(w - 150f, 600f), 84f), l.title + " — " + l.ObjectiveText() + "\n" + status + "\n" + hint, boxStyle);
+            if (GUI.Button(new Rect(w - 126f, 12f, 114f, 44f), "Menü", buttonStyle)) runner.Quit();
 
             // Baskı çubuğu
             if (manager.State == PassState.Aiming || manager.State == PassState.Drawing)
@@ -440,19 +172,61 @@ namespace FootballCareer.Passing.Demo
                 GUI.color = Color.Lerp(new Color(0.4f, 1f, 0.4f), new Color(1f, 0.25f, 0.2f), manager.Pressure);
                 GUI.DrawTexture(new Rect(bar.x, bar.y, bar.width * manager.Pressure, bar.height), Texture2D.whiteTexture);
                 GUI.color = Color.white;
-                GUI.Label(new Rect(bar.x, bar.y - 22f, bar.width, 20f), "RAKİP BASKISI", boxStyle);
+                GUI.Label(new Rect(bar.x, bar.y - 22f, bar.width, 20f), "RAKİP BASKISI", smallStyle);
+            }
+            else if (runner.State == LevelState.Playing && manager.State == PassState.Idle)
+            {
+                if (GUI.Button(new Rect(12f, h - 64f, 150f, 48f), "Pas Modu", buttonStyle)) manager.EnterPassMode();
             }
 
-            // Sonuç
             if (!string.IsNullOrEmpty(banner) && Time.unscaledTime < bannerUntil)
             {
                 bannerStyle.normal.textColor = bannerColor;
-                GUI.Label(new Rect(0f, h * 0.32f, w, 60f), banner, bannerStyle);
+                GUI.Label(new Rect(0f, h * 0.3f, w, 60f), banner, bannerStyle);
             }
+        }
 
-            // Düğmeler
-            if (GUI.Button(new Rect(12f, h - 64f, 150f, 48f), "Pas Modu", buttonStyle)) manager.EnterPassMode();
-            if (GUI.Button(new Rect(w - 162f, h - 64f, 150f, 48f), "Sıfırla", buttonStyle)) manager.ResetPlay();
+        private void DrawWon(float w, float h)
+        {
+            Rect card = Card(w, h, 290f);
+            GUI.Label(new Rect(card.x, card.y + 16f, card.width, 36f), "BÖLÜM TAMAM!", titleStyle);
+            DrawStars(new Rect(card.x + card.width / 2f - 84f, card.y + 62f, 168f, 48f), runner.StarsEarned);
+            GUI.Label(new Rect(card.x, card.y + 120f, card.width, 28f), "Puan: " + runner.Score + (runner.NewBest ? "   ·   YENİ REKOR!" : ""), smallStyle);
+            GUI.Label(new Rect(card.x + 20f, card.y + 150f, card.width - 40f, 40f), runner.Message, smallStyle);
+            float bw = (card.width - 60f) / 3f, by = card.yMax - 72f;
+            GUI.enabled = runner.HasNext;
+            if (GUI.Button(new Rect(card.x + 20f, by, bw, 52f), "Sonraki", buttonStyle)) runner.Next();
+            GUI.enabled = true;
+            if (GUI.Button(new Rect(card.x + 30f + bw, by, bw, 52f), "Tekrar", buttonStyle)) runner.Retry();
+            if (GUI.Button(new Rect(card.x + 40f + 2f * bw, by, bw, 52f), "Menü", buttonStyle)) runner.Quit();
+        }
+
+        private void DrawLost(float w, float h)
+        {
+            Rect card = Card(w, h, 240f);
+            GUI.Label(new Rect(card.x, card.y + 16f, card.width, 36f), "Bölüm başarısız", titleStyle);
+            GUI.Label(new Rect(card.x + 20f, card.y + 64f, card.width - 40f, 60f), runner.Message + "\nHakların bitti. Bir daha dene!", smallStyle);
+            float bw = (card.width - 50f) / 2f, by = card.yMax - 72f;
+            if (GUI.Button(new Rect(card.x + 20f, by, bw, 52f), "Tekrar", buttonStyle)) runner.Retry();
+            if (GUI.Button(new Rect(card.x + 30f + bw, by, bw, 52f), "Menü", buttonStyle)) runner.Quit();
+        }
+
+        private Rect Card(float w, float h, float height)
+        {
+            float cw = Mathf.Min(w - 24f, 460f);
+            Rect r = new Rect((w - cw) / 2f, (h - height) / 2f, cw, height);
+            GUI.Box(r, "", boxStyle);
+            GUI.Box(r, "", boxStyle); // iki kat: daha koyu zemin
+            return r;
+        }
+
+        private void DrawStars(Rect area, int count)
+        {
+            float s = Mathf.Min(area.height, area.width / 3f);
+            for (int i = 0; i < 3; i++)
+            {
+                GUI.DrawTexture(new Rect(area.x + i * s, area.y, s, s), i < count ? starOn : starOff);
+            }
         }
 
         private void EnsureStyles()
@@ -460,8 +234,54 @@ namespace FootballCareer.Passing.Demo
             if (boxStyle != null) return;
             boxStyle = new GUIStyle(GUI.skin.box) { fontSize = 16, alignment = TextAnchor.MiddleLeft, wordWrap = true };
             boxStyle.normal.textColor = Color.white;
+            titleStyle = new GUIStyle(GUI.skin.label) { fontSize = 26, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+            titleStyle.normal.textColor = Color.white;
+            smallStyle = new GUIStyle(GUI.skin.label) { fontSize = 16, alignment = TextAnchor.MiddleCenter, wordWrap = true };
+            smallStyle.normal.textColor = new Color(0.9f, 0.93f, 1f);
             bannerStyle = new GUIStyle(GUI.skin.label) { fontSize = 34, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
-            buttonStyle = new GUIStyle(GUI.skin.button) { fontSize = 18 };
+            buttonStyle = new GUIStyle(GUI.skin.button) { fontSize = 18, alignment = TextAnchor.MiddleLeft };
+        }
+
+        /// <summary>Yazı tipinden bağımsız yıldız simgesi (5 köşeli, kenarı yumuşatılmış).</summary>
+        private static Texture2D MakeStar(Color color)
+        {
+            const int n = 48;
+            var tex = new Texture2D(n, n, TextureFormat.RGBA32, false);
+            var pts = new Vector2[10];
+            for (int i = 0; i < 10; i++)
+            {
+                float a = Mathf.PI / 2f + i * Mathf.PI / 5f;
+                float rad = (i % 2 == 0 ? 0.48f : 0.2f) * n;
+                pts[i] = new Vector2(n / 2f + Mathf.Cos(a) * rad, n / 2f + Mathf.Sin(a) * rad);
+            }
+            var clear = new Color(color.r, color.g, color.b, 0f);
+            for (int y = 0; y < n; y++)
+            {
+                for (int x = 0; x < n; x++)
+                {
+                    // 2×2 alt örnekleme ile kenar yumuşatma
+                    int hits = 0;
+                    for (int s = 0; s < 4; s++)
+                    {
+                        if (Inside(pts, new Vector2(x + 0.25f + 0.5f * (s % 2), y + 0.25f + 0.5f * (s / 2)))) hits++;
+                    }
+                    tex.SetPixel(x, y, hits == 0 ? clear : new Color(color.r, color.g, color.b, color.a * hits / 4f));
+                }
+            }
+            tex.Apply();
+            return tex;
+        }
+
+        private static bool Inside(Vector2[] poly, Vector2 p)
+        {
+            bool inside = false;
+            for (int i = 0, j = poly.Length - 1; i < poly.Length; j = i++)
+            {
+                if ((poly[i].y > p.y) != (poly[j].y > p.y)
+                    && p.x < (poly[j].x - poly[i].x) * (p.y - poly[i].y) / (poly[j].y - poly[i].y) + poly[i].x)
+                    inside = !inside;
+            }
+            return inside;
         }
     }
 }

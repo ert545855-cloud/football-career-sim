@@ -238,6 +238,35 @@ namespace FootballCareer.Passing
             if (keeper != null && ball != null) keeper.Track(ball.transform);
         }
 
+        /// <summary>
+        /// Yeni diziliş yükler (bölüm başlangıcı): listeleri değiştirir, ilk pasörü ayarlar ve her şeyi sıfırlar.
+        /// teammates listesi pasörü de içermeli.
+        /// </summary>
+        public void LoadFormation(Transform startingPasser, IList<PassReceiver> mates, IList<EnemyAI> foes, GoalkeeperAI goalkeeper)
+        {
+            teammates.Clear();
+            for (int i = 0; i < mates.Count; i++) AddTeammate(mates[i]);
+            enemies.Clear();
+            for (int i = 0; i < foes.Count; i++) AddEnemy(foes[i]);
+            keeper = goalkeeper;
+            passer = startingPasser;
+            startPasser = startingPasser;
+            if (startingPasser != null)
+            {
+                startPasserPos = startingPasser.position;
+                startPasserRot = startingPasser.rotation;
+            }
+            if (keeper != null && ball != null) keeper.Track(ball.transform);
+            if (initialized) ResetPlay();
+            else if (ball != null && passer != null) ball.AttachTo(passer, OffsetFor(passer));
+        }
+
+        /// <summary>Ağır çekim oranı (bölüm zorluğu / oyuncu statı).</summary>
+        public void SetSlowTimeScale(float scale) { slowTimeScale = Mathf.Clamp(scale, 0.05f, 1f); }
+
+        /// <summary>Çizim başlayınca baskıya koşan rakip sayısı (0 = kimse basmaz).</summary>
+        public void SetPressersCount(int count) { pressersCount = Mathf.Max(0, count); }
+
         public void AddTeammate(PassReceiver r) { if (r != null && !teammates.Contains(r)) teammates.Add(r); }
         public void AddEnemy(EnemyAI e) { if (e != null && !enemies.Contains(e)) enemies.Add(e); }
 
@@ -631,6 +660,7 @@ namespace FootballCareer.Passing
 
             int count = Mathf.Min(pressersCount, sortBuffer.Count);
             for (int i = 0; i < count; i++) sortBuffer[i].StartPress(this, passer, i % 2 == 1);
+            // Gösterge, en yakın rakibin (basmasa bile) uzaklığına göre dolar
             pressureStartDistance = Mathf.Max(stealRadius + 0.5f, sortBuffer[0].HorizontalDistanceTo(passer.position));
         }
 

@@ -180,6 +180,14 @@ namespace FootballCareer.Passing
             homeRotation = transform.rotation;
         }
 
+        /// <summary>Bölüm zorluğu için hızlar (m/sn).</summary>
+        public void SetSpeeds(float press, float intercept)
+        {
+            pressSpeed = Mathf.Max(0.5f, press);
+            interceptSpeed = Mathf.Max(0.5f, intercept);
+            if (agent != null && agent.enabled && mode != Mode.Hold && mode != Mode.Return) agent.speed = CurrentSpeed();
+        }
+
         /// <summary>Kodla kurulum için: baskı göstergesi renderer'ı.</summary>
         public void SetIndicator(Renderer r)
         {

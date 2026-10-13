@@ -17,14 +17,21 @@ Namespace: `FootballCareer.Passing` · Unity 2021.3 LTS ve üstü (Unity 6 dahil
 | `PassCameraController.cs` | Üç kamera modu arasında gerçek zamanlı yumuşak geçiş: yayın, oyuncu arkası (3. şahıs) ve top takibi |
 | `PassPath.cs` | Çizimden kübik Bezier üretir, yay uzunluğu tablosunu tutar (sabit hız için) ve falso açısını hesaplar |
 | `PassTypes.cs` | `PassState`, `PassOutcome`, `PassResult` ve `PassResultEvent` tipleri |
-| `Demo/PassDemoBootstrap.cs` | Boş sahnede her şeyi kodla kurar (deneme için) |
+| `Levels/PassLevel.cs` | Bölüm verisi (ScriptableObject): diziliş, hedef, hak, yıldız eşikleri, zorluk |
+| `Levels/LevelRunner.cs` | Bölümü kurar; hedef, puan, hak ve yıldızları yönetir, en iyi sonucu kaydeder |
+| `Levels/LevelScoring.cs` | Puanlama ve yıldız hesabı (`LevelScoring`), kayıt ve kilitler (`LevelProgress`) |
+| `Levels/BuiltInLevels.cs` | Hazır 8 bölüm ve serbest oyun |
+| `Levels/PrefabFormationSpawner.cs` | Bölüm dizilişini sizin oyuncu prefab'larınızla kurar |
+| `Demo/PassDemoBootstrap.cs` | Boş sahnede her şeyi kodla kurar, bölüm menüsünü çizer (deneme için) |
+| `Demo/PitchBuilder.cs` | Deneme sahnesinin saha, kale ve oyuncularını ilkel şekillerle üretir |
 | `../Core/InputCompat.cs` | Dokunma ve fare girdisini tek API'de toplar. Eski Input Manager ile yeni Input System'i destekler |
 
 ## En hızlı deneme (1 dakika)
 
 1. Yeni, boş bir sahne açın (File > New Scene > Basic).
 2. Boş bir GameObject oluşturun ve `PassDemoBootstrap` ekleyin.
-3. Play'e basın. Saha, NavMesh, oyuncular, top, kamera ve pas çizgisi çalışma anında kurulur.
+3. Play'e basın. Saha, NavMesh, top, kamera ve pas çizgisi çalışma anında kurulur, bölüm menüsü açılır.
+   Bir bölüm ya da **Serbest Oyun** seçin.
    - **Space** tuşuna basın ya da ekrana dokunun: ağır çekim başlar ve kamera oyuncunun arkasına geçer.
    - Topa tıklayın, sürükleyin ve bırakın: pas atılır.
    - Çizgiyi kale ağzına çekerseniz şut olur. Kalenin neresine çizerseniz (köşe, üst, yerden) oraya vurulur.
@@ -84,6 +91,50 @@ Namespace: `FootballCareer.Passing` · Unity 2021.3 LTS ve üstü (Unity 6 dahil
 ### 8. (İsteğe bağlı) Katmanlar
 - Oyuncuları bir **Players** katmanına alın ve `BallController > playerMask` alanında yalnızca o katmanı seçin.
 - Böylece fizik sorguları zemini ve dekoru hiç görmez. Zorunlu değildir; filtreleme bileşene göre de yapılır.
+
+## Bölümler (Score! Hero tarzı)
+
+Her bölümün bir **hedefi**, birkaç **hakkı** ve **yıldız eşikleri** vardır:
+
+| Hedef | Açıklama |
+|---|---|
+| `CompletePasses` | `targetCount` kadar isabetli pas |
+| `ScoreGoal` | Gol at. `passBudget` > 0 ise en fazla o kadar pasla |
+| `ScoreCurvedGoal` | Falsolu bir vuruşla gol (\|falso\| ≥ 0.25) |
+| `ScoreLongRange` | En az `targetCount` metreden gol |
+| `FreePlay` | Serbest oyun: bitmez, hak gitmez |
+
+**Deneme kuralları:**
+- Başarısız pas ya da şut 1 hak götürür. Pozisyon baştan kurulur ve deneme puanı sıfırlanır.
+- Hedefe uymayan gol hak götürmez, yalnızca pozisyon yeniden kurulur. Örnek: falsolu gol istenen bölümde düz atılan gol.
+- Hedefi tamamlayan denemenin puanı yıldızları belirler:
+  - **1 yıldız:** hedef tamamlandı.
+  - **2 ve 3 yıldız:** puan `twoStarScore` / `threeStarScore` eşiklerini geçti.
+
+**Puan:**
+- İsabetli pas: 100 + falso (en fazla 80) + metre başına 2.
+- Gol: 500 + falso (en fazla 300) + 12 m'den uzak her metre için 10 + köşeye 150.
+
+**Kayıt ve kilitler:**
+- En iyi yıldız ve puan `PlayerPrefs`'te saklanır (WebGL'de tarayıcıda).
+- Bir bölüm, bir öncekinden en az 1 yıldız alınınca açılır.
+
+**Bölüm başına zorluk:**
+- `slowTimeScale`
+- rakiplerin baskı ve araya girme hızları
+- baskıya koşan rakip sayısı: 0 verilirse rakipler baraj gibi yerinde durur.
+- kalecinin yeteneği
+
+**Kendi bölümleriniz:**
+1. Create > Football Career > Pas Bölümü ile bir bölüm oluşturun.
+2. `LevelRunner > levels` listesine sürükleyin. Liste boşsa hazır bölümler kullanılır.
+3. Oyuncuları kendi prefab'larınızla kurmak için sahneye `PrefabFormationSpawner` ekleyip `LevelRunner > spawnerBehaviour` alanına bağlayın.
+
+**Arayüz:** `LevelRunner` arayüzden bağımsızdır.
+- Bilgiler: `State`, `Score`, `LivesLeft`, `PassesUsed`, `StarsEarned`, `Message`.
+- Olaylar: `Changed`, `LevelWon`, `LevelLost`.
+- Komutlar: `Load(i)`, `StartPlay()`, `Retry()`, `Next()`, `Quit()`.
+- Demo bunları IMGUI ile çizer; kendi Canvas'ınıza aynı şekilde bağlayabilirsiniz.
 
 ## Oyuna bağlama (sonuçları dinleme)
 
