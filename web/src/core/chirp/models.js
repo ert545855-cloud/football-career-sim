@@ -6,7 +6,7 @@
 /** @typedef {'positive'|'negative'|'neutral'} SentimentLabel */
 /**
  * @typedef {'form_dip'|'transfer_offer'|'transfer_done'|'renewal'|'great_game'|'injury'|'discipline'
- *   |'award'|'bench'|'board'|'player_post'|'ballon'|'gossip'} TweetTopic
+ *   |'award'|'bench'|'board'|'player_post'|'ballon'|'gossip'|'scandal'} TweetTopic
  */
 
 export class AuthorModel {
@@ -125,7 +125,20 @@ export const YAGIZ = new AuthorModel({
   avatar: { color: '#b91c1c', look: { skin: 2, hair: 'buzz', hairColor: 1 }, kit: ['#7c2d12', '#fde68a'] },
 });
 
-export const JOURNALISTS = { fabricio: FABRICIO, yagiz: YAGIZ };
+export const MAGAZIN = new AuthorModel({
+  id: 'magazin',
+  displayName: 'Flaş Magazin',
+  handle: '@FlasMagazinTV',
+  kind: 'journalist',
+  signature: 'ÖZEL:',
+  bio: 'Ünlülerin gece hayatı, aşkları, ayrılıkları. Objektifimizden kaçamazsınız. (Parodi hesap)',
+  followers: 1_800_000,
+  parody: true,
+  beats: ['gossip', 'scandal'],
+  avatar: { color: '#db2777', look: { skin: 0, hair: 'long', hairColor: 3, fem: true }, kit: ['#be185d', '#fbcfe8'] },
+});
+
+export const JOURNALISTS = { fabricio: FABRICIO, yagiz: YAGIZ, magazin: MAGAZIN };
 
 /** Oyuncunun kendi hesabı (durumdan üretilir). */
 export function playerAuthor(state) {

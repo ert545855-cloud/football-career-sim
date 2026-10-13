@@ -3,6 +3,17 @@ import { CLUB_BY_ID, STAT_KEYS, STATS } from './data.js';
 import { chance, clamp, pick, roundTo, weightedPick } from './rng.js';
 import { changeEnergy, changeFame, changeMorale, changeRel, form, ovr } from './player.js';
 import { positionOf } from './league.js';
+import { publishTabloid } from './social/events.js';
+import { PERSON_BY_ID } from './social/data.js';
+import { carStats } from './garage.js';
+
+const partnerName = (s) => PERSON_BY_ID[s.social?.partner]?.name || '';
+const nameOf = (s) => s.player.name.split(' ')[0];
+/** Sevgiliyle ilişki puanını değiştir */
+const partnerRel = (s, d) => {
+  const r = s.social?.rel?.[s.social?.partner];
+  if (r) r.v = clamp(r.v + d, 0, 100);
+};
 
 const club = (s) => CLUB_BY_ID[s.career.clubId];
 
@@ -37,8 +48,8 @@ export const EVENTS = [
     text: () => 'Arkadaşların maçtan sonra seni şehrin en popüler gece kulübüne çağırıyor.',
     choices: [
       {
-        label: 'Takıl', fx: () => chance(0.4)
-          ? { fx: { morale: 6, energy: -25, manager: -8, fans: -3, board: -4 }, note: 'Fotoğrafların sabah gazetelerdeydi. Hoca ve yönetim hiç memnun değil.' }
+        label: 'Takıl', fx: (s) => chance(0.4)
+          ? { fx: { morale: 6, energy: -25, manager: -8, fans: -3, board: -4 }, note: 'Fotoğrafların sabah gazetelerdeydi. Hoca ve yönetim hiç memnun değil.', press: s.social ? publishTabloid(s, { tone: 'bad', venueId: 'bar', palette: 'neon', headline: 'GECE KULÜBÜNDEN SABAHA KARŞI ÇIKTI!', sub: `${nameOf(s)}, maçtan sonra arkadaşlarıyla şehrin en popüler kulübünde sabahladı.`, tweet: `${nameOf(s)} gece kulübünden sabaha karşı çıktı! 🍸📸` }) : null }
           : { fx: { morale: 8, energy: -20 }, note: 'Harika bir geceydi ve kimse görmedi.' },
       },
       { label: 'Evde kal', fx: { energy: 6, manager: 1 }, note: 'Erken yattın, sabah dinç uyandın.' },
@@ -268,6 +279,65 @@ export const EVENTS = [
   },
 ];
 
+// ── Magazin olayları (sosyal yaşam) ──
+EVENTS.push(
+  {
+    id: 'tabloid_doorstep', icon: 'camera', title: 'Kapında Magazinciler',
+    when: (s) => !!s.social?.partner && s.player.fame >= 20, weight: 1.1,
+    text: (s) => `Magazin muhabirleri ${partnerName(s)} ile evinin önünde bekliyor. Mikrofonlar uzatıldı: "Evlilik ne zaman?"`,
+    choices: [
+      {
+        label: 'Birlikte poz verin',
+        fx: (s) => {
+          partnerRel(s, 4);
+          const press = publishTabloid(s, { tone: 'good', venueId: 'home', palette: 'home', personId: s.social.partner, headline: 'MUTLULUK POZU!', sub: `${nameOf(s)} ve ${partnerName(s)} objektiflerimize gülümsedi. "Acelemiz yok" dediler.`, tweet: `${nameOf(s)} ve ${partnerName(s)} kapı önünde poz verdi: "Acelemiz yok!" 💍` });
+          return { fx: { fame: 1, fans: 2, morale: 2 }, note: `${partnerName(s)} çok mutlu oldu; fotoğraflar sevimli bulundu.`, press };
+        },
+      },
+      {
+        label: 'Arabaya binip uzaklaşın',
+        fx: (s) => (carStats(s).stealth >= 3
+          ? { fx: { morale: 1 }, note: 'Koyu cam filmi sayesinde kimse ikinizi göremedi.' }
+          : { fx: { fans: -1 }, note: 'Kaçarken çekilen bulanık kareler yine de yayımlandı.', press: publishTabloid(s, { tone: 'warn', venueId: 'home', palette: 'home', personId: s.social.partner, headline: 'KAMERALARDAN KAÇTILAR', sub: `${nameOf(s)} ve ${partnerName(s)} soruları yanıtlamadan arabaya bindi.`, tweet: `${nameOf(s)} ve ${partnerName(s)} kameralardan kaçtı! Bir şey mi saklıyorlar? 🤔` }) }),
+      },
+      {
+        label: 'Muhabire çıkış',
+        fx: (s) => {
+          partnerRel(s, -2);
+          const press = publishTabloid(s, { tone: 'bad', venueId: 'home', palette: 'home', headline: 'MUHABİRE SERT TEPKİ!', sub: `${nameOf(s)}, sorulara sinirlenip muhabirimizin mikrofonunu itti.`, tweet: `${nameOf(s)} muhabirimize sert çıktı! Görüntüler bizde. 🎥` });
+          return { fx: { morale: 2, fans: -3, sponsor: -3 }, note: 'Görüntüler akşam haberlerindeydi.', press };
+        },
+      },
+    ],
+  },
+  {
+    id: 'breakup_rumor', icon: 'news', title: 'Ayrılık Dedikodusu',
+    when: (s) => !!s.social?.partner, weight: 0.9,
+    text: (s) => `Flaş Magazin, ${partnerName(s)} ile ayrıldığınızı iddia ediyor. Telefonun susmuyor.`,
+    choices: [
+      {
+        label: 'Chirp\'te birlikte fotoğraf paylaş',
+        fx: (s) => {
+          partnerRel(s, 3);
+          if (s.chirp) s.chirp.followers = (s.chirp.followers || 0) + 500;
+          return { fx: { fans: 1, morale: 2 }, note: 'Tek fotoğrafla dedikoduyu bitirdin. Takipçilerin arttı.' };
+        },
+      },
+      { label: 'Sessiz kal', fx: (s) => (partnerRel(s, -4), { fx: { morale: -2 }, note: `${partnerName(s)} sessizliğine biraz kırıldı.` }) },
+      { label: 'Yalanla ve dava aç (€3.000)', fx: { money: -3000, morale: 1, fans: 1 }, note: 'Avukatın sert bir açıklama yaptı; magazin geri adım attı.' },
+    ],
+  },
+  {
+    id: 'car_meet', icon: 'car', title: 'Otomobil Kulübü Buluşması',
+    when: (s) => carStats(s).flash >= 5, weight: 0.8,
+    text: () => 'Modifiyeli araban sosyal medyada çok konuşuldu. Bir otomobil kulübü seni hafta sonu buluşmasına davet ediyor.',
+    choices: [
+      { label: 'Katıl', fx: { fans: 3, fame: 1, energy: -10, morale: 3 }, note: 'Yüzlerce kişi arabanın etrafında toplandı; günün yıldızı sendin.' },
+      { label: 'Teşekkür et, katılma', fx: { energy: 4 }, note: 'Hafta sonunu dinlenerek geçirdin.' },
+    ],
+  },
+);
+
 const EVENT_BY_ID = Object.fromEntries(EVENTS.map((e) => [e.id, e]));
 
 function randomStat(s) {
@@ -304,12 +374,14 @@ export function resolveEvent(state, eventId, choiceIndex) {
   if (!choice) return { note: '', changes: [] };
   let fx = choice.fx;
   let note = choice.note || '';
+  let press = null;
   if (typeof fx === 'function') {
     const out = fx(state);
     fx = out.fx;
     note = out.note || note;
+    press = out.press || null;
   }
-  return { note, changes: applyFx(state, fx || {}) };
+  return { note, changes: applyFx(state, fx || {}), press };
 }
 
 const LABELS = {

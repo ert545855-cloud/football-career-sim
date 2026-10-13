@@ -54,6 +54,14 @@ export const COMMENT_POOLS = {
     pos: ['{player} bu kulübün değeri, desteğimiz tam!', 'Yönetim değil oyuncu haklı, arkandayız!'],
     neg: ['Yönetim doğru yapıyor, bu performans yetersiz.', 'Satın gitsin, artık yeter.', 'Kulübe zarar veriyor, satılmalı.'],
   },
+  gossip: {
+    pos: ['Çok yakışıyorlar, mutluluklar {player} 😍', 'Özel hayatı onu ilgilendirir, sahada harika oynuyor!', 'Aşk yaramış, son maçlarda müthiş formda 🔥', 'Mutlu oyuncu sahada da mutlu olur 👏'],
+    neg: ['Magazinle değil futbolla gündeme gelsin, yazık.', 'Sahada sıfır, gece hayatında bir numara.', 'Bu kadar gezme yorgunluk yapar, performans düştü.', 'Kafası futbolda değil, disiplinsiz davranıyor.'],
+  },
+  scandal: {
+    pos: ['Özel hayatı onu ilgilendirir, arkandayız {player}!', 'Magazinin yalanlarına inanmayın, desteğimiz tam 💪', 'Sahada cevabını verecek, arkandayız!'],
+    neg: ['Rezalet, kulübün adını magazine düşürdü.', 'Maç öncesi gece kulübü mü? Profesyonellik sıfır.', 'Ayıp, taraftara saygısızlık bu.', 'Bu disiplinsizlik cezasız kalmamalı.', 'Yönetim derhal ceza kesmeli, yazık.'],
+  },
   player_modest: {
     pos: ['İşte örnek profesyonel! Gurur duyuyoruz.', 'Alçakgönüllü oyuncu her zaman kazanır 👏', 'Seninle gurur duyuyoruz {player}!'],
     neg: ['Klişe cümleler, sahada göster.', 'PR ekibi yazmış belli, samimiyetsiz.'],
@@ -71,7 +79,7 @@ export const COMMENT_POOLS = {
 /** Bağlamın taban olumlu yorum oranı. */
 const BASE_POSITIVE = {
   form_dip: 0.3, transfer_offer: 0.6, transfer_done: 0.65, renewal: 0.7, great_game: 0.75, injury: 0.7, discipline: 0.45,
-  award: 0.75, bench: 0.5, board: 0.4, player_modest: 0.75, player_ego: 0.4, player_aggressive: 0.6,
+  award: 0.75, bench: 0.5, board: 0.4, player_modest: 0.75, player_ego: 0.4, player_aggressive: 0.6, gossip: 0.55, scandal: 0.25,
 };
 
 export class CommentGenerator {

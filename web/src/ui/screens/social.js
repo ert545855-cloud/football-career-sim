@@ -11,6 +11,7 @@ import { outingResultSheets, playOuting, sceneOptsFor } from '../sceneView.js';
 import { carName, carStats, currentCarId } from '../../core/garage.js';
 import { CH, CW, drawCar } from '../carCanvas.js';
 import { carLook } from './garage.js';
+import { paintPhotos, tabloidSheet } from '../tabloidView.js';
 
 let lastVenue = 'cafe';
 
@@ -105,6 +106,9 @@ export function socialScreen(app) {
         </span>
       </button>
 
+      ${(s.social.press || []).length ? `<div class="h-sec">Magazin arşivi <span>${s.social.press.length} haber</span></div>
+      <div class="press-clips">${s.social.press.slice(0, 8).map((p, i) => `<button class="clip ${p.tone || ''}" data-press="${i}"><canvas data-photo="${esc(JSON.stringify({ venueId: p.venueId, palette: p.palette, personId: p.personId || null }))}"></canvas><span class="clip-mast">FLAŞ MAGAZİN · S${p.s} H${p.w}</span><b>${esc(p.headline)}</b></button>`).join('')}</div>` : ''}
+
       ${log ? `<div class="h-sec">Son etkinlikler</div><div class="card list">${log}</div>` : ''}`,
     mount(node) {
       animateBars(node);
@@ -114,13 +118,19 @@ export function socialScreen(app) {
         drawScene(cv.getContext('2d'), 0.6, sceneOptsFor(s, venueId, cv.dataset.palette, null));
       });
 
+      paintPhotos(node, s);
       const carCv = node.querySelector('canvas[data-car]');
       if (carCv && carId) drawCar(carCv.getContext('2d'), 0.4, carLook(s, carId));
 
       node.addEventListener('click', async (e) => {
-        const t = e.target.closest('[data-act],[data-venue],[data-tier],[data-contact]');
+        const t = e.target.closest('[data-act],[data-venue],[data-tier],[data-contact],[data-press]');
         if (!t) return;
         app.click();
+        if (t.dataset.press) {
+          const p = s.social.press[Number(t.dataset.press)];
+          if (p) await tabloidSheet(app, { text: p.sub, changes: [], press: p });
+          return;
+        }
         if (t.dataset.act === 'back') return app.go('hub');
         if (t.dataset.act === 'home') return app.go('home');
         if (t.dataset.act === 'garage') return app.go('garage');

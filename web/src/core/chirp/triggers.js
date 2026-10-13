@@ -88,7 +88,7 @@ export class ChirpTriggerEngine {
     const all = { ...this.baseVars(), ...vars };
     const id = this.timeline.nextId();
     const fame = this.state.player.fame;
-    const [lo, hi] = author.id === 'fabricio' ? [6000, 26000] : [1200, 7000];
+    const [lo, hi] = author.id === 'fabricio' ? [6000, 26000] : author.id === 'magazin' ? [9000, 34000] : [1200, 7000];
     const likes = Math.round((lo + this.rnd() * (hi - lo)) * (1 + fame / 40));
     const tweet = new TweetModel({
       id,

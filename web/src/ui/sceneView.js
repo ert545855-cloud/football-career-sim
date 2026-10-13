@@ -2,10 +2,14 @@
 // altta kişinin kartı (portre + isim + söz) ve 4 cevap seçeneği.
 import { CLUB_BY_ID } from '../core/data.js';
 import { money } from '../core/economy.js';
-import { TONES, answerOuting, ensureHome, finishOuting, homeOf, homeScore } from '../core/social/index.js';
-import { WALLS } from '../core/social/home.js';
+import { TONES, answerOuting, finishOuting, homeScore } from '../core/social/index.js';
+import { resolveSocialChoice } from '../core/social/events.js';
+import { tabloidSheet } from './tabloidView.js';
 import { buzz, sfx } from '../audio.js';
 import { SH, SW, drawScene } from './pixelScenes.js';
+import { sceneOptsFor } from './sceneOpts.js';
+
+export { sceneOptsFor };
 import { avatarSVG, crestSVG, icon } from './art.js';
 import { changeChips } from './components.js';
 import { el, esc, root, sheet, sleep } from './dom.js';
@@ -25,24 +29,6 @@ function hud(state) {
 function portrait(person) {
   if (!person) return `<span class="npc-portrait alone">${icon('user')}</span>`;
   return `<span class="npc-portrait">${avatarSVG(person.look, { colors: person.clothes }, person.number ?? '')}</span>`;
-}
-
-/** Sahne çizim seçenekleri (ev partisinde evin duvarı, zemini, manzarası ve kupaları) */
-export function sceneOptsFor(s, venueId, palette, person) {
-  const club = CLUB_BY_ID[s.career.clubId];
-  const h = ensureHome(s);
-  const wall = WALLS.find((w) => w.id === h.wall);
-  return {
-    scene: venueId,
-    palette,
-    npc: person ? { look: person.look, clothes: person.clothes } : null,
-    me: { look: s.player.avatar || {}, colors: [club.colors[0], club.colors[1]] },
-    wall: wall?.color || club.colors[0],
-    floor: h.floor,
-    view: ['penthouse', 'villa'].includes(homeOf(s).id) ? 'sea' : 'city',
-    trophies: h.placed.some((p) => p.id === 'trophy') ? (s.career.awards || []).length : 0,
-    jersey: club.colors[0],
-  };
 }
 
 /**
@@ -177,7 +163,32 @@ export async function outingResultSheets(app, result, outing) {
       <button class="btn primary block" style="margin-top:14px" data-close>Devam</button>`,
   });
   for (const ev of result.events) {
+    if (ev.press) {
+      await tabloidSheet(app, ev);
+      continue;
+    }
     sfx(ev.tone === 'bad' ? 'error' : 'swish');
+    if (ev.choices) {
+      // Seçimli olay (ör. barda sataşma)
+      const pickId = await sheet({
+        center: true,
+        dismissable: false,
+        html: `<div class="event-art">${icon(ev.icon || 'sparkle')}</div><h3 class="center">${esc(ev.title)}</h3><p class="lead center">${esc(ev.text)}</p>
+          <div class="stack">${ev.choices.map((c) => `<button class="btn block" data-close="${c.id}">${icon(c.icon || 'chat', 'ico sm')} ${esc(c.label)}</button>`).join('')}</div>`,
+      });
+      const r = resolveSocialChoice(app.state, ev, pickId);
+      app.save();
+      if (r.press) {
+        await tabloidSheet(app, { ...ev, text: r.text, changes: r.changes, press: r.press });
+        continue;
+      }
+      buzz(r.tone === 'bad' ? 'error' : 'tap');
+      await sheet({
+        center: true,
+        html: `<h3 class="center">${esc(ev.title)}</h3><p class="lead center">${esc(r.text)}</p>${changeChips(r.changes)}<button class="btn primary block" style="margin-top:14px" data-close>Devam</button>`,
+      });
+      continue;
+    }
     await sheet({
       center: true,
       html: `<div class="event-art">${icon(ev.icon || 'sparkle')}</div><h3 class="center">${esc(ev.title)}</h3><p class="lead center">${esc(ev.text)}</p>

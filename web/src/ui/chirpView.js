@@ -7,7 +7,8 @@ import { sfx, buzz } from '../audio.js';
 const TOPIC_LABEL = {
   form_dip: ['Kulis', 'bad'], transfer_offer: ['Transfer', 'gold'], transfer_done: ['Transfer', 'good'], renewal: ['Sözleşme', 'good'],
   great_game: ['Dedikodu', 'accent'], injury: ['Sakatlık', 'bad'], discipline: ['Disiplin', 'bad'], award: ['Ödül', 'gold'],
-  bench: ['Kulis', 'warn'], board: ['Yönetim', 'bad'], player_post: ['Paylaşım', ''],
+  bench: ['Kulis', 'warn'], board: ['Yönetim', 'bad'], player_post: ['Paylaşım', ''], ballon: ['Altın Top', 'gold'],
+  gossip: ['Magazin', 'accent'], scandal: ['Skandal', 'bad'],
 };
 const SENT = { positive: ['Olumlu', 'good'], negative: ['Olumsuz', 'bad'], neutral: ['Nötr', ''] };
 
@@ -57,6 +58,7 @@ export function tweetCard(state, tw, { compactReplies = false } = {}) {
         <span class="muted ellipsis">${esc(author.handle)} · ${when}</span>
       </div>
       <div class="tw-text">${formatText(tw.text, author)}</div>
+      ${tw.meta?.photo ? `<div class="tw-photo"><canvas data-photo="${esc(JSON.stringify(tw.meta.photo))}"></canvas><span class="tb-stamp sm">ÖZEL</span></div>` : ''}
       <div class="row" style="gap:6px;margin-top:8px"><span class="chip ${tone}">${topic}</span>${tw.meta?.scoreLine ? `<span class="chip">${esc(tw.meta.scoreLine)}</span>` : ''}</div>
       <div class="tw-actions">
         <button data-toggle-replies>${icon('comment', 'ico sm')} ${tw.comments.length}</button>

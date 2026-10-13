@@ -324,3 +324,40 @@
 .mod-sw { display: block; width: 28px; height: 16px; border-radius: 5px; border: 1px solid rgba(255, 255, 255, 0.25); }
 .mod-sw.glow { background: var(--g); box-shadow: 0 0 12px var(--g); }
 @media (min-width: 720px) { .mod-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+/* ─────────────── Magazin ─────────────── */
+.press-row .press:nth-child(3) { grid-column: 1 / -1; }
+.sig-magazin { color: #f472b6; }
+.tabloid { position: relative; background: #fffdf5; color: #111827; border-radius: 8px; padding: 10px 12px 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45); transform: rotate(-0.6deg); animation: tbIn 0.5s cubic-bezier(0.2, 1.3, 0.3, 1); }
+@keyframes tbIn { from { transform: rotate(-8deg) scale(0.6); opacity: 0; } to { transform: rotate(-0.6deg) scale(1); opacity: 1; } }
+.tb-mast { display: flex; align-items: baseline; gap: 6px; border-bottom: 3px double #111827; padding-bottom: 4px; }
+.tb-mast b { background: #dc2626; color: #fff; font-weight: 900; font-size: 20px; padding: 0 6px; letter-spacing: 1px; transform: skew(-8deg); }
+.tb-mast span { font-weight: 900; font-size: 20px; letter-spacing: 3px; }
+.tb-mast small { margin-left: auto; font-size: 10px; color: #6b7280; font-weight: 700; }
+.tb-kicker { margin-top: 6px; font-size: 10.5px; font-weight: 900; letter-spacing: 1.5px; color: #dc2626; }
+.tabloid.good .tb-kicker { color: #db2777; }
+.tabloid.warn .tb-kicker { color: #d97706; }
+.tb-head { margin: 2px 0 8px; font-size: 25px; line-height: 1.02; font-weight: 900; text-transform: uppercase; letter-spacing: -0.5px; font-family: Impact, 'Arial Narrow', 'Helvetica Neue', sans-serif; }
+.tb-photo { position: relative; border: 3px solid #111827; background: #000; }
+.tb-photo canvas, .tw-photo canvas, .clip canvas { display: block; width: 100%; aspect-ratio: 192 / 120; image-rendering: pixelated; filter: contrast(1.12) saturate(0.85); }
+.tb-stamp { position: absolute; right: 8px; top: 8px; background: #dc2626; color: #fff; font-weight: 900; font-size: 13px; padding: 2px 8px; transform: rotate(6deg); border: 2px solid #fff; letter-spacing: 1px; }
+.tb-stamp.sm { font-size: 10px; padding: 1px 6px; }
+.tb-credit { position: absolute; left: 6px; bottom: 4px; color: #fff; font-size: 10px; font-weight: 700; text-shadow: 0 1px 2px #000; display: inline-flex; gap: 4px; align-items: center; }
+.tb-sub { margin: 8px 0 0; font-size: 13.5px; line-height: 1.4; color: #374151; font-family: Georgia, 'Times New Roman', serif; }
+.tb-flash { position: absolute; inset: 0; pointer-events: none; background: #fff; opacity: 0; border-radius: inherit; z-index: 3; }
+.tb-flash.go { animation: tbFlash 0.16s ease-out; }
+@keyframes tbFlash { 0% { opacity: 0.95; } 100% { opacity: 0; } }
+.layer .sheet { position: relative; }
+.tw-photo { position: relative; margin-top: 8px; border-radius: 12px; overflow: hidden; border: 1px solid var(--line-2); }
+.press-clips { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; }
+.clip { flex: none; width: 168px; display: flex; flex-direction: column; gap: 4px; padding: 6px 6px 8px; border: 0; border-radius: 6px; background: #fffdf5; color: #111827; text-align: left; font: inherit; cursor: pointer; transform: rotate(-1deg); }
+.clip:nth-child(even) { transform: rotate(1deg); }
+.clip-mast { font-size: 9px; font-weight: 900; color: #dc2626; letter-spacing: 0.5px; }
+.clip b { font-size: 13px; line-height: 1.1; font-weight: 900; text-transform: uppercase; font-family: Impact, 'Arial Narrow', sans-serif; }
+.clip canvas { border: 2px solid #111827; }
+/* Telefonda sahne boş alanı doldurur; cevaplar altta (tasarım referansı gibi) */
+@media (max-width: 719px) {
+  .scene-stage { flex: none; height: min(50vh, 80vw); }
+  .scene-canvas { height: 100%; max-height: none; object-fit: cover; object-position: 30% 100%; }
+  .scene-dialog { justify-content: flex-end; }
+}

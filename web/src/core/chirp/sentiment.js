@@ -19,14 +19,14 @@ const STEMS = {
   destek: 1.5, desteğ: 1.5, inşallah: 1, hadi: 0.5, sabır: 1, sabr: 1, güçlü: 1.5, yıldız: 1, muhteşem: 2,
   bravo: 2, tebrik: 2, helal: 2, cesur: 1.5, özgüven: 1.5, akıllıca: 1.5, örnek: 1, alçakgönüllü: 1.5,
   kazanır: 1, değer: 1, önemli: 0.5, bekliyor: 0.5, çalışkan: 1.5, yetene: 1.5, inanc: 1.5, inanç: 1.5,
-  terlet: 0.5, bomba: 1.5, doğru: 1, profesyonel: 1, iyi: 1, süper: 2, mükemmel: 2,
+  terlet: 0.5, bomba: 1.5, doğru: 1, profesyonel: 1, iyi: 1, süper: 2, mükemmel: 2, yakış: 1.5, mutlu: 1.5, '😍': 1,
   '🔥': 1, '👑': 1, '💪': 1, '🙌': 1, '👏': 1, '🙏': 1, '🏆': 1,
   // olumsuz
   balon: -2, sıfır: -1.5, yük: -1.5, rezalet: -2.5, abart: -1.5, yedek: -1, ısıtır: -1, sat: -1, şaka: -1.5,
   gereksiz: -1.5, klişe: -1.5, samimiyetsiz: -2, kibir: -2, ego: -1.5, tavan: -0.5, yerlerde: -1.5,
   saygısızlık: -2, ceza: -1, suç: -1, ayıp: -2, sakat: -1, kötü: -1.5, bitti: -1, bencil: -2, zarar: -2,
   yeter: -1.5, tembel: -2, torpil: -2, şike: -2, zayıf: -1.5, eksik: -1, eksiğ: -1, olmaz: -1.5, olunmaz: -1.5,
-  hata: -1, yazık: -1.5, sevilmez: -1.5, yetersiz: -2, haksızlık: -2, rezil: -2,
+  hata: -1, yazık: -1.5, sevilmez: -1.5, yetersiz: -2, haksızlık: -2, rezil: -2, disiplinsiz: -2, yorgun: -1, düştü: -1,
   '😡': -1, '👎': -1, '🤡': -1,
 };
 
@@ -49,7 +49,7 @@ export function analyzeSentiment(text) {
     }
   }
   const tokens = s
-    .replace(/([🔥👑💪🙌👏🙏🏆😡👎🤡])/gu, ' $1 ')
+    .replace(/([🔥👑💪🙌👏🙏🏆😡👎🤡😍])/gu, ' $1 ')
     .split(/[\s.,!?;:"'()…-]+/u)
     .filter(Boolean);
   for (let i = 0; i < tokens.length; i++) {

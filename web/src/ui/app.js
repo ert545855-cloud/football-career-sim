@@ -39,6 +39,7 @@ import { agentScreen } from './screens/agent.js';
 import { socialScreen } from './screens/social.js';
 import { homeScreen } from './screens/home.js';
 import { garageScreen } from './screens/garage.js';
+import { tabloidSheet } from './tabloidView.js';
 import { nationalScreen } from './screens/national.js';
 import { ballonCeremony, ballonScreen } from './ballonView.js';
 import { afterCareerClick, afterCareerSection, coachScreen, punditScreen } from './screens/afterCareer.js';
@@ -534,6 +535,8 @@ export function createApp(rootEl) {
         center: true,
         html: `<h3 class="center">${esc(ev.title)}</h3><p class="lead center">${esc(out?.note || '')}</p>${changeChips(out?.changes || [])}<button class="btn primary block" style="margin-top:16px" data-close>Devam</button>`,
       });
+      // Magazine düştüysen gazete sayfası
+      if (out?.press) await tabloidSheet(this, { text: out.note, changes: [], press: out.press });
     },
 
     async offersFlow() {

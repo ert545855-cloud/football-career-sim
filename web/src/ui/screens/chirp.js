@@ -1,11 +1,13 @@
-import { FABRICIO, YAGIZ, playerAuthor, timelineOf } from '../../core/chirp/index.js';
+import { FABRICIO, MAGAZIN, YAGIZ, playerAuthor, timelineOf } from '../../core/chirp/index.js';
+import { paintPhotos } from '../tabloidView.js';
 import { chirpAvatar, icon } from '../art.js';
 import { esc } from '../dom.js';
 import { bindTweetActions, compact, shareCard, shareFlow, tweetCard } from '../chirpView.js';
 
 const FILTERS = [
   { id: 'all', label: 'Akış', fn: null },
-  { id: 'press', label: 'Gazeteciler', fn: (t) => t.authorId !== 'me' },
+  { id: 'press', label: 'Gazeteciler', fn: (t) => t.authorId !== 'me' && t.authorId !== 'magazin' },
+  { id: 'gossip', label: 'Magazin', fn: (t) => t.authorId === 'magazin' },
   { id: 'me', label: 'Paylaşımlarım', fn: (t) => t.authorId === 'me' },
 ];
 
@@ -33,7 +35,7 @@ export function chirpScreen(app) {
         <div class="row" style="gap:8px">${chirpAvatar(me, 34)}<div class="col" style="gap:0"><b class="small">${compact(s.chirp.followers)}</b><span class="muted" style="font-size:10.5px">takipçi</span></div></div>
       </div>
       <div class="press-row">
-        ${[FABRICIO, YAGIZ].map((a) => `<div class="press">${chirpAvatar(a, 38)}<div class="grow" style="min-width:0"><b class="small ellipsis">${esc(a.displayName)}</b><div class="muted ellipsis" style="font-size:11px">${esc(a.signature)} · ${compact(a.followers)}</div></div></div>`).join('')}
+        ${[FABRICIO, YAGIZ, MAGAZIN].map((a) => `<div class="press">${chirpAvatar(a, 38)}<div class="grow" style="min-width:0"><b class="small ellipsis">${esc(a.displayName)}</b><div class="muted ellipsis" style="font-size:11px">${esc(a.signature)} · ${compact(a.followers)}</div></div></div>`).join('')}
       </div>
       ${shareCard(s)}
       <div class="seg" style="margin:12px 0">
@@ -42,6 +44,7 @@ export function chirpScreen(app) {
       <div class="feed-tweets">${tweets.length ? tweets.map((t) => tweetCard(s, t)).join('') : empty}</div>`,
     mount(el) {
       bindTweetActions(app, el);
+      paintPhotos(el, s);
       el.addEventListener('click', async (e) => {
         const fb = e.target.closest('[data-filter]');
         if (fb) {

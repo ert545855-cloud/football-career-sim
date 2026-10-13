@@ -6,7 +6,7 @@ import { RelationshipService } from './relationships.js';
 import { Timeline, ensureChirp } from './timeline.js';
 
 export { ensureChirp, Timeline } from './timeline.js';
-export { TweetModel, AuthorModel, CommentModel, JOURNALISTS, FABRICIO, YAGIZ, playerAuthor } from './models.js';
+export { TweetModel, AuthorModel, CommentModel, JOURNALISTS, FABRICIO, YAGIZ, MAGAZIN, playerAuthor } from './models.js';
 export { POST_STYLES, PlayerPostService } from './posts.js';
 export { RELATIONS, RELATION_DEFAULTS, RelationshipService } from './relationships.js';
 export { ChirpTriggerEngine, TEMPLATES, FORM_DIP_RULE } from './triggers.js';
