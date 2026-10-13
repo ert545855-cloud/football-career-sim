@@ -78,8 +78,40 @@ namespace FootballCareer.Passing
             }
 
             Loft = Mathf.Min(maxLoft, c * loftPerMeter);
-            RebuildLut();
+            Finish();
+        }
 
+        /// <summary>
+        /// Kavisi k ile ölçekler (0 = dümdüz, 1 = çizildiği gibi); uç noktalar değişmez.
+        /// Oyuncunun falso ustalığı: düşük statta çizilen kavisin ancak bir kısmı uygulanabilir.
+        /// </summary>
+        public void ScaleCurve(float k)
+        {
+            k = Mathf.Clamp01(k);
+            if (k >= 0.999f) return;
+            P1 = Vector3.Lerp(Vector3.Lerp(P0, P3, 1f / 3f), P1, k);
+            P2 = Vector3.Lerp(Vector3.Lerp(P0, P3, 2f / 3f), P2, k);
+            Finish();
+        }
+
+        /// <summary>
+        /// Bitişi kaydırır (isabet sapması). Yatay bileşen eğrinin sonunu, dikey bileşen bitiş yüksekliğini (EndLift) değiştirir;
+        /// eğrinin şekli korunur (kontrol noktaları orantılı kayar).
+        /// </summary>
+        public void ShiftEnd(Vector3 delta)
+        {
+            Vector3 flat = new Vector3(delta.x, 0f, delta.z);
+            P1 += flat * (1f / 3f);
+            P2 += flat * (2f / 3f);
+            P3 += flat;
+            EndLift = Mathf.Max(0f, EndLift + delta.y);
+            Finish();
+        }
+
+        /// <summary>LUT ve dönüş açısını yeniden hesaplar.</summary>
+        private void Finish()
+        {
+            RebuildLut();
             Vector3 t0 = Flat(DerivativeT(0f), 0f);
             Vector3 t1 = Flat(DerivativeT(1f), 0f);
             TurnDegrees = (t0.sqrMagnitude > 1e-6f && t1.sqrMagnitude > 1e-6f) ? Vector3.SignedAngle(t0, t1, Vector3.up) : 0f;

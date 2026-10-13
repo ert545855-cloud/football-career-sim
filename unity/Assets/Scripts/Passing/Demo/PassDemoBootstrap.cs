@@ -25,7 +25,9 @@ namespace FootballCareer.Passing.Demo
         private PassCameraController rig;
         private BallController ball;
         private LevelRunner runner;
+        private CareerStatsBridge bridge;
         private NavMeshDataInstance navMesh;
+        private float demoPassing = 50f, demoShooting = 50f;
 
         private string banner;
         private Color bannerColor;
@@ -54,6 +56,11 @@ namespace FootballCareer.Passing.Demo
             manager.SetGoal(goal, null);
             manager.PassFinished += OnPassFinished;
             manager.enabled = false; // bölüm seçilene kadar
+
+            // Kariyer kaydı varsa statlar oynanışı etkiler ve isabetli pas/gol stat geliştirir
+            bridge = gameObject.AddComponent<CareerStatsBridge>();
+            bridge.Setup(manager);
+            if (!bridge.HasCareer) ApplyDemoSkill();
 
             runner = gameObject.AddComponent<LevelRunner>();
             runner.Setup(manager, builder);
@@ -115,18 +122,39 @@ namespace FootballCareer.Passing.Demo
             GUI.Label(new Rect(x, y + 12f, cw, 40f), "ÇİZEREK PAS & ŞUT", titleStyle);
             GUI.Label(new Rect(x, y + 50f, cw, 24f), "Toplam yıldız: " + LevelProgress.TotalStars(runner.Levels) + " / " + (runner.Levels.Count - 1) * 3, smallStyle);
 
-            float rowH = 54f, top = y + 86f;
+            // Stat etkisi: kariyer yoksa kaydırıcılarla denenir
+            float sy = y + 80f;
+            if (bridge.HasCareer)
+            {
+                GUI.Label(new Rect(x + 16f, sy, cw - 32f, 44f), "Kariyer statların oynanışı etkiliyor; isabetli pas ve gol stat geliştirir.\n" + SkillSummary(), smallStyle);
+            }
+            else
+            {
+                GUI.Label(new Rect(x + 16f, sy, 110f, 22f), "Pas: " + Mathf.RoundToInt(demoPassing), smallStyle);
+                float np = GUI.HorizontalSlider(new Rect(x + 130f, sy + 6f, cw - 150f, 16f), demoPassing, 0f, 100f);
+                GUI.Label(new Rect(x + 16f, sy + 24f, 110f, 22f), "Şut: " + Mathf.RoundToInt(demoShooting), smallStyle);
+                float ns = GUI.HorizontalSlider(new Rect(x + 130f, sy + 30f, cw - 150f, 16f), demoShooting, 0f, 100f);
+                if (!Mathf.Approximately(np, demoPassing) || !Mathf.Approximately(ns, demoShooting))
+                {
+                    demoPassing = np;
+                    demoShooting = ns;
+                    ApplyDemoSkill();
+                }
+                GUI.Label(new Rect(x + 16f, sy + 48f, cw - 32f, 22f), SkillSummary(), smallStyle);
+            }
+
+            float rowH = 46f, top = sy + 80f;
             for (int i = 0; i < runner.Levels.Count; i++)
             {
                 PassLevel l = runner.Levels[i];
-                Rect r = new Rect(x + 16f, top + i * (rowH + 6f), cw - 32f, rowH);
+                Rect r = new Rect(x + 16f, top + i * (rowH + 5f), cw - 32f, rowH);
                 bool unlocked = LevelProgress.IsUnlocked(runner.Levels, i);
                 GUI.enabled = unlocked;
                 string label = l.objective == LevelObjective.FreePlay ? "  " + l.title : "  " + (i + 1) + ". " + l.title;
                 if (!unlocked) label += "   (kilitli)";
                 if (GUI.Button(r, label, buttonStyle)) runner.Load(i);
                 GUI.enabled = true;
-                if (l.objective != LevelObjective.FreePlay) DrawStars(new Rect(r.xMax - 96f, r.y + 15f, 84f, 24f), LevelProgress.GetStars(l.id));
+                if (l.objective != LevelObjective.FreePlay) DrawStars(new Rect(r.xMax - 96f, r.y + 11f, 84f, 24f), LevelProgress.GetStars(l.id));
             }
         }
 
@@ -209,6 +237,19 @@ namespace FootballCareer.Passing.Demo
             float bw = (card.width - 50f) / 2f, by = card.yMax - 72f;
             if (GUI.Button(new Rect(card.x + 20f, by, bw, 52f), "Tekrar", buttonStyle)) runner.Retry();
             if (GUI.Button(new Rect(card.x + 30f + bw, by, bw, 52f), "Menü", buttonStyle)) runner.Quit();
+        }
+
+        /// <summary>Kariyer kaydı yokken stat etkisini denemek için (kaydırıcılar).</summary>
+        private void ApplyDemoSkill()
+        {
+            manager.ApplySkill(PassSkillProfile.FromSkills(demoPassing / 100f, demoShooting / 100f, 0.5f));
+        }
+
+        private string SkillSummary()
+        {
+            PassSkillProfile k = manager.Skill;
+            return "Ağır çekim ×" + k.timeScaleFactor.ToString("0.00") + "  ·  pas sapması " + k.passErrorMeters.ToString("0.0")
+                + " m  ·  şut sapması " + k.shotErrorMeters.ToString("0.0") + " m  ·  falso %" + Mathf.RoundToInt(k.shotCurveFidelity * 100f);
         }
 
         private Rect Card(float w, float h, float height)

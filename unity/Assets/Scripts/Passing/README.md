@@ -17,6 +17,8 @@ Namespace: `FootballCareer.Passing` · Unity 2021.3 LTS ve üstü (Unity 6 dahil
 | `PassCameraController.cs` | Üç kamera modu arasında gerçek zamanlı yumuşak geçiş: yayın, oyuncu arkası (3. şahıs) ve top takibi |
 | `PassPath.cs` | Çizimden kübik Bezier üretir, yay uzunluğu tablosunu tutar (sabit hız için) ve falso açısını hesaplar |
 | `PassTypes.cs` | `PassState`, `PassOutcome`, `PassResult` ve `PassResultEvent` tipleri |
+| `PassSkillProfile.cs` | Oyuncu statlarını oynanış çarpanlarına çevirir: ağır çekim, mesafe, hız, isabet sapması, falso ustalığı, top koruma |
+| `CareerStatsBridge.cs` | Kariyer profilini PasManager'a uygular; isabetli pas ve gol statları geliştirir |
 | `Levels/PassLevel.cs` | Bölüm verisi (ScriptableObject): diziliş, hedef, hak, yıldız eşikleri, zorluk |
 | `Levels/LevelRunner.cs` | Bölümü kurar; hedef, puan, hak ve yıldızları yönetir, en iyi sonucu kaydeder |
 | `Levels/LevelScoring.cs` | Puanlama ve yıldız hesabı (`LevelScoring`), kayıt ve kilitler (`LevelProgress`) |
@@ -135,6 +137,27 @@ Her bölümün bir **hedefi**, birkaç **hakkı** ve **yıldız eşikleri** vard
 - Olaylar: `Changed`, `LevelWon`, `LevelLost`.
 - Komutlar: `Load(i)`, `StartPlay()`, `Retry()`, `Next()`, `Quit()`.
 - Demo bunları IMGUI ile çizer; kendi Canvas'ınıza aynı şekilde bağlayabilirsiniz.
+
+## Statların etkisi (kariyer bağlantısı)
+
+`PasManager`'ın yanına `CareerStatsBridge` ekleyin. Aktif kariyer profilinin (`GameSession.Current`) statları oynanışı etkiler; oynanış da statları geliştirir. Statlar Inspector ve bölüm ayarlarının **üzerine çarpan** olarak uygulanır.
+
+| Stat | Etkisi (stat 0 → 100) |
+|---|---|
+| **Pas** | Ağır çekim ×1.30 → ×0.70 (iyi pasöre daha çok düşünme süresi). En uzak pas ×0.80 → ×1.10. Pas hızı. Yanal sapma 30 m'de 1.8 m → 0. Çizilen kavisin uygulanan kısmı %63 → %100 |
+| **Şut** | Şut hızı ×0.94 → ×1.20. Kale ağzında sapma 1 m → 0. Falso ustalığı %63 → %100 |
+| **Hız** (+%30 Dayanıklılık) | Rakibin top kapma mesafesi ×1.14 → ×0.80 |
+| **Enerji** | Düştükçe hepsi zayıflar (`FatigueMultiplier`) |
+
+- Stat 0 bile çaresiz değildir: etki %25 tabandan başlar.
+- Önizleme çizgisi uygulanabilecek kavisi gösterir, yani sürpriz olmaz. Sapma ise pas atıldığında rastgele eklenir; küçük sapmalar sık, büyükleri seyrek görülür.
+- **Gelişim:**
+  - İsabetli pas Pas statına, gol Şut statına gelişim puanı yazar.
+  - Falsolu vuruşlar %60'a kadar daha çok puan verir.
+  - Mevki çarpanları geçerlidir.
+  - İsteğe bağlı olarak her deneme enerji harcar (`spendEnergy`).
+- Kariyer kaydı yoksa nötr profil kullanılır. Demo menüsünde Pas/Şut kaydırıcılarıyla etkiyi deneyebilirsiniz.
+- Kodla uygulamak için: `pas.ApplySkill(PassSkillProfile.FromProfile(profil))` ya da `FromSkills(pas, şut, hız)` (0–1).
 
 ## Oyuna bağlama (sonuçları dinleme)
 

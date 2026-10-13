@@ -142,6 +142,12 @@ namespace FootballCareer.Passing
         public float Pressure { get { return pressure; } }
         public bool IsSlowMotion { get { return Time.timeScale < 0.999f; } }
         public PassResult LastResult { get { return lastResult; } }
+        /// <summary>Oyuncu statlarından gelen etki (CareerStatsBridge ya da ApplySkill ile).</summary>
+        public PassSkillProfile Skill { get { return skill; } }
+        /// <summary>Statlarla ölçeklenmiş ağır çekim oranı.</summary>
+        public float EffectiveSlowTimeScale { get { return Mathf.Clamp(slowTimeScale * skill.timeScaleFactor, 0.05f, 0.6f); } }
+        public float EffectiveMaxPassDistance { get { return maxPassDistance * skill.distanceFactor; } }
+        public float EffectiveStealRadius { get { return stealRadius * skill.stealRadiusFactor; } }
         /// <summary>Çizilen çizgi kaleye mi (şut)?</summary>
         public bool IsShotAimed { get { return shotAimed; } }
         public GoalFrame TargetGoal { get { return targetGoal; } }
@@ -152,6 +158,7 @@ namespace FootballCareer.Passing
         // ─────────────────────────── İç durum ───────────────────────────
 
         private PassState state = PassState.Idle;
+        private PassSkillProfile skill = PassSkillProfile.Neutral;
         private readonly PassPath path = new PassPath();
         private readonly List<Vector3> drawn = new List<Vector3>(128);
         private readonly List<EnemyAI> sortBuffer = new List<EnemyAI>(16);
@@ -261,7 +268,10 @@ namespace FootballCareer.Passing
             else if (ball != null && passer != null) ball.AttachTo(passer, OffsetFor(passer));
         }
 
-        /// <summary>Ağır çekim oranı (bölüm zorluğu / oyuncu statı).</summary>
+        /// <summary>Oyuncu statlarının etkisini uygular (PassSkillProfile.FromProfile ile üretin).</summary>
+        public void ApplySkill(PassSkillProfile profile) { skill = profile; }
+
+        /// <summary>Ağır çekim oranı (bölüm zorluğu). Statlar bunun üzerine çarpan olarak uygulanır.</summary>
         public void SetSlowTimeScale(float scale) { slowTimeScale = Mathf.Clamp(scale, 0.05f, 1f); }
 
         /// <summary>Çizim başlayınca baskıya koşan rakip sayısı (0 = kimse basmaz).</summary>
@@ -363,7 +373,7 @@ namespace FootballCareer.Passing
             SetState(PassState.Aiming);
             pressureActive = false;
             pressure = 0f;
-            BlendTimeTo(slowTimeScale);
+            BlendTimeTo(EffectiveSlowTimeScale);
             aimDir = ComputeAimDirection();
             // Henüz çizim yok: iniş tahmini = pas koridoru (çizimden önce baskı başlarsa rakip buraya koşar)
             predictedLanding = passer.position + aimDir * 12f;
@@ -449,7 +459,7 @@ namespace FootballCareer.Passing
             float goalEnter;
             if (targetGoal != null && targetGoal.RaycastMouth(ray, goalAimMargin, out goalPoint, out goalEnter)
                 && (!groundHit || goalEnter < enter)
-                && HorizontalDistance(drawn[0], goalPoint) <= maxPassDistance)
+                && HorizontalDistance(drawn[0], goalPoint) <= EffectiveMaxPassDistance)
             {
                 // Hedef ağlara doğru biraz uzatılır: top çizgiyi yolun bitiminden ÖNCE, nişan yüksekliğinde geçsin
                 SetTail(goalPoint - targetGoal.Normal * shotOvershoot, true);
@@ -463,7 +473,8 @@ namespace FootballCareer.Passing
             // Topa olan uzaklığı sınırla
             Vector3 fromBall = p - drawn[0];
             fromBall.y = 0f;
-            if (fromBall.sqrMagnitude > maxPassDistance * maxPassDistance) p = drawn[0] + fromBall.normalized * maxPassDistance;
+            float maxD = EffectiveMaxPassDistance;
+            if (fromBall.sqrMagnitude > maxD * maxD) p = drawn[0] + fromBall.normalized * maxD;
             SetTail(p, false);
         }
 
@@ -507,6 +518,8 @@ namespace FootballCareer.Passing
             shotAimed = tailOnGoal && targetGoal != null;
             if (shotAimed) path.Build(drawn, ballY, shotLoftPerMeter, maxLoft, drawn[drawn.Count - 1].y - ballY);
             else path.Build(drawn, ballY, loftPerMeter, maxLoft);
+            // Falso ustalığı: önizleme de uygulanabilecek kavisi gösterir (sürpriz olmasın)
+            path.ScaleCurve(shotAimed ? skill.shotCurveFidelity : skill.passCurveFidelity);
             predictedLanding = path.P3;
 
             SetTarget(shotAimed ? null : FindReceiverNear(predictedLanding, targetRadius));
@@ -570,8 +583,9 @@ namespace FootballCareer.Passing
 
             launchedShot = shotAimed;
             launchSpeed = launchedShot
-                ? Mathf.Clamp(minShotSpeed + shotSpeedPerMeter * path.Length, minShotSpeed, maxShotSpeed)
-                : Mathf.Clamp(minPassSpeed + speedPerMeter * path.Length, minPassSpeed, maxPassSpeed);
+                ? Mathf.Clamp(minShotSpeed + shotSpeedPerMeter * path.Length, minShotSpeed, maxShotSpeed) * skill.shotSpeedFactor
+                : Mathf.Clamp(minPassSpeed + speedPerMeter * path.Length, minPassSpeed, maxPassSpeed) * skill.passSpeedFactor;
+            ApplyAccuracyError();
             launchPasser = passer;
             ball.Launch(path, launchSpeed, passer, launchedShot);
             if (launchedShot && keeper != null) keeper.OnShot(path, launchSpeed);
@@ -602,6 +616,24 @@ namespace FootballCareer.Passing
             {
                 runner.OnPassLaunched(predictedLanding);
             }
+        }
+
+        /// <summary>
+        /// İsabet sapması (statlara bağlı): çizginin sonu rastgele kayar. Üçgen dağılım → küçük sapmalar sık,
+        /// büyükler seyrek. Paslarda yanal (mesafeyle orantılı), şutlarda kale ağzında yanal + dikey.
+        /// </summary>
+        private void ApplyAccuracyError()
+        {
+            Vector3 chord = path.P3 - path.P0;
+            chord.y = 0f;
+            float len = chord.magnitude;
+            if (len < 0.5f) return;
+            float err = launchedShot ? skill.shotErrorMeters : skill.passErrorMeters * Mathf.Clamp(len / 30f, 0.3f, 1.5f);
+            if (err <= 0.001f) return;
+            Vector3 side = Vector3.Cross(Vector3.up, chord / len);
+            float lateral = (UnityEngine.Random.value - UnityEngine.Random.value) * err;
+            float vertical = launchedShot ? (UnityEngine.Random.value - UnityEngine.Random.value) * err * 0.6f : 0f;
+            path.ShiftEnd(side * lateral + Vector3.up * vertical);
         }
 
         private void OnFlightFinished(BallContact contact)
@@ -661,7 +693,7 @@ namespace FootballCareer.Passing
             int count = Mathf.Min(pressersCount, sortBuffer.Count);
             for (int i = 0; i < count; i++) sortBuffer[i].StartPress(this, passer, i % 2 == 1);
             // Gösterge, en yakın rakibin (basmasa bile) uzaklığına göre dolar
-            pressureStartDistance = Mathf.Max(stealRadius + 0.5f, sortBuffer[0].HorizontalDistanceTo(passer.position));
+            pressureStartDistance = Mathf.Max(EffectiveStealRadius + 0.5f, sortBuffer[0].HorizontalDistanceTo(passer.position));
         }
 
         /// <summary>Bir rakip pasöre yeterince yaklaştıysa top kapılır. Ayrıca baskı göstergesini günceller.</summary>
@@ -681,8 +713,9 @@ namespace FootballCareer.Passing
                 }
             }
             if (thief == null) return false;
-            pressure = 1f - Mathf.Clamp01((nearest - stealRadius) / Mathf.Max(0.01f, pressureStartDistance - stealRadius));
-            if (nearest > stealRadius) return false;
+            float steal = EffectiveStealRadius;
+            pressure = 1f - Mathf.Clamp01((nearest - steal) / Mathf.Max(0.01f, pressureStartDistance - steal));
+            if (nearest > steal) return false;
 
             // Oyalandın, top gitti
             SetTimeScaleImmediate(1f);
