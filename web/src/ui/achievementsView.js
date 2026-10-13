@@ -16,9 +16,19 @@ export function badgeHTML(ach, { unlocked = true, size = 56 } = {}) {
 let showing = Promise.resolve();
 
 /** Açılan başarımları sırayla, üstten kayan bir şeritle gösterir (oyunu bloklamaz). */
+const TIER_RANK = { platinum: 4, gold: 3, silver: 2, bronze: 1 };
+
 export function showAchievementToasts(list) {
   if (!list?.length) return showing;
+  // Çok sayıda rozet aynı anda açıldıysa (ör. eski kayıt) en değerli ikisi + toplu özet gösterilir
+  let rest = 0;
+  if (list.length > 3) {
+    const sorted = [...list].sort((x, y) => TIER_RANK[y.tier] - TIER_RANK[x.tier]);
+    rest = list.length - 2;
+    list = sorted.slice(0, 2);
+  }
   showing = showing.then(async () => {
+    if (rest) list = [...list, { id: '_more', tier: 'silver', title: `+${rest} başarım daha`, desc: 'Kariyer › Başarımlar ekranından hepsini gör.', icon: 'medal' }];
     for (const ach of list) {
       const tier = TIERS[ach.tier];
       const node = el(`<div class="ach-toast t-${ach.tier}" style="--tier:${tier.color}">

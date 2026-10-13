@@ -3,6 +3,7 @@ import { SAVE_VERSION, emptySeasonStats } from './game.js';
 import { migrateChirp } from './chirp/index.js';
 import { ensureMentor } from './mentor/index.js';
 import { ensureAchievements } from './achievements.js';
+import { ensureAgent } from './agent.js';
 
 const KEY = 'krampon.save.v1';
 const SETTINGS_KEY = 'krampon.settings';
@@ -65,6 +66,7 @@ export function migrate(state) {
   migrateChirp(state);
   ensureMentor(state);
   ensureAchievements(state);
+  ensureAgent(state);
   return state;
 }
 

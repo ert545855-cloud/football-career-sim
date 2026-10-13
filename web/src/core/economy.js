@@ -35,7 +35,9 @@ export function weeklyUpkeep(state) {
 export function weeklyFinance(state) {
   const income = state.career.contract.wage;
   const upkeep = weeklyUpkeep(state);
-  return { income, living: LIVING_COST, upkeep, net: income - LIVING_COST - upkeep };
+  // Menajer komisyonu (core/agent.js): maaştan haftalık pay
+  const agent = Math.round(income * (state.agent?.commission || 0));
+  return { income, living: LIVING_COST, upkeep, agent, net: income - LIVING_COST - upkeep - agent };
 }
 
 export function canBuy(state, item) {
@@ -144,7 +146,10 @@ export function outlookFor(clubR, playerOvr) {
 export function acceptOffer(state, offer) {
   const { career, player } = state;
   const moving = offer.clubId !== career.clubId;
-  career.money += offer.signingBonus || 0;
+  // İmza parasından menajer payı düşülür
+  const cut = Math.round((offer.signingBonus || 0) * (state.agent?.commission || 0));
+  career.money += (offer.signingBonus || 0) - cut;
+  if (cut && state.agent) state.agent.paid = (state.agent.paid || 0) + cut;
   career.contract = { wage: offer.wage, yearsLeft: offer.years };
   if (moving) {
     const from = CLUB_BY_ID[career.clubId]?.name;

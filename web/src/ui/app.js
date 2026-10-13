@@ -33,6 +33,9 @@ import { tryoutsScreen } from './screens/tryouts.js';
 import { achievementsScreen } from './screens/achievements.js';
 import { checkAchievements, drainAchievementQueue } from '../core/achievements.js';
 import { showAchievementToasts } from './achievementsView.js';
+import { AGENT_RULES, currentAgent } from '../core/agent.js';
+import { agentAvatar, negotiationSheet } from './agentView.js';
+import { agentScreen } from './screens/agent.js';
 import { runTryoutStation, heartsHTML } from '../games/tryoutStation.js';
 import { POSITIONS as POS } from '../core/data.js';
 import { createWorld } from '../core/league.js';
@@ -66,6 +69,7 @@ export function createApp(rootEl) {
     mentor: mentorScreen,
     tryouts: tryoutsScreen,
     achievements: achievementsScreen,
+    agent: agentScreen,
     retired: retiredScreen,
   };
 
@@ -453,6 +457,7 @@ export function createApp(rootEl) {
             <div class="row between small"><span class="muted">Maaş</span><b style="color:var(--good)">+${money(f.income)}</b></div>
             <div class="row between small" style="margin-top:6px"><span class="muted">Yaşam gideri</span><b style="color:var(--bad)">−${money(f.living)}</b></div>
             ${f.upkeep ? `<div class="row between small" style="margin-top:6px"><span class="muted">Eşya/abonelik</span><b style="color:var(--bad)">−${money(f.upkeep)}</b></div>` : ''}
+            ${f.agent ? `<div class="row between small" style="margin-top:6px"><span class="muted">Menajer komisyonu</span><b style="color:var(--bad)">−${money(f.agent)}</b></div>` : ''}
             <div class="divider" style="margin:10px 0"></div>
             <div class="row between"><span>Kasa</span><b style="color:var(--gold)">${money(s.career.money)}</b></div>
           </div>
@@ -517,17 +522,41 @@ export function createApp(rootEl) {
         return;
       }
       sfx('coin');
-      const choice = await sheet({
-        dismissable: false,
-        html: `<h3>${p.kind === 'mid' ? 'Devre Arası Teklifler' : 'Sezon Sonu Teklifler'}</h3>
-          <p class="lead">${p.mandatory ? 'Sözleşmen sona erdi. Devam etmek için bir teklifi kabul etmelisin.' : 'Menajerin masana teklifler koydu. İstersen kulübünde kalabilirsin.'}</p>
-          ${p.list.map((o, i) => offerCard(s, o, i)).join('')}
-          ${p.mandatory ? '' : '<button class="btn ghost block" style="margin-top:12px" data-close="decline">Tümünü reddet, kulübümde kal</button>'}`,
-        onMount: (node, close) => node.addEventListener('click', (e) => {
-          const b = e.target.closest('[data-offer]');
-          if (b) close(`offer:${b.dataset.offer}`);
-        }),
-      });
+      const ag = currentAgent(s);
+      let choice;
+      // Pazarlık turlarından sonra liste yeniden çizilir (masadan kalkan teklifler düşer)
+      for (;;) {
+        const live = p.list.map((o, i) => ({ o, i })).filter(({ o }) => !o.withdrawn);
+        if (!live.length) {
+          // Hepsi masadan kalktı: sözleşme bittiyse son çare teklifini geri getir
+          if (p.mandatory) {
+            p.list.forEach((o) => { o.withdrawn = false; o.rounds = AGENT_RULES.maxRounds; });
+            continue;
+          }
+          s.pending.offers = null;
+          this.save();
+          toast('Masada teklif kalmadı. Kulübünde devam!');
+          return;
+        }
+        choice = await sheet({
+          dismissable: false,
+          html: `<h3>${p.kind === 'mid' ? 'Devre Arası Teklifler' : 'Sezon Sonu Teklifler'}</h3>
+            <div class="row" style="gap:10px;margin:6px 0 10px">${agentAvatar(ag, 40)}<p class="lead" style="margin:0">${p.mandatory ? 'Sözleşmen sona erdi. Devam etmek için bir teklifi kabul etmelisin.' : ag.id === 'self' ? 'Teklifleri kendin değerlendiriyorsun. İstersen kulübünde kalabilirsin.' : `${esc(ag.name)} masana teklifleri koydu. Pazarlık edebilir ya da kulübünde kalabilirsin.`}</p></div>
+            ${live.map(({ o, i }) => offerCard(s, o, i, { negotiable: !o.negotiated && (o.rounds || 0) < AGENT_RULES.maxRounds })).join('')}
+            ${p.mandatory ? '' : '<button class="btn ghost block" style="margin-top:12px" data-close="decline">Tümünü reddet, kulübümde kal</button>'}`,
+          onMount: (node, close) => node.addEventListener('click', (e) => {
+            const b = e.target.closest('[data-offer]');
+            if (b) close(`offer:${b.dataset.offer}`);
+            const n = e.target.closest('[data-negotiate]');
+            if (n) close(`neg:${n.dataset.negotiate}`);
+          }),
+        });
+        if (typeof choice === 'string' && choice.startsWith('neg:')) {
+          await negotiationSheet(this, p.list[Number(choice.split(':')[1])]);
+          continue;
+        }
+        break;
+      }
       if (typeof choice === 'string' && choice.startsWith('offer:')) {
         const offer = p.list[Number(choice.split(':')[1])];
         const text = takeOffer(s, offer);

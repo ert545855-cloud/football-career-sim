@@ -42,7 +42,7 @@ export function clubLine(clubId) {
   return `<span class="row" style="gap:6px">${crestSVG(c, 'crest sm')}<span class="ellipsis">${esc(c.name)}</span></span>`;
 }
 
-export function offerCard(state, offer, i) {
+export function offerCard(state, offer, i, { negotiable = false } = {}) {
   const c = CLUB_BY_ID[offer.clubId];
   const lg = LEAGUES[leagueOf(offer.clubId)];
   const r = clubRating(state.world, offer.clubId);
@@ -61,9 +61,13 @@ export function offerCard(state, offer, i) {
           <span class="chip">${offer.years} yıl</span>
           ${offer.signingBonus ? `<span class="chip gold">İmza ${money(offer.signingBonus)}</span>` : ''}
           ${offer.outlook ? `<span class="chip ${tone}">${esc(offer.outlook.label)}</span>` : ''}
+          ${offer.guarantee ? '<span class="chip good">İlk 11 garantisi</span>' : ''}
+          ${offer.viaAgent ? `<span class="chip accent">${icon('handshake', 'ico xs')} Ajanının bağlantısı</span>` : ''}
+          ${offer.negotiated ? '<span class="chip accent">Pazarlıkla iyileşti</span>' : ''}
         </div>
       </div>
     </div>
-    <button class="btn primary block" style="margin-top:10px" data-offer="${i}">${icon('check')} ${offer.renewal ? 'Sözleşmeyi Yenile' : 'İmzala'}</button>
+    ${negotiable ? `<div class="offer-btns"><button class="btn block" data-negotiate="${i}">${icon('handshake')} Pazarlık</button><button class="btn primary block" data-offer="${i}">${icon('check')} ${offer.renewal ? 'Yenile' : 'İmzala'}</button></div>`
+      : `<button class="btn primary block" style="margin-top:10px" data-offer="${i}">${icon('check')} ${offer.renewal ? 'Sözleşmeyi Yenile' : 'İmzala'}</button>`}
   </div>`;
 }

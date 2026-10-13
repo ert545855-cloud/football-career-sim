@@ -5,6 +5,9 @@ import { ovr } from '../../core/player.js';
 import { crestSVG, icon } from '../art.js';
 import { animateBars, esc } from '../dom.js';
 import { achievementsCard } from '../achievementsView.js';
+import { currentAgent } from '../../core/agent.js';
+import { money } from '../../core/economy.js';
+import { agentAvatar } from '../agentView.js';
 
 export function careerScreen(app) {
   const s = app.state;
@@ -36,6 +39,7 @@ export function careerScreen(app) {
       <p class="muted small" style="margin:4px 0 0">${s.player.age} yaş · ${c.moves || 0} transfer · ${c.caps || 0} milli maç · OVR ${ovr(s.player)}</p>
 
       <div style="margin-top:14px">${achievementsCard(s)}</div>
+      <button class="card ag-entry" data-act="agent">${agentAvatar(currentAgent(s), 44)}<div class="grow" style="min-width:0"><b>Menajer ve sözleşme</b><div class="muted small ellipsis">${esc(currentAgent(s).name)} · ${money(c.contract.wage)}/hf · ${c.contract.yearsLeft} yıl</div></div>${icon('chev')}</button>
 
       <div class="h-sec">Bu sezon</div>
       <div class="kpis">
@@ -70,6 +74,9 @@ export function careerScreen(app) {
         if (e.target.closest('[data-act="achievements"]')) {
           app.click();
           app.go('achievements');
+        } else if (e.target.closest('[data-act="agent"]')) {
+          app.click();
+          app.go('agent');
         }
       });
     },

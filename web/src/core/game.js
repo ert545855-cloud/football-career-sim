@@ -21,6 +21,7 @@ import {
   applyStarterOffer, assignYouthNumber, ensureNumberAfterMove, isTransferLocked, resolveStartTerms, squadClubId,
 } from './onboarding/index.js';
 import { random } from './rng.js';
+import { agentNetworkOffers, agentSponsorMult, ensureAgent } from './agent.js';
 import { achievementsOnMatch, achievementsOnTraining, checkAchievements, ensureAchievements } from './achievements.js';
 
 export const SAVE_VERSION = 1;
@@ -72,6 +73,7 @@ export function newGame(setup) {
   ensureChirp(state);
   ensureMentor(state);
   ensureAchievements(state);
+  ensureAgent(state);
   // Forma numarası: seçilmez, kulüp boştaki genç numaralarından verir
   if (!setup.number) assignYouthNumber(state, random);
   else state.career.numberHistory.push({ season: 1, clubId: state.career.clubId, number: player.number, reason: 'Başlangıç' });
@@ -182,7 +184,7 @@ export function doAction(state, id) {
       break;
     }
     case 'sponsor': {
-      const earned = roundTo((150 + player.fame * 70) * new RelationshipService(state).sponsorMultiplier(), 50);
+      const earned = roundTo((150 + player.fame * 70) * new RelationshipService(state).sponsorMultiplier() * agentSponsorMult(state), 50);
       career.money += earned;
       changeEnergy(player, -12);
       title = 'Reklam Çekimi';
@@ -262,6 +264,7 @@ function endWeek(state, ctx) {
   const { player, career, calendar, flags } = state;
   const fin = weeklyFinance(state);
   career.money += fin.net;
+  if (fin.agent && state.agent) state.agent.paid = (state.agent.paid || 0) + fin.agent;
   const fx = itemEffects(state);
   const before = snapshot(state);
 
@@ -292,7 +295,7 @@ function endWeek(state, ctx) {
   let offers = null;
   // Kiralıkta / altyapıdayken devre arası transfer penceresi kapalı
   if (calendar.week === MID_WINDOW_WEEK && !isTransferLocked(state)) {
-    offers = generateOffers(state, 'mid');
+    offers = agentNetworkOffers(state, generateOffers(state, 'mid'), 'mid');
     state.pending.offers = offers.length ? { kind: 'mid', list: offers, mandatory: false } : null;
     chirpTweets.push(...chirpOnOffers(state, offers));
   }
@@ -367,7 +370,7 @@ export function endSeason(state) {
   }
 
   // Yeni bir kiralık dönemi başladıysa (altyapıdan yükselip kiralanma) sezon sonu teklifleri gelmez
-  const offers = isTransferLocked({ ...state, calendar: { ...calendar, season: calendar.season + 1 } }) && career.contract.yearsLeft > 0 ? [] : generateOffers(state, 'end');
+  const offers = isTransferLocked({ ...state, calendar: { ...calendar, season: calendar.season + 1 } }) && career.contract.yearsLeft > 0 ? [] : agentNetworkOffers(state, generateOffers(state, 'end'), 'end');
   const mustChoose = career.contract.yearsLeft <= 0;
   state.pending.offers = offers.length ? { kind: 'end', list: offers, mandatory: mustChoose } : null;
   chirpOnSeasonEnd(state, { awards });
@@ -424,6 +427,8 @@ export function takeOffer(state, offer) {
     const n = ensureNumberAfterMove(state);
     if (n.changed) addNews(state, `Yeni kulübünde ${n.number} numaralı formayı giyeceksin.`, 'info');
   }
+  // Pazarlıkla alınan "ilk 11 garantisi" maddesi: sezon ortasında imzalandıysa gelecek sezonu da kapsar
+  if (offer.guarantee) state.career.guarantee = { untilSeason: state.calendar.season + (state.calendar.week > 1 ? 1 : 0), reason: 'contract' };
   state.pending.offers = null;
   state.pending.match = null; // eski kulübün planlanmış maçı geçersiz
   addNews(state, text, 'good');
