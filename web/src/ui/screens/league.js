@@ -50,7 +50,7 @@ export function leagueScreen(app, params = {}) {
       <h1 class="h-title">Lig</h1>
       <p class="muted small" style="margin:4px 0 12px">Sezon ${s.calendar.season} · Hafta ${Math.min(s.calendar.week, SEASON_WEEKS)}/${SEASON_WEEKS}</p>
       <div class="seg" style="margin-bottom:10px">
-        ${Object.values(LEAGUES).map((l) => `<button class="${view.league === l.id ? 'on' : ''}" data-lg="${l.id}">${l.name}</button>`).join('')}
+        ${Object.values(LEAGUES).filter((l) => !l.youth || myLeague === l.id).map((l) => `<button class="${view.league === l.id ? 'on' : ''}" data-lg="${l.id}">${l.name}</button>`).join('')}
       </div>
       <div class="seg">
         <button class="${view.tab === 'table' ? 'on' : ''}" data-tab="table">Puan Durumu</button>

@@ -34,6 +34,13 @@ export function hubScreen(app) {
     : flags.suspendedWeeks > 0 ? `<span class="chip bad">${icon('shield')} Cezalı · ${flags.suspendedWeeks} maç</span>`
     : player.energy < 30 ? `<span class="chip warn">${icon('bolt')} Yorgun</span>` : '';
 
+  // Başlangıç yolu durumları: kiralık / altyapı / ilk 11 garantisi
+  const startChips = [
+    career.loan && calendar.season <= career.loan.untilSeason ? `<span class="chip warn">${icon('swap', 'ico sm')} Kiralık · ${esc(CLUB_BY_ID[career.loan.parentId].short)}</span>` : '',
+    career.academy && calendar.season <= career.academy.untilSeason ? `<span class="chip accent">${icon('star', 'ico sm')} Altyapı · U-17</span>` : '',
+    career.guarantee && calendar.season <= career.guarantee.untilSeason ? `<span class="chip good">${icon('check', 'ico sm')} İlk 11 garantisi</span>` : '',
+  ].join('');
+
   const news = career.news.slice(0, 3).map((n) => `<div class="li"><span class="news-dot ${n.kind}"></span><div class="grow small">${esc(n.text)}</div><span class="muted small">H${n.w}</span></div>`).join('');
 
   return {
@@ -48,6 +55,7 @@ export function hubScreen(app) {
         <div class="ovr-badge">${ov.ovr}<small>OVR</small></div>
       </div>
 
+      ${startChips ? `<div class="chips" style="margin-top:10px">${startChips}</div>` : ''}
       ${shareCard(s)}
 
       <div class="row between" style="margin-top:14px">

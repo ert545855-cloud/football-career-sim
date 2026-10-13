@@ -70,6 +70,8 @@ export const TRAINING = {
 export const LEAGUES = {
   super: { id: 'super', name: 'Süper Lig', short: 'SL', tier: 1 },
   first: { id: 'first', name: '1. Lig', short: '1L', tier: 2 },
+  /** Dev kulüplerin altyapı takımlarından oluşan gelişim ligi (Seçenek C) */
+  u17: { id: 'u17', name: 'U-17 Gelişim Ligi', short: 'U17', tier: 3, youth: true },
 };
 
 // Kurgusal kulüpler. rating = kulübün genel gücü (oyuncu OVR'si ile aynı ölçek).
@@ -101,7 +103,24 @@ export const CLUBS = [
   { id: 'van', name: 'Van Gölü SK', short: 'VAN', league: 'first', rating: 26, colors: ['#0ea5e9', '#14532d'], pattern: 'hoops', city: 'Van' },
 ];
 
-export const CLUB_BY_ID = Object.fromEntries(CLUBS.map((c) => [c.id, c]));
+/**
+ * Altyapı (U-17) takımları: Süper Lig kulüplerinin gençleri. Kendi liglerinde oynarlar,
+ * transfer tekliflerine ve büyük kulüp listelerine girmezler (CLUBS yalnızca A takımları içerir).
+ */
+export const YOUTH_CLUBS = CLUBS.filter((c) => c.league === 'super').map((c) => ({
+  ...c,
+  id: `${c.id}-u17`,
+  name: `${c.name} U-17`,
+  league: 'u17',
+  rating: Math.round(16 + (c.rating - 50) * 0.35),
+  parentId: c.id,
+  youth: true,
+}));
+
+/** Lig tablosu ve fikstür üretimi için tüm takımlar (A takımları + altyapı) */
+export const ALL_CLUBS = [...CLUBS, ...YOUTH_CLUBS];
+
+export const CLUB_BY_ID = Object.fromEntries(ALL_CLUBS.map((c) => [c.id, c]));
 
 export const SEASON_WEEKS = 22;
 export const MID_WINDOW_WEEK = 11;

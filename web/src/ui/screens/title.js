@@ -21,8 +21,9 @@ export function titleScreen(app) {
           <div class="hero-shadow"></div>
         </div>
         <div class="title-actions">
-          ${canContinue ? `<button class="btn primary lg block" data-act="continue">${icon('play')} Devam Et</button>` : ''}
-          <button class="btn ${canContinue ? 'ghost' : 'primary'} lg block" data-act="new">${icon('plus')} Yeni Kariyer</button>
+          ${app.draft ? `<button class="btn primary lg block" data-act="tryouts">${icon('play')} Seçmelere Devam Et</button>` : ''}
+          ${canContinue ? `<button class="btn ${app.draft ? 'ghost' : 'primary'} lg block" data-act="continue">${icon('play')} Devam Et</button>` : ''}
+          <button class="btn ${canContinue || app.draft ? 'ghost' : 'primary'} lg block" data-act="new">${icon('plus')} Yeni Kariyer</button>
           <button class="btn ghost block" data-act="settings">${icon('gear')} Ayarlar</button>
           ${standalone ? '' : `<p class="install-tip">${isIOS
             ? 'Uygulama gibi oynamak için Safari\'de <b>Paylaş</b> → <b>Ana Ekrana Ekle</b>.'
@@ -35,6 +36,7 @@ export function titleScreen(app) {
         if (!act) return;
         app.click();
         if (act === 'continue') app.resume();
+        if (act === 'tryouts') app.go('tryouts');
         if (act === 'new') {
           if (canContinue) {
             const ok = await app.confirm('Yeni kariyer', 'Mevcut kariyerin silinecek. Emin misin?', 'Evet, baştan başla');

@@ -18,6 +18,9 @@ export function selection(state) {
     reason = 'tired';
   }
   const gap = Math.round(score - competitor);
+  // Başlangıç sözleşmesindeki ilk 11 garantisi (alt lig / kiralık forma şartı / altyapı)
+  const g = career.guarantee;
+  if (g && state.calendar.season <= g.untilSeason) return { role: 'starter', reason: 'guarantee', competitor, score, gap };
   return { role: score >= competitor ? 'starter' : 'bench', reason, competitor, score, gap };
 }
 

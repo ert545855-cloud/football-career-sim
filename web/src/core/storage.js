@@ -57,9 +57,38 @@ export function migrate(state) {
   state.career.awards = state.career.awards || [];
   state.career.history = state.career.history || [];
   state.career.season = state.career.season || emptySeasonStats();
+  state.career.numberHistory = state.career.numberHistory || [{ season: state.calendar?.season || 1, clubId: state.career.clubId, number: state.player.number, reason: 'Eski kayıt' }];
+  state.career.loan = state.career.loan ?? null;
+  state.career.academy = state.career.academy ?? null;
+  state.career.guarantee = state.career.guarantee ?? null;
   migrateChirp(state);
   ensureMentor(state);
   return state;
+}
+
+// ── Seçmeler taslağı: kamp yarıda kalırsa kaldığı yerden devam etmek için ──
+const DRAFT_KEY = 'krampon.draft.v1';
+
+export function saveDraft(draft) {
+  try {
+    storage()?.setItem(DRAFT_KEY, JSON.stringify(draft));
+  } catch {
+    /* yoksay */
+  }
+}
+
+export function loadDraft() {
+  try {
+    const raw = storage()?.getItem(DRAFT_KEY);
+    const d = raw ? JSON.parse(raw) : null;
+    return d && typeof d.name === 'string' && d.tryout ? d : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearDraft() {
+  storage()?.removeItem(DRAFT_KEY);
 }
 
 /** Kaydı panoya kopyalanabilir metne çevirir (cihaz değiştirmek için). */

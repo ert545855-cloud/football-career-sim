@@ -57,8 +57,10 @@ export class MentorManager {
 
   // ───────────────────────── Kadro ─────────────────────────
 
+  /** Kadro/mentor kulübü: altyapıdayken A takımın kadrosu (U-17 oyuncusu A takım tecrübelilerinden öğrenir) */
   get clubId() {
-    return this.state.career.clubId;
+    const c = this.state.career;
+    return c.academy?.parentId || c.clubId;
   }
 
   get season() {

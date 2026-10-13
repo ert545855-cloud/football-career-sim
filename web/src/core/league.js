@@ -1,4 +1,4 @@
-import { CLUBS, CLUB_BY_ID, LEAGUES, SEASON_WEEKS } from './data.js';
+import { ALL_CLUBS, CLUB_BY_ID, LEAGUES, SEASON_WEEKS } from './data.js';
 import { clamp, poisson, shuffle, randInt, rand } from './rng.js';
 
 /** Çift devreli lig fikstürü (çember yöntemi). 12 takım → 22 hafta. */
@@ -29,10 +29,10 @@ function emptyRow(id) {
 }
 
 export function createWorld(season = 1, prevRatings = null) {
-  const ratings = prevRatings ? { ...prevRatings } : Object.fromEntries(CLUBS.map((c) => [c.id, c.rating]));
+  const ratings = Object.fromEntries(ALL_CLUBS.map((c) => [c.id, prevRatings?.[c.id] ?? c.rating]));
   const leagues = {};
   for (const lg of Object.values(LEAGUES)) {
-    const ids = CLUBS.filter((c) => c.league === lg.id).map((c) => c.id);
+    const ids = ALL_CLUBS.filter((c) => c.league === lg.id).map((c) => c.id);
     leagues[lg.id] = {
       id: lg.id,
       teams: ids,

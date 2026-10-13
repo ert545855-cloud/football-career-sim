@@ -7,7 +7,7 @@ import { getEvent } from '../core/events.js';
 import { money } from '../core/economy.js';
 import { clubRating, leagueOf } from '../core/league.js';
 import { growthMult, ovr } from '../core/player.js';
-import { clearSave, loadGame, loadSettings, saveGame, saveSettings } from '../core/storage.js';
+import { clearDraft, clearSave, loadDraft, loadGame, loadSettings, saveDraft, saveGame, saveSettings } from '../core/storage.js';
 import { runMiniGame } from '../games/index.js';
 import { buzz, sfx } from '../audio.js';
 import { crestSVG, icon, playerAvatar } from './art.js';
@@ -29,6 +29,11 @@ import { MENTOR_TRAITS, MentorManager } from '../core/mentor/index.js';
 import { legacyShiftSheet, requestsSheet, selectionSheet } from './mentorView.js';
 import { ACTION_SPRITES, ROLE_SPRITES, TRAINING_SPRITES, awardArt, eventArt } from './spriteMap.js';
 import { sprite, spriteOr } from '../assets/sprites.js';
+import { tryoutsScreen } from './screens/tryouts.js';
+import { runTryoutStation, heartsHTML } from '../games/tryoutStation.js';
+import { POSITIONS as POS } from '../core/data.js';
+import { createWorld } from '../core/league.js';
+import { MAX_SCORE, TryoutSession, buildStarterOffers, randomAvatar, tryoutStatBonus } from '../core/onboarding/index.js';
 
 const TABS = [
   { id: 'home', screen: 'hub', label: 'Ana Sayfa', icon: 'home' },
@@ -56,17 +61,19 @@ export function createApp(rootEl) {
     match: matchScreen,
     chirp: chirpScreen,
     mentor: mentorScreen,
+    tryouts: tryoutsScreen,
     retired: retiredScreen,
   };
 
   const app = {
     state: loadGame(),
+    /** Seçmeler taslağı (kamp sürerken) */
+    draft: loadDraft(),
     settings: loadSettings(),
     installPrompt: null,
     autoplay: new URLSearchParams(location.search).has('autoplay'),
     current: null,
     prev: null,
-    draft: null,
 
     save() {
       if (this.state) saveGame(this.state);
@@ -114,23 +121,120 @@ export function createApp(rootEl) {
       });
     },
 
-    async startCareer(draft) {
-      this.state = newGame({ name: draft.name, position: draft.position, avatar: draft.avatar, number: draft.number });
+    // ── Başlangıç akışı: isim → seçmeler kampı → rapor/mevki → teklifler → imza ──
+    saveDraft() {
+      if (this.draft) saveDraft(this.draft);
+    },
+
+    startTryouts(name) {
+      this.draft = { name, avatar: randomAvatar(), tryout: new TryoutSession().toJSON(), stage: 'camp', position: null, offers: null, score: 0 };
+      this.nameDraft = null;
+      this.saveDraft();
+      this.go('tryouts');
+    },
+
+    async leaveTryouts() {
+      const ok = await this.confirm('Kamptan ayrıl', 'Seçmeler kaydedildi; ana menüden kaldığın yerden devam edebilirsin.', 'Ana menüye dön');
+      if (ok) this.go('title');
+    },
+
+    /** Sıradaki istasyonu oynatır, sonucu gösterir, taslağı kaydeder. */
+    async runStation() {
+      const d = this.draft;
+      const session = new TryoutSession(d.tryout);
+      const station = session.current;
+      if (!station) return this.go('tryouts');
+      const summary = await runTryoutStation({
+        station,
+        session,
+        myKit: { colors: ['#334155', '#f8fafc'] },
+        number: '?',
+        auto: this.autoplay,
+        // Her denemeden sonra kaydet: sayfayı yenileyerek kaybedilen hak geri alınamaz
+        onProgress: (sess) => {
+          d.tryout = sess.toJSON();
+          this.saveDraft();
+        },
+      });
+      d.tryout = session.toJSON();
+      d.score = session.score();
+      this.saveDraft();
+      if (summary.hearts) sfx('levelup');
+      await sheet({
+        center: true,
+        html: `
+          <div class="center"><span class="chip ${summary.hearts ? 'good' : 'bad'}">${esc(station.name.toLocaleUpperCase('tr'))} TAMAMLANDI</span></div>
+          <div class="hearts big center" style="margin:16px 0 8px">${heartsHTML(summary.hearts)}</div>
+          <h3 class="center">${summary.hearts}/3 hak ile bitirdin</h3>
+          <p class="lead center">${summary.successes}/${summary.attempts} başarılı deneme. ${summary.eliminated ? 'Bu istasyonda tüm haklarını kaybettin ama kamp devam ediyor.' : 'Kalan hakların seçme skoruna eklendi.'}</p>
+          <div class="score-strip"><span class="muted small">Seçme skoru</span><div class="bar thick grow"><i style="--c:var(--gold)" data-w="${(d.score / MAX_SCORE) * 100}"></i></div><b class="tnum">${d.score}/${MAX_SCORE}</b></div>
+          <button class="btn primary block" style="margin-top:16px" data-close>${session.finished ? 'Seçme raporu' : 'Sıradaki istasyon'}</button>`,
+        onMount: (n) => animateBars(n),
+      });
+      if (session.finished) d.stage = 'report';
+      this.saveDraft();
+      this.go('tryouts');
+    },
+
+    /** Rapordan teklif ekranına: teklifler bir kez üretilir ve taslakta saklanır (yenilemede değişmez). */
+    showStarterOffers() {
+      const d = this.draft;
+      const session = new TryoutSession(d.tryout);
+      const report = session.report();
+      d.position = d.position || report.position;
+      d.score = report.score;
+      if (!d.offers) {
+        const bonus = tryoutStatBonus(report);
+        const pos = POS[d.position];
+        const stats = { ...pos.stats };
+        for (const [k, v] of Object.entries(bonus)) stats[k] += v;
+        const o = Math.round(Object.entries(pos.ovr).reduce((sum, [k, w]) => sum + stats[k] * w, 0));
+        d.offers = buildStarterOffers(createWorld(1), report.score, { ovr: o });
+      }
+      d.stage = 'offers';
+      this.saveDraft();
+      this.go('tryouts');
+    },
+
+    async acceptStarterOffer(index) {
+      const d = this.draft;
+      const offer = d.offers?.[index];
+      if (!offer || offer.locked) return;
+      const report = new TryoutSession(d.tryout).report();
+      this.state = newGame({ name: d.name, position: d.position || report.position, avatar: d.avatar, statBonus: tryoutStatBonus(report), start: offer, tryout: { score: report.score, stations: report.stations } });
       this.draft = null;
+      clearDraft();
       this.save();
+      await this.startCareer();
+    },
+
+    /** İmza ekranı → ana ekran (mentor seçimi vb.) */
+    async startCareer() {
       const s = this.state;
       const club = CLUB_BY_ID[s.career.clubId];
+      const st = s.career.start || { kind: 'A' };
+      const parent = st.parentId ? CLUB_BY_ID[st.parentId] : null;
+      const headline = { A: 'İLK PROFESYONEL SÖZLEŞME', B: 'SÜPER LİG SÖZLEŞMESİ · KİRALIK', C: 'ALTYAPI SÖZLEŞMESİ' }[st.kind];
+      const body = st.kind === 'B'
+        ? `${esc(parent.name)} seninle ${s.career.contract.yearsLeft} yıllık sözleşme imzaladı ve gelişmen için seni 1 yıllığına <b>${esc(club.name)}</b> takımına kiraladı. Sözleşmedeki forma şartı sayesinde ilk 11'desin.`
+        : st.kind === 'C'
+          ? `${esc(parent.name)} altyapısına hoş geldin! <b>${esc(club.name)}</b> takımında ${LEAGUES.u17.name}'nde oynayacaksın. Sezon sonunda A takım sözleşmesi seni bekliyor.`
+          : `${esc(club.city)} · ${LEAGUES[club.league].name}<br>Kulüp sana ilk 11 garantisi verdi. Şimdi formanın hakkını ver!`;
       confetti();
       sfx('levelup');
       await sheet({
         center: true,
         dismissable: false,
         html: `
-          <div class="center" style="margin-bottom:8px"><span class="chip accent">İLK PROFESYONEL SÖZLEŞME</span></div>
-          <div style="display:grid;place-items:center;margin:10px 0">${crestSVG(club, 'crest lg')}</div>
-          <h3 class="center">${esc(club.name)}</h3>
-          <p class="lead center">${esc(club.city)} · ${LEAGUES[club.league].name}<br>Kulüp seni A takım kadrosuna aldı. Formanı kapmak için hocayı etkilemelisin!</p>
-          <div class="chips" style="justify-content:center"><span class="chip gold">${money(s.career.contract.wage)}/hafta</span><span class="chip">${s.career.contract.yearsLeft} yıl</span><span class="chip">#${s.player.number}</span></div>
+          <div class="center" style="margin-bottom:8px"><span class="chip accent">${headline}</span></div>
+          <div class="sign-crests">${parent && st.kind === 'B' ? `${crestSVG(parent, 'crest lg')}<span class="loan-arrow">${icon('chev')}<small>kiralık</small></span>` : ''}${crestSVG(st.kind === 'C' ? parent : club, 'crest lg')}</div>
+          <h3 class="center">${esc(st.kind === 'B' ? parent.name : club.name)}</h3>
+          <p class="lead center">${body}</p>
+          <div class="number-reveal">
+            <div class="avatar-big" style="width:96px;height:96px">${playerAvatar(s)}</div>
+            <div><div class="muted small">Kulüp sana bu formayı verdi</div><div class="big-number">#${s.player.number}</div><div class="muted small">7, 9, 10 gibi numaralar ileride performansla kazanılır.</div></div>
+          </div>
+          <div class="chips" style="justify-content:center;margin-top:10px"><span class="chip gold">${money(s.career.contract.wage)}/hafta</span><span class="chip">${s.career.contract.yearsLeft} yıl</span><span class="chip">${POS[s.player.position].name}</span></div>
           <button class="btn primary lg block" style="margin-top:16px" data-close>${icon('check')} İmzala</button>`,
       });
       sfx('coin');
@@ -264,7 +368,8 @@ export function createApp(rootEl) {
       const roleKey = match.role === 'out' ? (match.reason === 'suspended' ? 'suspended' : 'injured') : match.role;
       const roleArt = spriteOr(ROLE_SPRITES[roleKey], '', { h: roleKey === 'starter' ? 92 : 70, w: 150 });
       let decision;
-      if (match.role === 'starter') decision = `<span class="chip accent">${icon('check')} İlk 11'desin</span><p class="lead" style="margin-top:10px">Hoca: "Bugün sana güveniyorum. Fırsat geldiğinde değerlendir."</p>`;
+      if (match.role === 'starter' && match.reason === 'guarantee') decision = `<span class="chip accent">${icon('check')} İlk 11'desin</span> <span class="chip good">Sözleşme garantisi</span><p class="lead" style="margin-top:10px">Hoca: "${s.career.loan ? 'Ana kulübünle anlaşmamız var, her hafta oynayacaksın. Gelişimini göster.' : s.career.academy ? 'Altyapıda her maç bir sınav. A takım hocası tribünde.' : 'Seni oynatacağımıza söz verdik. Şimdi sözünü sen tut.'}"</p>`;
+      else if (match.role === 'starter') decision = `<span class="chip accent">${icon('check')} İlk 11'desin</span><p class="lead" style="margin-top:10px">Hoca: "Bugün sana güveniyorum. Fırsat geldiğinde değerlendir."</p>`;
       else if (match.role === 'out' && match.reason === 'suspended') decision = `<span class="chip bad">${icon('shield')} Cezalısın</span><p class="lead" style="margin-top:10px">PFDK cezası nedeniyle bu maçta forma giyemezsin.</p>`;
       else if (match.role === 'out') decision = `<span class="chip bad">${icon('bandage')} Sakatsın</span><p class="lead" style="margin-top:10px">Bu maçı tribünden izleyeceksin.</p>`;
       else decision = `<span class="chip warn">${icon('user')} Yedek kulübesi</span><p class="lead" style="margin-top:10px">${match.reason === 'tired' ? 'Hoca: "Çok yorgunsun, bugün kenardan başla."' : 'Hoca: "Sabırlı ol, gerekirse seni oyuna alacağım."'} ${match.subMinute ? '' : ''}</p>`;
@@ -448,6 +553,7 @@ export function createApp(rootEl) {
           </div>
           ${r.awards.length ? `<div class="h-sec">Ödüllerin</div>${r.awards.map((a) => `<div class="award">${awardArt(a.icon)}<b>${esc(a.title)}</b></div>`).join('')}` : ''}
           ${r.mentor?.farewell ? `<div class="h-sec">Mentorun</div><div class="card"><p class="small" style="margin:0 0 8px">${esc(r.mentor.farewell.text)}</p><div class="chips"><span class="chip">İlişki ${r.mentor.farewell.relationship}</span>${r.mentor.farewell.influence ? `<span class="chip gold">Mentorun mirası: Nüfuz +${r.mentor.farewell.influence}</span>` : ''}</div></div>` : ''}
+          ${r.startTerms ? `<div class="card start-terms" style="margin-top:12px"><b>${icon(r.startTerms.kind === 'loan_return' ? 'swap' : 'star', 'ico sm')} ${r.startTerms.kind === 'loan_return' ? 'Kiralık dönüşü' : 'Altyapıdan profesyonelliğe'}</b><p class="small" style="margin:6px 0 0">${esc(r.startTerms.text)}</p>${r.startTerms.numberChanged ? `<div class="chips" style="margin-top:8px"><span class="chip">Yeni formanın numarası #${r.startTerms.number}</span></div>` : ''}</div>` : ''}
           ${r.influenceGain ? `<div class="chips" style="margin-top:8px"><span class="chip gold">${icon('flag', 'ico sm')} Kulüp Nüfuzu +${r.influenceGain}</span></div>` : ''}
           <div class="h-sec">Şampiyonlar</div><div class="card list" style="padding:4px 12px">${champs}</div>
           <p class="muted small" style="margin-top:12px">Ligin gol kralı ${r.aiTop} golle zirvedeydi.</p>

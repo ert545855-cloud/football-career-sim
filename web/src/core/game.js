@@ -17,11 +17,21 @@ import {
 import {
   ensureMentor, gainInfluence, mentorBonus, mentorOnAction, mentorOnMatch, mentorOnSeasonEnd, mentorOnSeasonStart, mentorOnTransfer, mentorOnWeekEnd,
 } from './mentor/index.js';
+import {
+  applyStarterOffer, assignYouthNumber, ensureNumberAfterMove, isTransferLocked, resolveStartTerms, squadClubId,
+} from './onboarding/index.js';
+import { random } from './rng.js';
 
 export const SAVE_VERSION = 1;
 
 export const emptySeasonStats = () => ({ apps: 0, starts: 0, goals: 0, assists: 0, ratingSum: 0, motm: 0 });
 
+/**
+ * Yeni kariyer.
+ * setup.start: seçme kampından seçilen başlangıç teklifi (A/B/C). Yoksa eski davranış: 1. Lig'in en zayıf
+ * 4 kulübünden biri. setup.number verilmezse kulüp boştaki genç numaralarından birini atar.
+ * @param {{name:string, position:string, avatar?:object, number?:number, statBonus?:object, start?:import('./onboarding/offers.js').StarterOffer, tryout?:object}} setup
+ */
 export function newGame(setup) {
   const player = createPlayer(setup);
   const world = createWorld(1);
@@ -49,8 +59,20 @@ export function newGame(setup) {
     flags: { cooldowns: {}, benchStreak: 0, rivalOffset: randInt(-3, 3), injuredWeeks: 0, suspendedWeeks: 0, trainBoostWeeks: 0, nationalSeason: 0 },
     pending: { match: null, event: null, offers: null, seasonReport: null },
   };
+  state.career.numberHistory = [];
+  state.career.loan = null;
+  state.career.academy = null;
+  state.career.guarantee = null;
+  if (setup.start) {
+    state.career.money = START_MONEY;
+    applyStarterOffer(state, setup.start);
+  }
+  if (setup.tryout) state.career.tryout = setup.tryout;
   ensureChirp(state);
   ensureMentor(state);
+  // Forma numarası: seçilmez, kulüp boştaki genç numaralarından verir
+  if (!setup.number) assignYouthNumber(state, random);
+  else state.career.numberHistory.push({ season: 1, clubId: state.career.clubId, number: player.number, reason: 'Başlangıç' });
   return state;
 }
 
@@ -181,7 +203,9 @@ export function trainingSetup(state, stat) {
 
 export function finishTraining(state, stat, result) {
   const { player, flags } = state;
-  const bonus = itemEffects(state).train + (flags.trainBoostWeeks > 0 ? 0.25 : 0);
+  // Altyapı (Seçenek C): dev kulübün tesisleri antrenman gelişimini artırır
+  const academyBonus = state.career.academy && state.calendar.season <= state.career.academy.untilSeason ? state.career.academy.trainingBonus || 0 : 0;
+  const bonus = itemEffects(state).train + (flags.trainBoostWeeks > 0 ? 0.25 : 0) + academyBonus;
   const before = player.stats[stat];
   const progressBefore = player.progress[stat];
   // Çalışkan mentor: antrenman gelişim hızı ×1.2
@@ -262,7 +286,8 @@ function endWeek(state, ctx) {
   state.pending.event = event;
 
   let offers = null;
-  if (calendar.week === MID_WINDOW_WEEK) {
+  // Kiralıkta / altyapıdayken devre arası transfer penceresi kapalı
+  if (calendar.week === MID_WINDOW_WEEK && !isTransferLocked(state)) {
     offers = generateOffers(state, 'mid');
     state.pending.offers = offers.length ? { kind: 'mid', list: offers, mandatory: false } : null;
     chirpTweets.push(...chirpOnOffers(state, offers));
@@ -330,7 +355,15 @@ export function endSeason(state) {
   const influenceGain = gainInfluence(state, (s.apps >= 8 ? 2 : 0.5) + awards.length * 3);
   const mentorEnd = mentorOnSeasonEnd(state);
 
-  const offers = generateOffers(state, 'end');
+  // Başlangıç yolları: kiralık dönüşü / altyapıdan A takıma yükselme (tekliflerden önce)
+  const startTerms = resolveStartTerms(state);
+  if (startTerms) {
+    addNews(state, startTerms.text, 'good');
+    if (squadClubId(state) !== startTerms.prevSquadClub) mentorOnTransfer(state, startTerms.prevSquadClub);
+  }
+
+  // Yeni bir kiralık dönemi başladıysa (altyapıdan yükselip kiralanma) sezon sonu teklifleri gelmez
+  const offers = isTransferLocked({ ...state, calendar: { ...calendar, season: calendar.season + 1 } }) && career.contract.yearsLeft > 0 ? [] : generateOffers(state, 'end');
   const mustChoose = career.contract.yearsLeft <= 0;
   state.pending.offers = offers.length ? { kind: 'end', list: offers, mandatory: mustChoose } : null;
   chirpOnSeasonEnd(state, { awards });
@@ -351,6 +384,7 @@ export function endSeason(state) {
     canRetire: player.age >= 34,
     mustRetire: player.age >= 38,
     influenceGain,
+    startTerms,
     mentor: { ...mentorEnd, start: null },
   };
 
@@ -376,8 +410,14 @@ export function takeOffer(state, offer) {
   const text = acceptOffer(state, offer);
   chirpOnTransfer(state, offer, fromClubId);
   if (!offer.renewal) {
-    const m = mentorOnTransfer(state, fromClubId);
+    const prevSquad = state.career.academy?.parentId || fromClubId;
+    state.career.loan = null;
+    state.career.academy = null;
+    state.career.guarantee = null;
+    const m = mentorOnTransfer(state, prevSquad);
     if (m.ended) addNews(state, `Mentorun ${m.ended} ile yolların ayrıldı.`, 'info');
+    const n = ensureNumberAfterMove(state);
+    if (n.changed) addNews(state, `Yeni kulübünde ${n.number} numaralı formayı giyeceksin.`, 'info');
   }
   state.pending.offers = null;
   state.pending.match = null; // eski kulübün planlanmış maçı geçersiz

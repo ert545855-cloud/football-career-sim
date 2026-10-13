@@ -2,15 +2,21 @@ import { STAT_KEYS, POSITIONS, GROWTH } from './data.js';
 import { clamp, lerp } from './rng.js';
 import { RELATION_DEFAULTS } from './chirp/relationships.js';
 
-export function createPlayer({ name, position, avatar, number }) {
+/**
+ * @param {{name:string, position:string, avatar?:object, number?:number, statBonus?:Record<string, number>}} setup
+ *   statBonus: seçme kampından gelen başlangıç katkısı (istasyonda kalan her hak +1)
+ */
+export function createPlayer({ name, position, avatar, number, statBonus }) {
   const pos = POSITIONS[position] || POSITIONS.FW;
+  const stats = { ...pos.stats };
+  for (const [k, v] of Object.entries(statBonus || {})) if (k in stats) stats[k] = clamp(stats[k] + v, 1, 99);
   return {
     name: cleanName(name) || 'Yeni Oyuncu',
     position: pos.id,
     number: clamp(Number(number) || 9, 1, 99),
     avatar: avatar || { skin: 1, hair: 'short', hairColor: 1 },
     age: 17,
-    stats: { ...pos.stats },
+    stats,
     progress: Object.fromEntries(STAT_KEYS.map((k) => [k, 0])),
     energy: 100,
     morale: 60,

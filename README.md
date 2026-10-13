@@ -6,7 +6,8 @@ Tarayıcıda çalışır. iPhone'da ve Android'de **ana ekrana eklenip uygulama 
 
 ## Özellikler
 
-- **Oyuncu oluşturma:** İsim, forma numarası, mevki (Forvet / Orta Saha / Defans) ve görünüş (ten, saç modeli, saç rengi).
+- **Başlangıç akışı:** Oyuncu yalnızca ismini yazar; görünüş rastgele oluşur, forma numarasını kulüp boştaki genç numaralarından (33, 48, 99…) verir. "Oyuna Başla" ile **Seçmeler Kampı** açılır: Pas (hareketli hedefe pas), Şut (köşe hedefleri) ve Çalım (dubalar arasından geçiş) istasyonları hem oyunu öğretir hem yeteneği ölçer. Her istasyonda 3 hak vardır; her hata 1 hak götürür, ilk deneme ısınmadır. Kalan haklar **seçme skoru**dur (0–9). Raporda scout bir mevki önerir; oyuncu Forvet / Orta Saha / Defans arasından seçer, kalan haklar ilgili özelliğe başlangıç katkısı olur.
+- **Başlangıç teklifleri:** 9–7 hak → A, B, C · 6–4 hak → A, B · 3 ve altı → A. **A** alt lig takımı (ilk sezon ilk 11 garantisi), **B** Süper Lig kulübüyle 3 yıllık sözleşme + 1. Lig'e 1 yıllık forma şartlı kiralık (sezon sonunda ana kulübe dönüş), **C** dev kulübün U-17 takımı (U-17 Gelişim Ligi, antrenman gelişimi +%25, sezon sonunda A takım sözleşmesi ya da gelişim için kiralık). Kiralıkta ve altyapıdayken devre arası transferi kapalıdır.
 - **5 özellik:** Hız, Şut, Pas, Defans, Dayanıklılık. Başlangıç değerleri mevkiye göre dağıtılır. Mevkinin ana özelliği ×1.5, yan özelliği ×1.25 hızla gelişir.
 - **Haftalık takvim:** Her hafta 4 zaman hakkı var. Antrenman, Dinlen, Takımla Yemek, Taraftar & Medya, Hocayla Görüş ve Reklam Çekimi arasından seçim yapılır.
 - **Maç motoru:** 90 dakika canlı anlatım ve skor tabelası. Oyuncunun kritik anlarında (şut, pas, müdahale) mini oyun açılır. Maç sonunda not, prim, ilişki ve moral değişimi gelir.
@@ -45,6 +46,7 @@ web/src/
     storage.js    Kayıt
     chirp/        Sosyal medya: modeller, tetikleyiciler, paylaşımlar, ilişkiler, duygu analizi
     mentor/       Mentorluk: MentorManager, kadro (yapay zekâ oyuncular), diyaloglar, büyük maçlar
+    onboarding/   Seçmeler kampı (TryoutSession, hak sistemi), başlangıç teklifleri, forma numarası
   games/     Canvas mini oyunları (shot, pass, tackle, sprint)
   assets/    Sprite atlası ve yükleyicisi
   ui/        Ekranlar, SVG çizimler (avatar, arma, ikonlar), akışlar

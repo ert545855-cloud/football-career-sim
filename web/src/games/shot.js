@@ -13,6 +13,8 @@ const persp = (p) => 1 - Math.pow(1 - clamp(p, 0, 1), 1.5);
 export function playShot(host, opts) {
   return new Promise((resolve) => {
     const type = opts.context || 'box';
+    /** Hedef modu (seçme kampı): {u, v, r} kale koordinatlarında; kaleci çıkmaz */
+    const target = opts.target || null;
     const skill = clamp(opts.skill ?? 0.3, 0.02, 1);
     const kq = clamp(opts.keeper ?? 0.5, 0, 1);
     const sigma = lerp(0.3, 0.05, skill) * (type === 'edge' ? 1.25 : type === 'penalty' ? 0.7 : 1);
@@ -117,7 +119,12 @@ export function playShot(host, opts) {
       if (blocked) outcome = 'block';
       else if ((absU > 0.965 && absU < 1.05 && v <= 1.04) || (v > 0.96 && v < 1.07 && absU <= 1.0)) outcome = 'post';
       else if (v > 1.0 || absU > 1.0 + ballU * 0.4) outcome = v > 1.0 ? 'over' : 'wide';
-      else {
+      else if (target) {
+        // Seçme kampı: kaleci yok; top kale içinde, hedef halkasına isabet ölçülür
+        outcome = 'goal';
+        S.targetHit = Math.hypot((u - target.u) / target.r, (v - target.v) / (target.r * 1.15)) <= 1;
+        k.to = k.u;
+      } else {
         const rd = lerp(0.32, 0.18, kq) + skill * 0.06;
         const vk = lerp(1.7, 2.7, kq);
         let guess = u + gaussian() * lerp(0.35, 0.12, kq);
@@ -153,8 +160,9 @@ export function playShot(host, opts) {
     function finish() {
       if (S.done) return;
       S.done = true;
-      const o = S.outcome;
-      const success = o === 'goal';
+      let o = S.outcome;
+      if (target && o === 'goal') o = S.targetHit ? 'target' : 'miss';
+      const success = target ? o === 'target' : o === 'goal';
       const sh = S.shot;
       const accuracy = success ? clamp(0.35 + Math.abs(sh.u) * 0.5 + (sh.v > 0.6 ? 0.15 : 0), 0, 1) : 0;
       setTimeout(() => {
@@ -168,7 +176,22 @@ export function playShot(host, opts) {
       S.afterT = 0;
       const b = S.ball;
       const o = S.outcome;
-      if (o === 'goal') {
+      if (o === 'goal' && target && !S.targetHit) {
+        S.net = { x: b.x, y: b.y, t: 0 };
+        big.show('ISKA!', '#ff5d6c', 64);
+        sfx('miss');
+        buzz(30);
+        S.after = { vx: (b.x - L.cx) * 0.1, vy: -20, shrink: 0.996 };
+      } else if (o === 'goal' && target) {
+        S.net = { x: b.x, y: b.y, t: 0 };
+        S.excite = 0.6;
+        big.show('HEDEF!', '#c6ff3d', 70);
+        particles.burst(b.x, b.y, { n: 36, colors: ['#c6ff3d', '#ffcf3d', '#fff'], speed: 340, gravity: 500, life: 1.2, size: 5 });
+        stage.shake(8);
+        sfx('levelup');
+        buzz([40, 30, 80]);
+        S.after = { vx: (b.x - L.cx) * 0.1, vy: -20, shrink: 0.996 };
+      } else if (o === 'goal') {
         S.net = { x: b.x, y: b.y, t: 0 };
         S.excite = 1;
         big.show('GOOOL!', '#c6ff3d', 76);
@@ -363,7 +386,8 @@ export function playShot(host, opts) {
         drawNet(ctx, t);
         if (ballBehind) drawBallAll(ctx);
         drawPosts(ctx);
-        drawKeeper(ctx);
+        if (target) drawTargets(ctx, t);
+        else drawKeeper(ctx);
         if (L.def) drawDefender(ctx);
         if (!ballBehind) drawBallAll(ctx);
 
@@ -551,6 +575,33 @@ export function playShot(host, opts) {
         ctx.moveTo(lerp(x0, x1, i / cols), top);
         ctx.lineTo(lerp(bx0, bx1, i / cols), btop);
         ctx.stroke();
+      }
+    }
+
+    /** Seçme kampı: dört köşede hedef halkaları, aktif olan parlar */
+    function drawTargets(ctx, t) {
+      const corners = opts.corners || [];
+      const rx = (target.r * L.gw) / 2;
+      const ry = target.r * 1.15 * L.gh;
+      for (const c of corners) {
+        const active = c.u === target.u && c.v === target.v;
+        const x = gx(c.u);
+        const y = gy(c.v);
+        const pulse = active ? 1 + Math.sin(t * 6) * 0.06 : 1;
+        ctx.save();
+        ctx.globalAlpha = active ? 1 : 0.28;
+        for (let i = 3; i >= 1; i--) {
+          ctx.beginPath();
+          ctx.ellipse(x, y, (rx * i * pulse) / 3, (ry * i * pulse) / 3, 0, 0, Math.PI * 2);
+          ctx.fillStyle = i % 2 ? (active ? '#ff5d6c' : '#94a3b8') : '#ffffff';
+          ctx.fill();
+        }
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(0,0,0,.35)';
+        ctx.beginPath();
+        ctx.ellipse(x, y, rx * pulse, ry * pulse, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
       }
     }
 
