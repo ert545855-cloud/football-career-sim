@@ -10,6 +10,7 @@ import { money } from '../../core/economy.js';
 import { agentAvatar } from '../agentView.js';
 import { nationalCrest } from '../nationalView.js';
 import { ensureNational } from '../../core/national.js';
+import { ballonSummary, golden } from '../ballonView.js';
 
 export function careerScreen(app) {
   const s = app.state;
@@ -41,8 +42,11 @@ export function careerScreen(app) {
       <p class="muted small" style="margin:4px 0 0">${s.player.age} yaş · ${c.moves || 0} transfer · ${c.caps || 0} milli maç · OVR ${ovr(s.player)}</p>
 
       <div style="margin-top:14px">${achievementsCard(s)}</div>
-      <button class="card ag-entry" data-act="national">${nationalCrest('crest sm', ensureNational(s).current || 'A')}<div class="grow" style="min-width:0"><b>Milli takım</b><div class="muted small ellipsis">${(() => { const n = ensureNational(s); const caps = n.caps.U19 + n.caps.U21 + n.caps.A; return caps ? `${caps} milli maç · A milli ${n.caps.A}` : 'Henüz çağrı yok'; })()}</div></div>${icon('chev')}</button>
-      <button class="card ag-entry" data-act="agent">${agentAvatar(currentAgent(s), 44)}<div class="grow" style="min-width:0"><b>Menajer ve sözleşme</b><div class="muted small ellipsis">${esc(currentAgent(s).name)} · ${money(c.contract.wage)}/hf · ${c.contract.yearsLeft} yıl</div></div>${icon('chev')}</button>
+      <div class="career-links">
+        <button class="card cl-tile" data-act="national">${nationalCrest('crest sm', ensureNational(s).current || 'A')}<b>Milli takım</b><span>${(() => { const n = ensureNational(s); return n.caps.A ? `A milli ${n.caps.A}` : n.caps.U21 + n.caps.U19 ? `Genç milli ${n.caps.U21 + n.caps.U19}` : 'Çağrı yok'; })()}</span></button>
+        <button class="card cl-tile" data-act="ballon">${golden(34)}<b>Altın Top</b><span>${(() => { const b = ballonSummary(s); return b.rank <= 30 ? `${b.rank}. sıra` : b.best ? `En iyi ${b.best}.` : 'Aday değil'; })()}</span></button>
+        <button class="card cl-tile" data-act="agent">${agentAvatar(currentAgent(s), 34)}<b>Menajer</b><span>${esc(currentAgent(s).id === 'self' ? 'Ajansız' : currentAgent(s).name.split(' ')[0])} · ${c.contract.yearsLeft} yıl</span></button>
+      </div>
 
       <div class="h-sec">Bu sezon</div>
       <div class="kpis">
@@ -83,6 +87,9 @@ export function careerScreen(app) {
         } else if (e.target.closest('[data-act="national"]')) {
           app.click();
           app.go('national');
+        } else if (e.target.closest('[data-act="ballon"]')) {
+          app.click();
+          app.go('ballon');
         }
       });
     },

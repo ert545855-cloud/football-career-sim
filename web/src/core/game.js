@@ -23,6 +23,8 @@ import {
 import { random } from './rng.js';
 import { agentNetworkOffers, agentSponsorMult, ensureAgent } from './agent.js';
 import { ensureNational, nationalWindow } from './national.js';
+import { ballonOnMatch, ballonRank, ballonSeasonEnd, ensureBallon } from './ballondor.js';
+import { ChirpTriggerEngine, FABRICIO } from './chirp/index.js';
 import { achievementsOnMatch, achievementsOnTraining, checkAchievements, ensureAchievements } from './achievements.js';
 
 export const SAVE_VERSION = 1;
@@ -76,6 +78,7 @@ export function newGame(setup) {
   ensureAchievements(state);
   ensureAgent(state);
   ensureNational(state);
+  ensureBallon(state);
   // Forma numarası: seçilmez, kulüp boştaki genç numaralarından verir
   if (!setup.number) assignYouthNumber(state, random);
   else state.career.numberHistory.push({ season: 1, clubId: state.career.clubId, number: player.number, reason: 'Başlangıç' });
@@ -258,6 +261,12 @@ export function completeMatch(state, match) {
   if (!summary.played) addNews(state, `${opp} maçında forma giymedin.`, 'bad');
 
   achievementsOnMatch(state, summary, match);
+  ballonOnMatch(state, summary);
+  // Devre arası: Altın Top yarışında ilk 10'daysan transfer gazetecisi yazar
+  if (state.calendar.week === MID_WINDOW_WEEK) {
+    const rank = ballonRank(state);
+    if (rank <= 10) chirp.push(new ChirpTriggerEngine(state).post(FABRICIO, 'ballon', 'Altın Top yarışında ara sıralama: {player} {rank}. sırada! Avrupa devleri gözlerini Türkiye\'ye çevirdi.', { rank }));
+  }
   const weekEnd = endWeek(state, { summary });
   return { summary, results, weekEnd, chirp: [...chirp, ...weekEnd.chirp] };
 }
@@ -362,6 +371,14 @@ export function endSeason(state) {
   career.totals.assists += s.assists;
   career.totals.motm += s.motm;
 
+  // Altın Top töreni (ödüller ve turnuva belli olduktan sonra)
+  const ballon = ballonSeasonEnd(state, { awards, season: calendar.season });
+  if (ballon.won) {
+    awards.push({ season: calendar.season, title: 'Altın Top (Ballon d\'Or)', icon: 'star', ballon: true });
+    addNews(state, 'ALTIN TOP SENİN! Dünyanın en iyi oyuncusu seçildin.', 'good');
+  } else if (ballon.rank <= 10) addNews(state, `Altın Top sıralamasında ${ballon.rank}. oldun.`, 'good');
+  if (ballon.rank <= 10) new ChirpTriggerEngine(state).post(FABRICIO, 'ballon', ballon.won ? 'Altın Top {player:gen}! Türk futbolu için tarihi gece. 🏆' : 'Altın Top sıralaması açıklandı: {player} {rank}. sırada. Kazanan: {winner}.', { rank: ballon.rank, winner: ballon.winner });
+
   const ageChanges = ageUp(player);
   career.contract.yearsLeft -= 1;
   // Kulüp nüfuzu: kulüpte geçen sezon ve ödüller; mentorluk sezonu kapanır
@@ -399,6 +416,7 @@ export function endSeason(state) {
     influenceGain,
     startTerms,
     mentor: { ...mentorEnd, start: null },
+    ballon,
   };
 
   calendar.season += 1;

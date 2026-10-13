@@ -37,6 +37,7 @@ import { AGENT_RULES, currentAgent } from '../core/agent.js';
 import { agentAvatar, negotiationSheet } from './agentView.js';
 import { agentScreen } from './screens/agent.js';
 import { nationalScreen } from './screens/national.js';
+import { ballonCeremony, ballonScreen } from './ballonView.js';
 import { nationalFlow, tournamentFlow } from './nationalView.js';
 import { tournamentEligible } from '../core/national.js';
 import { runTryoutStation, heartsHTML } from '../games/tryoutStation.js';
@@ -74,6 +75,7 @@ export function createApp(rootEl) {
     achievements: achievementsScreen,
     agent: agentScreen,
     national: nationalScreen,
+    ballon: ballonScreen,
     retired: retiredScreen,
   };
 
@@ -586,6 +588,11 @@ export function createApp(rootEl) {
 
     async seasonFlow(r) {
       const s = this.state;
+      if (r.ballon?.nominated && !r.ballonShown) {
+        await ballonCeremony(this, r.ballon);
+        r.ballonShown = true;
+        this.save();
+      }
       const lg = LEAGUES[r.leagueId];
       const champs = Object.entries(r.champions).map(([lid, cid]) => `<div class="li">${crestSVG(CLUB_BY_ID[cid], 'crest sm')}<div class="grow"><b>${esc(CLUB_BY_ID[cid].name)}</b><div class="muted small">${LEAGUES[lid].name} şampiyonu</div></div>${spriteOr('cup_gold', icon('trophy', 'ico'), { size: 30 })}</div>`).join('');
       const ageCh = Object.entries(r.ageChanges).map(([k, v]) => `<span class="chip ${v > 0 ? 'good' : 'bad'}">${STATS[k].name} ${v > 0 ? '+' : ''}${v}</span>`).join('');

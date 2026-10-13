@@ -38,6 +38,10 @@ export const COMMENT_POOLS = {
     pos: ['Ceza yese de arkandayız {player}!', 'Doğruları söyledi, desteğimiz tam!', 'Cesur duruş, helal olsun 👏'],
     neg: ['Hak etti, ağzına sahip olsun.', 'Takımı yarı yolda bıraktı, bencil davranış.', 'Bu ceza ders olur umarım, saygısızlık bitsin.'],
   },
+  ballon: {
+    pos: ['Dünya sahnesinde bir Türk yıldızı! Gurur duyuyoruz 🇹🇷', '{player} Altın Top\'u hak ediyor, başka aday yok!', 'Tarih yazılıyor, helal olsun {player}!'],
+    neg: ['Abartmayın, Avrupa\'da oynamadan Altın Top olmaz.', 'Sıralama torpilli, o kadar da değil.', 'Abartılmış bir aday, haksızlık bu.'],
+  },
   award: {
     pos: ['Hak edilmiş bir ödül, tebrikler! 🏆', 'Efsane sezon, gurur duyuyoruz!', 'Bravo {player}, devamı gelsin!'],
     neg: ['Ödülü başkası almalıydı, haksızlık.', 'Torpil, şike, ne derseniz deyin.', 'Abartılmış bir ödül, ligde daha iyisi var.'],

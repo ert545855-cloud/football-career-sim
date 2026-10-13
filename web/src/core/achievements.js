@@ -85,6 +85,8 @@ export const ACHIEVEMENTS = [
   { id: 'youth_cap', cat: 'honors', tier: 'bronze', title: 'Genç Milli', desc: 'U-19 ya da U-21 milli takımında forma giy.', icon: 'flag', goal: 1, value: (s) => (s.national?.caps?.U19 || 0) + (s.national?.caps?.U21 || 0) },
   { id: 'cap', cat: 'honors', tier: 'silver', title: 'Ay-Yıldızlı Forma', desc: 'Milli takımda forma giy.', icon: 'flag', goal: 1, value: (s) => s.career.caps || 0 },
   { id: 'intl_trophy', cat: 'honors', tier: 'platinum', title: 'Ay-Yıldızlı Zafer', desc: 'Milli takımla büyük bir turnuva kazan.', icon: 'trophy', sprite: 'cup_gold', goal: 1, value: (s) => (s.national?.tournaments || []).filter((t) => t.result === 'champion').length },
+  { id: 'ballon_top10', cat: 'honors', tier: 'gold', title: 'Dünyanın En İyileri', desc: 'Altın Top sıralamasında ilk 10\'a gir.', icon: 'star', sprite: 'golden_ball', goal: 1, value: (s) => ((s.ballon?.history || []).some((h) => h.rank <= 10) ? 1 : 0) },
+  { id: 'ballon_win', cat: 'honors', tier: 'platinum', title: 'Altın Top', desc: 'Dünyanın en iyi oyuncusu seçil.', icon: 'crown', sprite: 'golden_ball', goal: 1, value: (s) => ((s.ballon?.history || []).some((h) => h.rank === 1) ? 1 : 0) },
   { id: 'caps50', cat: 'honors', tier: 'platinum', title: 'Milli Efsane', desc: 'Milli takımda 50 maça çık.', icon: 'flag', goal: 50, value: (s) => s.career.caps || 0 },
 
   // ── Yaşam ──

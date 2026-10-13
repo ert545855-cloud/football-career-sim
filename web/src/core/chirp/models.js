@@ -6,7 +6,7 @@
 /** @typedef {'positive'|'negative'|'neutral'} SentimentLabel */
 /**
  * @typedef {'form_dip'|'transfer_offer'|'transfer_done'|'renewal'|'great_game'|'injury'|'discipline'
- *   |'award'|'bench'|'board'|'player_post'} TweetTopic
+ *   |'award'|'bench'|'board'|'player_post'|'ballon'|'gossip'} TweetTopic
  */
 
 export class AuthorModel {

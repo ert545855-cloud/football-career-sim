@@ -106,3 +106,27 @@
 .nat-level.on { border-color: rgba(227, 10, 23, 0.6); background: rgba(227, 10, 23, 0.12); }
 .nat-level b { display: block; font-size: 20px; font-weight: 900; }
 .nat-level span { font-size: 11px; color: var(--muted); font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* ─────────────── Kariyer bağlantıları + Altın Top ─────────────── */
+.career-links { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+.cl-tile { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 6px; text-align: center; cursor: pointer; min-width: 0; }
+.cl-tile b { font-size: 13px; }
+.cl-tile span:last-child { font-size: 11px; color: var(--muted); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.cl-tile .crest.sm { width: 30px; height: 36px; }
+.nat-dot { width: 16px; height: 16px; flex: none; border-radius: 50%; background: linear-gradient(135deg, var(--a) 0 55%, var(--b) 55%); border: 1.5px solid rgba(255, 255, 255, 0.7); }
+.bd-hero { background: linear-gradient(150deg, rgba(255, 207, 61, 0.18), var(--panel) 65%); border-color: rgba(255, 207, 61, 0.35); }
+.bd-rank { width: 26px; text-align: center; font-weight: 900; color: var(--muted); font-variant-numeric: tabular-nums; flex: none; }
+.bd-row.me { background: rgba(198, 255, 61, 0.08); border-radius: 10px; }
+.bd-row.me .bd-rank { color: var(--accent); }
+.podium { display: grid; grid-template-columns: repeat(3, 1fr); align-items: end; gap: 8px; margin: 14px 0 8px; }
+.pod { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.pod-name { min-height: 38px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 13px; text-align: center; }
+.pod.on .pod-name { animation: achIn 0.5s cubic-bezier(0.2, 1.3, 0.3, 1); }
+.pod.me.on .pod-name b { color: var(--accent); }
+.pod-bar { width: 100%; border-radius: 10px 10px 4px 4px; display: grid; place-items: start center; padding-top: 6px; font-weight: 900; font-size: 22px; color: rgba(0, 0, 0, 0.55); }
+.pod.p1 .pod-bar { height: 96px; background: linear-gradient(#ffe27a, #d9a520); }
+.pod.p2 .pod-bar { height: 70px; background: linear-gradient(#eef2f7, #9aa7b6); }
+.pod.p3 .pod-bar { height: 52px; background: linear-gradient(#f0b07a, #b0672e); }
+.pod:not(.on) .pod-bar { filter: grayscale(0.7) brightness(0.6); }
+.cl-tile > :first-child { height: 36px; width: auto; flex: none; }
+.cl-tile .ag-av { width: 36px; height: 36px; }
