@@ -31,8 +31,8 @@ export const MOMENT_INTRO = {
     penalty: 'PENALTI! Topun başına sen geçtin. Kaleciyi avla.',
   },
   pass: {
-    buildup: 'Orta sahada top sende. Pas yolu açık arkadaşını bul.',
-    final: 'Son bölgede top sende! Gol pası için boştaki arkadaşını bul.',
+    buildup: 'Orta sahada top sende. Topa dokun, arkadaşına doğru çiz: zaman yavaşlar. Rakip yoldaysa kavisle dolaş.',
+    final: 'Son bölgede top sende! Gol pası için çiz: rakiplerin etrafından kavisli bir pas.',
   },
   tackle: {
     threat: 'Kontra atak! Rakip forvet hızla kalene geliyor.',
@@ -220,12 +220,19 @@ export function resolveMoment(match, moment, result, playerName) {
         t.rating += 0.7;
         lines.push({ minute: m, kind: 'goal-my', text: `${playerName} ölçülü bir pas çıkardı, takım arkadaşı golü attı! ASİST! ${scoreLine(match)}` });
       } else {
-        lines.push({ minute: m, kind: 'pass', text: `${playerName} isabetli bir pasla oyunu yönlendirdi.` });
+        const curved = Math.abs(result.curve || 0) >= 0.25;
+        if (curved) t.rating += 0.1;
+        lines.push({ minute: m, kind: 'pass', text: curved ? `${playerName} falsolu bir pasla savunmayı deldi.` : `${playerName} isabetli bir pasla oyunu yönlendirdi.` });
       }
     } else {
       t.lost++;
       t.rating -= moment.context === 'final' ? 0.3 : 0.4;
-      lines.push({ minute: m, kind: 'chance', text: `Pas rakipte kaldı: ${playerName} topu kaptırdı.` });
+      const why = {
+        stolen: `${playerName} çok bekledi, rakip topu ayağından aldı.`,
+        out: `${playerName} pası çok sert attı, top taca çıktı.`,
+        missed: `${playerName} pası boşluğa attı, kimse yetişemedi.`,
+      }[result.outcome];
+      lines.push({ minute: m, kind: 'chance', text: why || `Pas rakipte kaldı: ${playerName} topu kaptırdı.` });
       if (moment.context === 'buildup' && chance(0.15)) {
         match.score.opp += 1;
         lines.push({ minute: m + 1, kind: 'goal-opp', text: `Top kaybı pahalıya patladı, rakip golü buldu. ${scoreLine(match)}` });

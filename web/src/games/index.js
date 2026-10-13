@@ -4,6 +4,8 @@ import { icon } from '../ui/art.js';
 import { sfx, unlock } from '../audio.js';
 import { playShot } from './shot.js';
 import { playPass } from './pass.js';
+import { playDrawPass } from './drawPass.js';
+import { loadSettings } from '../core/storage.js';
 import { playTackle } from './tackle.js';
 import { playSprint } from './sprint.js';
 
@@ -65,7 +67,8 @@ export async function runMiniGame(o) {
     const common = { skill: o.skill, context: o.context, myKit: o.myKit, oppKit: o.oppKit, number: o.number, skin: o.skin, tempo: big ? big.tempo : 1, nerves: big ? big.nerves : 0 };
     switch (o.type) {
       case 'shot': result = await playShot(host, { ...common, keeper: o.keeper }); break;
-      case 'pass': result = await playPass(host, common); break;
+      // Varsayılan: çizerek kavisli pas. Ayarlardan 'Kolay pas' seçilirse eski dokunarak pas.
+      case 'pass': result = await (loadSettings().easyPass ? playPass(host, common) : playDrawPass(host, common)); break;
       case 'tackle': result = await playTackle(host, common); break;
       case 'sprint': result = await playSprint(host, { ...common, mode: 'sprint', name: o.name }); break;
       case 'endurance': result = await playSprint(host, { ...common, mode: 'endurance', name: o.name }); break;

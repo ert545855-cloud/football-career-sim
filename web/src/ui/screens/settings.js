@@ -22,6 +22,7 @@ export function settingsScreen(app) {
       <div class="card list">
         ${toggle('sound', 'Ses efektleri', 'sound', 'Vuruş, düdük, tribün sesleri')}
         ${toggle('vibrate', 'Titreşim', 'vibrate', 'Gol ve müdahalede titreşim (Android)')}
+        ${toggle('easyPass', 'Kolay pas', 'target', 'Pas anlarında çizmek yerine arkadaşa dokun')}
       </div>
 
       <div class="h-sec">Kayıt</div>
