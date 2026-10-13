@@ -38,6 +38,7 @@ import { agentAvatar, negotiationSheet } from './agentView.js';
 import { agentScreen } from './screens/agent.js';
 import { nationalScreen } from './screens/national.js';
 import { ballonCeremony, ballonScreen } from './ballonView.js';
+import { afterCareerClick, afterCareerSection, coachScreen, punditScreen } from './screens/afterCareer.js';
 import { nationalFlow, tournamentFlow } from './nationalView.js';
 import { tournamentEligible } from '../core/national.js';
 import { runTryoutStation, heartsHTML } from '../games/tryoutStation.js';
@@ -76,6 +77,8 @@ export function createApp(rootEl) {
     agent: agentScreen,
     national: nationalScreen,
     ballon: ballonScreen,
+    coach: coachScreen,
+    pundit: punditScreen,
     retired: retiredScreen,
   };
 
@@ -666,12 +669,21 @@ export function createApp(rootEl) {
         <div class="h-sec">Kariyer</div>
         <div class="card list">${c.history.map((h) => `<div class="li">${crestSVG(CLUB_BY_ID[h.clubId], 'crest sm')}<div class="grow"><b>${esc(CLUB_BY_ID[h.clubId].name)}</b><div class="muted small">Sezon ${h.season} · ${h.apps} maç · ${h.goals} gol · OVR ${h.ovr}</div></div></div>`).join('')}</div>
         <p class="center muted" style="margin-top:14px">Son OVR: ${ovr(s.player)} · Kasa: ${money(c.money)}</p>
-        <button class="btn primary lg block" style="margin-top:12px" data-act="new">${icon('plus')} Yeni Kariyer</button>`,
+        ${afterCareerSection(s)}
+        <button class="btn primary lg block" style="margin-top:16px" data-act="new">${icon('plus')} Yeni Kariyer</button>`,
       mount(node) {
-        node.querySelector('[data-act="new"]').addEventListener('click', () => {
-          clearSave();
-          a.state = null;
-          a.go('create');
+        node.addEventListener('click', async (e) => {
+          const t = e.target.closest('[data-act],[data-path]');
+          if (!t) return;
+          a.click();
+          if (t.dataset.act === 'new') {
+            if (!(await a.confirm('Yeni kariyer', 'Bu efsanenin kaydı silinecek ve sıfırdan başlayacaksın.', 'Yeni kariyere başla'))) return;
+            clearSave();
+            a.state = null;
+            a.go('create');
+            return;
+          }
+          afterCareerClick(a, t);
         });
       },
     };

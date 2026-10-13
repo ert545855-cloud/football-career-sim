@@ -130,3 +130,15 @@
 .pod:not(.on) .pod-bar { filter: grayscale(0.7) brightness(0.6); }
 .cl-tile > :first-child { height: 36px; width: auto; flex: none; }
 .cl-tile .ag-av { width: 36px; height: 36px; }
+
+/* ─────────────── Futbol sonrası ─────────────── */
+.path-card { display: flex; gap: 12px; align-items: flex-start; width: 100%; text-align: left; cursor: pointer; }
+.path-ic { width: 44px; height: 44px; flex: none; border-radius: 14px; display: grid; place-items: center; background: rgba(198, 255, 61, 0.12); color: var(--accent); }
+.coach-hero { background: linear-gradient(150deg, rgba(255, 207, 61, 0.14), var(--panel) 60%); }
+.pundit-hero { background: linear-gradient(150deg, rgba(56, 189, 248, 0.16), var(--panel) 60%); }
+.on-air { display: inline-block; padding: 4px 10px; border-radius: 8px; background: #dc2626; color: #fff; font-weight: 900; font-size: 11px; letter-spacing: 0.12em; animation: onair 1.6s ease-in-out infinite; }
+@keyframes onair { 50% { opacity: 0.55; } }
+.seg.wrap { flex-wrap: wrap; margin-top: 6px; }
+.seg.wrap button { flex: 1 1 30%; font-size: 12px; }
+.tone-btn { flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; min-height: 58px; }
+.me-row { background: rgba(198, 255, 61, 0.08); border-radius: 10px; }

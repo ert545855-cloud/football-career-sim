@@ -95,6 +95,9 @@ export const ACHIEVEMENTS = [
   { id: 'millionaire', cat: 'life', tier: 'gold', title: 'Milyoner', desc: 'Kasanda €1.000.000 olsun.', icon: 'coin', goal: 1_000_000, value: (s) => Math.max(0, s.career.money) },
   { id: 'famous', cat: 'life', tier: 'silver', title: 'Ünlü', desc: 'Ünün 70 olsun.', icon: 'camera', sprite: 'tv_camera', goal: 70, value: (s) => Math.round(s.player.fame) },
   { id: 'fan_fav', cat: 'life', tier: 'gold', title: 'Tribünlerin Sevgilisi', desc: 'Taraftar ilişkin 95 olsun.', icon: 'heartFill', sprite: 'scarf_1', goal: 95, value: (s) => Math.round(s.player.rel.fans) },
+  { id: 'second_act', cat: 'life', tier: 'bronze', title: 'İkinci Perde', desc: 'Emeklilikten sonra teknik direktör ya da yorumcu ol.', icon: 'clipboard', goal: 1, value: (s) => (s.after?.path === 'coach' || s.after?.path === 'pundit' || (s.after?.coach?.seasons?.length || s.after?.pundit?.seasons?.length) ? 1 : 0) },
+  { id: 'coach_title', cat: 'honors', tier: 'gold', title: 'Kulübede Şampiyon', desc: 'Teknik direktör olarak lig şampiyonluğu kazan.', icon: 'clipboard', sprite: 'tactics_board', goal: 1, value: (s) => s.after?.coach?.titles || 0 },
+  { id: 'pundit_star', cat: 'life', tier: 'silver', title: 'Yılın Yorumcusu', desc: 'TV yorumculuğunda yılın yorumcusu seçil.', icon: 'mic', sprite: 'tv_mic', goal: 1, value: (s) => (s.after?.awards || []).filter((x) => x.role === 'pundit').length },
   { id: 'mentored', cat: 'life', tier: 'bronze', title: 'Çırak', desc: 'Bir mentor seç.', icon: 'mentor', goal: 1, value: (s) => (s.mentor?.current || (s.mentor?.history || []).length ? 1 : 0) },
   { id: 'mentor_others', cat: 'life', tier: 'gold', title: 'Akıl Hocası', desc: 'Bir gence mentorluk yap.', icon: 'sprout', goal: 1, value: (s) => (s.mentor?.legacy?.mentees || []).length },
 ];
