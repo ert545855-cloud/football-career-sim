@@ -142,3 +142,8 @@
 .seg.wrap button { flex: 1 1 30%; font-size: 12px; }
 .tone-btn { flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; min-height: 58px; }
 .me-row { background: rgba(198, 255, 61, 0.08); border-radius: 10px; }
+
+/* ─────────────── Bulut kayıt ─────────────── */
+.cloud-code { font-size: 20px; font-weight: 900; letter-spacing: 0.14em; font-variant-numeric: tabular-nums; color: var(--accent); }
+.cloud-code.big { font-size: 30px; margin: 8px 0; }
+.cloud-conflict { padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(251, 191, 36, 0.5); background: rgba(251, 191, 36, 0.08); display: grid; gap: 6px; }

@@ -41,6 +41,7 @@ import { ballonCeremony, ballonScreen } from './ballonView.js';
 import { afterCareerClick, afterCareerSection, coachScreen, punditScreen } from './screens/afterCareer.js';
 import { nationalFlow, tournamentFlow } from './nationalView.js';
 import { tournamentEligible } from '../core/national.js';
+import { scheduleCloudSync } from '../cloud.js';
 import { runTryoutStation, heartsHTML } from '../games/tryoutStation.js';
 import { POSITIONS as POS } from '../core/data.js';
 import { createWorld } from '../core/league.js';
@@ -96,6 +97,7 @@ export function createApp(rootEl) {
       if (!this.state) return;
       checkAchievements(this.state); // ölçüye dayalı rozetler (para, ün, eşya…) her kayıtta kontrol edilir
       saveGame(this.state);
+      scheduleCloudSync(this.state); // bulut bağlıysa birkaç saniye sonra yüklenir
     },
 
     /** Açılan başarımları bildirir (oyun/maç ekranlarında beklemeye alınır). */

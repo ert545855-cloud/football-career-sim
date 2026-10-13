@@ -1,6 +1,7 @@
 import { ballSVG, icon } from '../art.js';
 import { hasSave } from '../../core/storage.js';
 import { sprite } from '../../assets/sprites.js';
+import { checkCloudOnStart } from '../cloudView.js';
 
 export function titleScreen(app) {
   const canContinue = hasSave() && app.state;
@@ -31,6 +32,11 @@ export function titleScreen(app) {
         </div>
       </div>`,
     mount(el) {
+      // Bulut: başka cihazda daha yeni bir kayıt varsa (oturumda bir kez) sor
+      if (!app.cloudChecked) {
+        app.cloudChecked = true;
+        checkCloudOnStart(app);
+      }
       el.addEventListener('click', async (e) => {
         const act = e.target.closest('[data-act]')?.dataset.act;
         if (!act) return;

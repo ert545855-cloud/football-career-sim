@@ -8,5 +8,6 @@ export default defineConfig({
     assetsInlineLimit: 0,
     chunkSizeWarningLimit: 900,
   },
-  server: { host: true },
+  // Geliştirmede bulut kayıt API'si yerel Node sunucusuna (node server.mjs) yönlendirilir
+  server: { host: true, proxy: { '/api': `http://localhost:${process.env.API_PORT || 10000}` } },
 });

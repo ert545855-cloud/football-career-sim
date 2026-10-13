@@ -1,14 +1,17 @@
-// Krampon — bağımlılıksız statik sunucu (Render Docker servisi için).
+// Krampon — statik sunucu + bulut kayıt API'si (Render Docker servisi için).
 // dist/ klasörünü PORT üzerinden sunar; metin dosyalarını gzip'ler,
 // hash'li dosyaları uzun süre, sayfa/service worker'ı hiç önbelleklemez.
+// /api/cloud/* istekleri server/cloud.mjs'e gider (DATABASE_URL yoksa özellik kapalı döner).
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, join, normalize, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
+import { createCloud } from './server/cloud.mjs';
 
 const ROOT = fileURLToPath(new URL('./dist/', import.meta.url));
 const PORT = Number(process.env.PORT) || 10000;
+const cloud = createCloud();
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -53,6 +56,7 @@ async function resolve(urlPath) {
 
 const server = createServer(async (req, res) => {
   try {
+    if (await cloud.handle(req, res)) return;
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       res.writeHead(405, { Allow: 'GET, HEAD' }).end();
       return;
@@ -83,4 +87,4 @@ const server = createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, '0.0.0.0', () => console.log(`Krampon ${PORT} portunda yayında`));
+server.listen(PORT, '0.0.0.0', () => console.log(`Krampon ${PORT} portunda yayında · bulut kayıt ${cloud.enabled ? 'açık' : 'kapalı'}`));

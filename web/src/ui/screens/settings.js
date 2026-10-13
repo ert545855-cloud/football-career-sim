@@ -2,6 +2,7 @@ import { clearSave, exportSave, importSave, saveSettings } from '../../core/stor
 import { configureAudio, sfx } from '../../audio.js';
 import { icon } from '../art.js';
 import { toast } from '../dom.js';
+import { cloudSectionPlaceholder, mountCloudSection } from '../cloudView.js';
 
 export function settingsScreen(app) {
   const st = app.settings;
@@ -31,6 +32,7 @@ export function settingsScreen(app) {
         <div class="li"><div class="grow"><b>Kaydı içe aktar</b><div class="muted small">Kopyaladığın kodu yapıştır.</div></div><button class="btn sm ghost" data-act="import">${icon('upload')}</button></div>
         <div class="li"><div class="grow"><b>Kariyeri sil</b><div class="muted small">Geri alınamaz.</div></div><button class="btn sm danger" data-act="reset" ${app.state ? '' : 'disabled'}>Sil</button></div>
       </div>
+      ${cloudSectionPlaceholder}
 
       <div class="h-sec">Uygulama olarak yükle</div>
       <div class="card small" style="line-height:1.55">
@@ -41,9 +43,10 @@ export function settingsScreen(app) {
       </div>
       <p class="muted small center" style="margin-top:18px">Krampon v1.0 · Kulüpler ve isimler kurgusaldır.</p>`,
     mount(el) {
+      mountCloudSection(app, el);
       el.addEventListener('click', async (e) => {
         const t = e.target.closest('button');
-        if (!t) return;
+        if (!t || t.dataset.cloudAct) return;
         app.click();
         if (t.dataset.toggle) {
           st[t.dataset.toggle] = !st[t.dataset.toggle];

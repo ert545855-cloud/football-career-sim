@@ -17,5 +17,8 @@
   },
   "devDependencies": {
     "vite": "^8.3.4"
+  },
+  "dependencies": {
+    "pg": "^8.23.1"
   }
 }
