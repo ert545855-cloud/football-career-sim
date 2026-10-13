@@ -1,0 +1,171 @@
+# Çizerek Pas Sistemi (3B, Unity)
+
+Score! Hero / New Star Soccer tarzı pas mekaniği. Oyuncu pas moduna girer, zaman ağır çekime geçer, kamera oyuncunun arkasına süzülür. Oyuncu parmağıyla (ya da fareyle) topa dokunup kavisli bir hat çizer. Parmağını kaldırınca zaman normale döner ve top çizilen Bezier eğrisinde falsolu şekilde uçar. Çizim başladığı andan itibaren en yakın iki rakip baskıya koşar.
+
+Namespace: `FootballCareer.Passing` · Unity 2021.3 LTS ve üstü (Unity 6 dahil) · Built-in ve URP ile çalışır.
+
+## Dosyalar
+
+| Dosya | Görevi |
+|---|---|
+| `PasManager.cs` | Akışı yönetir: durum makinesi, ağır çekim, girdi ve çizim, Bezier önizleme (LineRenderer), baskı ve top kapma, sonuç olayları |
+| `BallController.cs` | Topu yol üzerinde sabit hızla taşır, falso dönüşünü uygular, çarpışma ve ulaşma kontrolünü yapar (SphereCast + OverlapSphere, NonAlloc) |
+| `EnemyAI.cs` | Rakip yapay zekâsı (NavMeshAgent): bekleme, pasöre baskı, iniş noktasına baskı, araya girme, yerine dönme |
+| `PassReceiver.cs` | Takım arkadaşı: hedef halkası, pası karşılamak için koşu. Pası atan oyuncuda da bulunur |
+| `PassCameraController.cs` | Üç kamera modu arasında gerçek zamanlı yumuşak geçiş: yayın, oyuncu arkası (3. şahıs) ve top takibi |
+| `PassPath.cs` | Çizimden kübik Bezier üretir, yay uzunluğu tablosunu tutar (sabit hız için) ve falso açısını hesaplar |
+| `PassTypes.cs` | `PassState`, `PassOutcome`, `PassResult` ve `PassResultEvent` tipleri |
+| `Demo/PassDemoBootstrap.cs` | Boş sahnede her şeyi kodla kurar (deneme için) |
+| `../Core/InputCompat.cs` | Dokunma ve fare girdisini tek API'de toplar. Eski Input Manager ile yeni Input System'i destekler |
+
+## En hızlı deneme (1 dakika)
+
+1. Yeni, boş bir sahne açın (File > New Scene > Basic).
+2. Boş bir GameObject oluşturun ve `PassDemoBootstrap` ekleyin.
+3. Play'e basın. Saha, NavMesh, oyuncular, top, kamera ve pas çizgisi çalışma anında kurulur.
+   - **Space** tuşuna basın ya da ekrana dokunun: ağır çekim başlar ve kamera oyuncunun arkasına geçer.
+   - Topa tıklayın, sürükleyin ve bırakın: pas atılır.
+   - **Esc**: rakip baskısı başlamadıysa pas modundan çıkar.
+
+## Kendi sahnenize kurulum
+
+### 1. Saha ve NavMesh
+- Saha zeminini **Navigation Static** yapıp bake edin:
+  - Unity 2021: Window > AI > Navigation > Bake.
+  - 2022 ve üstü: AI Navigation paketindeki `NavMeshSurface` bileşenini ekleyip **Bake**'e basın.
+- NavMesh yoksa rakipler yine çalışır, düz çizgide yürürler. Konsolda bir uyarı görürsünüz.
+
+### 2. Top
+- Bir küre ekleyin (ölçek 0.22 → yarıçap 0.11 m). `BallController` ekleyin; Rigidbody otomatik eklenir ve kinematik yapılır.
+- İsteğe bağlı:
+  - `Trail Renderer` ekleyip `trail` alanına bağlayın. Uçuşta açılır, falsonun izini gösterir.
+  - Dönüşün görünmesi için desenli bir top modeli kullanın.
+
+### 3. Oyuncular
+- **Takım arkadaşları ve pası atan oyuncu:** `PassReceiver` ekleyin.
+  - `highlight` alanına ayak altındaki halka renderer'ını bağlayın. Halka hedeflenince yanar.
+  - Collider gereklidir (kapsül olabilir).
+- **Rakipler:** `NavMeshAgent` ve `EnemyAI` ekleyin. Collider gereklidir.
+- Hareket eden oyunculara **kinematik Rigidbody** eklemek fizik performansı için önerilir.
+- Pivot önerisi: oyuncu kökü yerde (y = 0), gövde çocuk nesne. Böylece NavMeshAgent `baseOffset` gerektirmez.
+
+### 4. Kamera
+- Main Camera'ya `PassCameraController` ekleyin. Değerler hazırdır:
+  - yayın kamerası: ofset (0, 16, −13)
+  - pas modu: oyuncunun 7 m arkası, 4.5 m yükseklik
+- Cinemachine kullanıyorsanız bu bileşeni bir "rig" nesnesine ekleyip sanal kamerayla takip ettirebilirsiniz.
+
+### 5. Pas çizgisi
+- Boş bir nesneye `LineRenderer` ekleyin ve **Use World Space** açık olsun.
+- Malzeme olarak köşe rengi destekleyen bir shader seçin. Çizgi rengi koddan değişir:
+  - Built-in: `Sprites/Default`
+  - URP: `Universal Render Pipeline/Particles/Unlit`
+- Genişlik: 0.25. İsteğe bağlı: Width eğrisi 1 → 0.5, End Cap Vertices 4.
+
+### 6. PasManager
+- Sahnede tek bir nesneye `PasManager` ekleyin ve alanları bağlayın:
+  - `ball`, `passer` (topu ilk alan oyuncu), `cameraRig`, `line`
+  - `cam` boşsa Main Camera kullanılır.
+  - `teammates` / `enemies` listeleri boşsa sahnedekiler otomatik bulunur (`autoFindPlayers`).
+  - `pitchBounds`: sahanın sınırları. Varsayılan 68 × 105 m ve (0, 0, 0) merkezli. Dışına çıkan top **OutOfBounds** sayılır.
+
+### 7. (İsteğe bağlı) Katmanlar
+- Oyuncuları bir **Players** katmanına alın ve `BallController > playerMask` alanında yalnızca o katmanı seçin.
+- Böylece fizik sorguları zemini ve dekoru hiç görmez. Zorunlu değildir; filtreleme bileşene göre de yapılır.
+
+## Oyuna bağlama (sonuçları dinleme)
+
+```csharp
+using FootballCareer.Passing;
+using UnityEngine;
+
+public class PassStats : MonoBehaviour
+{
+    [SerializeField] private PasManager pas;
+    private int isabetli, toplam;
+
+    private void OnEnable()  { pas.PassFinished += OnPass; }
+    private void OnDisable() { pas.PassFinished -= OnPass; }
+
+    private void OnPass(PassResult r)
+    {
+        toplam++;
+        if (r.Success) isabetli++;
+        Debug.Log(r.Describe() + "  uzunluk=" + r.pathLength.ToString("F1") + " m  falso=" + r.curve.ToString("F2"));
+        // r.outcome: Completed / Intercepted / OutOfBounds / Stolen / Missed
+        // r.receiver (başarılıysa topu alan), r.interceptor (kesen/kapan rakip)
+    }
+}
+```
+
+- Aynı sonuç Inspector'dan `onPassFinished` (UnityEvent) olayıyla da alınabilir.
+- `onPassModeEntered` ve `onDrawStarted` olayları ses ve titreşim efektleri için uygundur.
+- Kendi UI düğmenizden pas moduna girmek için `pas.EnterPassMode()` çağırın.
+- Pozisyonu yeniden başlatmak için `pas.ResetPlay()`, topu başka bir oyuncuya vermek için (taç, serbest vuruş…) `pas.GiveBallTo(oyuncu)` kullanın.
+- `pas.Pressure` (0–1) rakip baskısı çubuğu çizmek için kullanılabilir.
+
+## Mekanik ayrıntıları
+
+**Ağır çekim.**
+- `Time.timeScale` yumuşakça 0.15'e iner (`slowTimeScale`).
+- `Time.fixedDeltaTime` da aynı oranda küçülür. Ağır çekimde de saniyede 50 fizik adımı kalır, hareket takılmaz.
+- Kamera, hedef halkası ve rakip yol yenileme **gerçek zamanla** çalışır. Ağır çekimden etkilenmezler.
+- Parmak kalktığı an zaman **anında** 1.0'a döner.
+- `PasManager` devre dışı kalırsa ya da sahne değişirse zaman ölçeği otomatik geri yüklenir.
+
+**Çizim → Bezier.**
+- Çizgi topun konumundan başlar. Çizim, topun ekrandaki konumuna `startTouchRadius` (ekran yüksekliğinin %22'si) yakınlıkta başlamalıdır.
+- Dokunuşlar yerdeki düzleme ışınlanır ve 0.4 m aralıkla nokta toplanır.
+- Eğri çizimin başından, 1/3'ünden, 2/3'ünden ve ucundan **geçecek** şekilde uydurulur (kübik Bezier, iki bilinmeyenli denklemin çözümü).
+- Aşırı zikzaklı çizimlerde kontrol noktaları sınırlandırılır.
+- Uzun paslara mesafeyle orantılı bir yay eklenir (`loftPerMeter`). Top `reachHeight` (2.1 m) üstündeyken kimse ona ulaşamaz, bu yüzden araya giren rakibin üstünden aşırtma mümkündür.
+- Çizgi rengi:
+  - **yeşil:** hedefte arkadaş var ve yol temiz.
+  - **turuncu:** yolda rakip var.
+  - **beyaz:** hedefte arkadaş yok.
+
+**Top.**
+- Yay uzunluğu tablosu sayesinde eğri boyunca sabit hızla gider. Hız 12–26 m/sn arasındadır; uzun pas daha serttir.
+- Dönüş iki bileşenlidir:
+  - yuvarlanma: ilerleme yönüne dik eksende, hız ÷ yarıçap.
+  - yan dönüş (falso): dikey eksende, eğrinin toplam dönüş açısıyla orantılı. Sola kıvrılan pas sola döner.
+- Her fizik adımında önceki konumdan yenisine SphereCast atılır. Hızlı top oyuncuların içinden geçmez.
+- Yol bitince kimse almadıysa top yerde yuvarlanır ve yavaşlar. Yine kimse almazsa sonuç **Missed** olur.
+
+**Rakipler.**
+- Çizim başlayınca en yakın 2 rakip baskıya koşar (`pressersCount`):
+  - 1. rakip pasöre koşar.
+  - 2. rakip tahmini iniş noktasına koşar. Bu hedef çizim değiştikçe güncellenir.
+- Rakipler ağır çekimde yavaşlar ama durmaz. Bir rakip pasöre `stealRadius` (1.1 m) kadar yaklaşırsa top kapılır (**Stolen**).
+- Pas modunda hiç çizmeden `pressureAfterIdleAim` (3 sn) beklenirse baskı yine başlar.
+- Pas atılınca tüm rakipler araya girme moduna geçer. Topun kalan yolunda, topa ondan önce varabilecekleri en erken noktaya koşarlar (tepki süresi 0.15 sn).
+
+**Sonuç.**
+
+| Durum | Sonuç |
+|---|---|
+| Top bir arkadaşa ulaştı | **Completed**. Topu alan oyuncu yeni pasör olur |
+| Top rakibe çarptı ya da rakip araya girdi | **Intercepted** |
+| Top saha dışına çıktı | **OutOfBounds** |
+| Çizerken çok beklendi | **Stolen** |
+| Top kimseye ulaşmadı | **Missed** |
+
+Başarısız pastan sonra `autoResetOnFail` açıksa diziliş 1 saniye sonra baştan kurulur.
+
+## Ayar önerileri
+
+| Ne istiyorsunuz? | Alan |
+|---|---|
+| Daha zor (rakip daha çabuk gelsin) | `EnemyAI.pressSpeed` ↑, `PasManager.slowTimeScale` ↑ (0.2–0.25) |
+| Daha kolay | `PasManager.stealRadius` ↓, `EnemyAI.reactionTime` ↑, `BallController.receiveRadius` ↑ |
+| Daha kavisli paslar | `BallController.sideSpinDegPerSec` ↑ (yalnızca görsel), çizim serbest |
+| Daha yüksek paslar | `PasManager.loftPerMeter` ↑ / `maxLoft` ↑ |
+| Kamera oyuncuya daha yakın | `PassCameraController.aimDistance` ↓, `aimHeight` ↓ |
+
+## Girdi
+
+`Core/InputCompat` iki girdi sisteminde de çalışır (Project Settings > Player > Active Input Handling):
+- Eski Input Manager'da önce dokunma, yoksa fare okunur.
+- Yeni Input System'de `Pointer.current` kullanılır.
+
+Pas çizimi Canvas düğmelerinin üstünde başlamaz (`EventSystem.IsPointerOverGameObject`).

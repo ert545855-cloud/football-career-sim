@@ -30,7 +30,8 @@ Tarayıcıda çalışır. iPhone'da ve Android'de **ana ekrana eklenip uygulama 
 
 ```
 web/     Tarayıcı oyunu (JavaScript + Canvas, Vite ile derlenir) ← Render'da yayınlanan
-unity/   Unity (C#) prototip scriptleri: ana menü, oyuncu oluşturma, 3 mini oyun
+unity/   Unity (C#) prototip scriptleri: ana menü, oyuncu oluşturma, 3 mini oyun,
+         3B çizerek pas sistemi (Assets/Scripts/Passing — kurulum: Passing/README.md)
 ```
 
 ```
