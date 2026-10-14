@@ -7,7 +7,7 @@ import { chance, pick, randInt, round1, roundTo } from './rng.js';
 import {
   addProgress, ageUp, changeEnergy, changeFame, changeMorale, changeRel, createPlayer, effectiveSkill, form, ovr, trainingAmount,
 } from './player.js';
-import { aiTopScorerGoals, clubRating, createWorld, evolveRatings, leagueOf, positionOf, simulateWeek, sortedTable } from './league.js';
+import { DEFAULT_FOCUS, addFocus, aiTopScorerGoals, clubRating, createWorld, evolveRatings, leagueIdIn, leagueOf, positionOf, simulateWeek, sortedTable, useWorld } from './league.js';
 import { acceptOffer, generateOffers, itemEffects, wageFor, weeklyFinance } from './economy.js';
 import { finalizeMatch, planMatch, selection } from './match.js';
 import { pickEvent, resolveEvent } from './events.js';
@@ -23,11 +23,13 @@ import {
 import { random } from './rng.js';
 import { agentNetworkOffers, agentSponsorMult, ensureAgent } from './agent.js';
 import { ensureNational, nationalWindow } from './national.js';
-import { ballonOnMatch, ballonRank, ballonSeasonEnd, ensureBallon } from './ballondor.js';
+import { ballonOnEurope, ballonOnMatch, ballonRank, ballonSeasonEnd, ensureBallon } from './ballondor.js';
 import { ChirpTriggerEngine, FABRICIO } from './chirp/index.js';
 import { achievementsOnMatch, achievementsOnTraining, checkAchievements, ensureAchievements } from './achievements.js';
 import { ensureSocial, homeScore, socialOnWeekEnd } from './social/index.js';
 import { ensureGarage, garageOnWeekEnd } from './garage.js';
+import { dative } from './chirp/turkish.js';
+import { CUPS, STAGE_LABEL, createEurope, europeWeek, europeWinners } from './world/europe.js';
 
 export const SAVE_VERSION = 1;
 
@@ -41,7 +43,8 @@ export const emptySeasonStats = () => ({ apps: 0, starts: 0, goals: 0, assists: 
  */
 export function newGame(setup) {
   const player = createPlayer(setup);
-  const world = createWorld(1);
+  const world = useWorld(createWorld(1));
+  world.europe = createEurope(1, world, null);
   const pool = CLUBS.filter((c) => c.league === 'first').sort((a, b) => a.rating - b.rating).slice(0, 4);
   const club = pick(pool);
   const state = {
@@ -251,6 +254,15 @@ export function completeMatch(state, match) {
   const ag = match.isHome ? match.score.opp : match.score.my;
   const results = simulateWeek(state.world, match.week, { h: match.homeId, a: match.awayId, hg, ag });
   state.pending.match = null;
+  // Avrupa kupaları (bu haftanın maç günü varsa); oyuncunun kulübü oynuyorsa katkısı
+  const europe = europeWeek(state, match.week);
+  if (europe.my) {
+    const m = europe.my;
+    ballonOnEurope(state, m);
+    const line = `${CUPS[m.cup].name} · ${STAGE_LABEL[m.stage]}${m.md ? ` ${m.md}. maç` : ''}: ${CLUB_BY_ID[m.match.h].short} ${m.match.hg}-${m.match.ag} ${CLUB_BY_ID[m.match.a].short}${m.match.pen ? ` (pen. ${m.match.pen[0]}-${m.match.pen[1]})` : ''}`;
+    addNews(state, `${line}${m.goals ? ` · ${m.goals} gol` : ''}${m.assists ? ` · ${m.assists} asist` : ''}${m.stage === 'f' && m.won ? ' · KUPA BİZİM! 🏆' : m.out ? ' · Elendik.' : ''}`, m.won ? 'good' : m.out ? 'bad' : 'info');
+    if (m.stage === 'f' && m.won) state.career.awards.push({ season: state.calendar.season, title: `${CUPS[m.cup].name} Şampiyonu`, icon: 'trophy', club: state.career.clubId });
+  }
 
   // Chirp: paylaşım kartı + gazeteci tweetleri (formsuzluk, büyük performans, kulübe, yönetim)
   const chirp = chirpOnMatch(state, { summary, match });
@@ -274,7 +286,7 @@ export function completeMatch(state, match) {
     if (rank <= 10) chirp.push(new ChirpTriggerEngine(state).post(FABRICIO, 'ballon', 'Altın Top yarışında ara sıralama: {player} {rank}. sırada! Avrupa devleri gözlerini Türkiye\'ye çevirdi.', { rank }));
   }
   const weekEnd = endWeek(state, { summary });
-  return { summary, results, weekEnd, chirp: [...chirp, ...weekEnd.chirp] };
+  return { summary, results, weekEnd, europe, chirp: [...chirp, ...weekEnd.chirp] };
 }
 
 function endWeek(state, ctx) {
@@ -375,6 +387,7 @@ export function endSeason(state) {
     assists: s.assists,
     avg,
     ovr: ovr(player),
+    europe: s.europe || null,
   };
   career.history.push(record);
   career.totals.apps += s.apps;
@@ -410,8 +423,15 @@ export function endSeason(state) {
   chirpOnSeasonEnd(state, { awards });
   chirpOnOffers(state, offers);
 
-  // Yeni sezon dünyası
-  state.world = createWorld(calendar.season + 1, evolveRatings(world));
+  // Yeni sezon dünyası: küme düşme / çıkma, oyuncunun liginin sonuçları tutulur
+  const nextWorld = createWorld(calendar.season + 1, evolveRatings(world), { prev: world, focus: DEFAULT_FOCUS });
+  // Avrupa: bu sezonun kazananları, gelecek sezonun katılımcıları (bu sezonun tablolarından)
+  const euroWinners = europeWinners(world);
+  nextWorld.europe = createEurope(calendar.season + 1, nextWorld, world);
+  state.world = useWorld(nextWorld);
+  addFocus(nextWorld, leagueIdIn(nextWorld, career.clubId));
+  const myMove = nextWorld.moves.find((m) => m.clubId === career.clubId);
+  if (myMove) addNews(state, myMove.up ? `${CLUB_BY_ID[career.clubId].name} ${dative(LEAGUES[myMove.to].name)} yükseldi! 🎉` : `${CLUB_BY_ID[career.clubId].name} ${dative(LEAGUES[myMove.to].name)} düştü.`, myMove.up ? 'good' : 'bad');
   const report = {
     season: calendar.season,
     leagueId,
@@ -428,6 +448,13 @@ export function endSeason(state) {
     startTerms,
     mentor: { ...mentorEnd, start: null },
     ballon,
+    promotion: myMove || null,
+    europe: euroWinners,
+    nextCup: (() => {
+      const id = Object.keys(nextWorld.europe.cups).find((k) => nextWorld.europe.cups[k].teams.includes(career.clubId));
+      return id || null;
+    })(),
+    moves: nextWorld.moves,
   };
 
   calendar.season += 1;

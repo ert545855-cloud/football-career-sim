@@ -1,7 +1,7 @@
 import { ITEM_BY_ID, POSITIONS, STATS, STAT_KEYS, LEAGUES } from '../../core/data.js';
 import { form, ovr, effectiveSkill } from '../../core/player.js';
 import { money, itemEffects } from '../../core/economy.js';
-import { leagueOf } from '../../core/league.js';
+import { leagueLabel, leagueOf } from '../../core/league.js';
 import { icon, itemArt, playerAvatar } from '../art.js';
 import { animateBars, esc } from '../dom.js';
 import { meter, statRow } from '../components.js';
@@ -63,7 +63,7 @@ export function playerScreen(app) {
         <div class="grow">
           <h1 class="h-title ellipsis">${esc(p.name)}</h1>
           <div class="muted small" style="margin-top:4px">${pos.name} · #${p.number} · ${p.age} yaş</div>
-          <div class="chips" style="margin-top:8px"><span class="chip">${esc(club.name)}</span><span class="chip">${LEAGUES[leagueOf(club.id)].name}</span></div>
+          <div class="chips" style="margin-top:8px"><span class="chip">${esc(club.name)}</span><span class="chip">${esc(leagueLabel(leagueOf(club.id)))}</span></div>
         </div>
         <div class="ovr-badge">${ovr(p)}<small>OVR</small></div>
       </div>

@@ -66,14 +66,17 @@ export class ChirpTriggerEngine {
   /** Büyük kulüp: oyuncunun kulübünden belirgin şekilde güçlü ya da Süper Lig'in ilk 4'ü. */
   isBigClub(clubId) {
     const w = this.state.world;
-    const top4 = CLUBS.filter((c) => c.league === 'super').map((c) => c.id).sort((a, b) => clubRating(w, b) - clubRating(w, a)).slice(0, 4);
+    // Oyuncunun ülkesindeki en üst ligin ilk 4'ü
+    const country = LEAGUES[leagueOf(this.state.career.clubId)]?.country || 'tr';
+    const topId = Object.values(LEAGUES).find((l) => l.country === country && l.tier === 1 && !l.youth)?.id || 'super';
+    const top4 = (w.leagues[topId]?.teams || []).slice().sort((a, b) => clubRating(w, b) - clubRating(w, a)).slice(0, 4);
     return clubId !== this.state.career.clubId && (clubRating(w, clubId) >= clubRating(w, this.state.career.clubId) + 6 || top4.includes(clubId));
   }
 
   randomBigClub() {
     const w = this.state.world;
     const list = CLUBS.filter((c) => c.id !== this.state.career.clubId && clubRating(w, c.id) >= clubRating(w, this.state.career.clubId) + 6);
-    const pool = list.length ? list : CLUBS.filter((c) => c.league === 'super' && c.id !== this.state.career.clubId);
+    const pool = list.length ? list : CLUBS.filter((c) => LEAGUES[c.league]?.tier === 1 && c.id !== this.state.career.clubId);
     return pool[Math.floor(this.rnd() * pool.length)];
   }
 

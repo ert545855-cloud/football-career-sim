@@ -1,15 +1,18 @@
-import { CLUBS, CLUB_BY_ID, ITEM_BY_ID, LIVING_COST } from './data.js';
+import { CLUBS, CLUB_BY_ID, COUNTRY_BY_ID, ITEM_BY_ID, LEAGUES, LIVING_COST } from './data.js';
+import { COUNTRY_PRESTIGE } from './world/countries.js';
 import { clamp, roundTo, chance, randInt, shuffle } from './rng.js';
-import { clubRating } from './league.js';
+import { addFocus, clubRating, countryOf, leagueIdIn } from './league.js';
 import { ovr, form } from './player.js';
 import { RelationshipService } from './chirp/relationships.js';
 import { onCarSold } from './garage.js';
 
 /** Haftalık maaş: kulüp gücüyle üstel artar, oyuncunun kulübe göre seviyesi çarpan olur. */
-export function wageFor(clubR, playerOvr) {
+export function wageFor(clubR, playerOvr, country = 'tr') {
   const base = 100 * Math.exp(clubR / 14);
   const perf = clamp(0.55 + 0.6 * (playerOvr / clubR - 0.5), 0.5, 1.25);
-  return Math.max(250, roundTo(base * perf, 50));
+  // Ülke maaş çarpanı: Premier Lig ve Körfez daha çok öder, alt ekonomiler daha az
+  const mult = COUNTRY_BY_ID[country]?.wage ?? 1;
+  return Math.max(250, roundTo(base * perf * mult, 50));
 }
 
 /** Eşya etkileri: araç ve evde sadece en iyisi sayılır, diğerleri toplanır. */
@@ -86,6 +89,7 @@ export function generateOffers(state, kind) {
   const o = ovr(player);
   const f = form(player);
   const curR = clubRating(world, career.clubId);
+  const myCountry = countryOf(career.clubId);
   const offers = [];
 
   // Yedekte kalan oyuncuya daha küçük kulüplerden "oynama şansı" teklifi gelir
@@ -93,14 +97,19 @@ export function generateOffers(state, kind) {
   // Yedekte kalan ya da yönetimin satış listesine koyduğu oyuncuya küçük kulüplerden teklif gelir
   const benched = (state.flags.benchStreak || 0) >= 3 || career.season.starts < (kind === 'end' ? 8 : 4) || rel.onTransferList();
 
-  const candidates = shuffle(CLUBS.filter((c) => c.id !== career.clubId)).filter((c) => {
+  const fits = (c) => {
     const r = clubRating(world, c.id);
     const stepUp = r >= curR + 3 && o >= r - 6;
     const stepDown = benched && r < curR && r >= o - 8 && r <= o + 2;
     return stepUp || stepDown;
-  });
+  };
+  const all = CLUBS.filter((c) => c.id !== career.clubId);
+  const domestic = shuffle(all.filter((c) => (c.country || 'tr') === myCountry)).filter(fits);
+  // Yurt dışı ilgisi: ün ve güç arttıkça açılır (genç ve tanınmayan oyuncuya yabancı kulüp gelmez)
+  const abroad = clamp((player.fame - 18) / 55 + (o - 52) / 45, 0, 1);
+  const foreign = abroad > 0 ? shuffle(all.filter((c) => (c.country || 'tr') !== myCountry && clubRating(world, c.id) >= curR + 2 && o >= clubRating(world, c.id) - 7)).slice(0, 60) : [];
 
-  for (const c of candidates) {
+  for (const c of domestic) {
     if (offers.length >= 3) break;
     const r = clubRating(world, c.id);
     let p = r < curR ? 0.45 : 0.16 + (f - 6.5) * 0.12 + player.fame / 260;
@@ -108,18 +117,38 @@ export function generateOffers(state, kind) {
     if (kind === 'mid') p *= 0.7;
     if (chance(clamp(p, 0.03, 0.85))) offers.push(makeOffer(c.id, r, o, true));
   }
+  const maxOffers = player.fame >= 50 ? 4 : 3;
+  for (const c of foreign) {
+    if (offers.length >= maxOffers) break;
+    const r = clubRating(world, c.id);
+    let p = (0.05 + (f - 6.5) * 0.06 + player.fame / 400) * abroad * (0.6 + (COUNTRY_PRESTIGE[c.country] ?? 0.5) * 0.5);
+    if (kind === 'mid') p *= 0.7;
+    if (chance(clamp(p, 0.005, 0.5))) offers.push(makeOffer(c.id, r, o, true));
+  }
+  // Körfez parası: tanınmış oyuncuya Suudi Arabistan'dan yüksek maaşlı teklif
+  if (player.fame >= 45 && myCountry !== 'sa' && offers.length < maxOffers && chance(kind === 'end' ? 0.18 : 0.08)) {
+    const sa = shuffle(all.filter((c) => c.country === 'sa' && LEAGUES[c.league]?.tier === 1))[0];
+    if (sa) {
+      const off = makeOffer(sa.id, clubRating(world, sa.id), o, true);
+      off.wage = roundTo(off.wage * 1.6, 50);
+      off.signingBonus = roundTo(off.wage * 12, 100);
+      off.tag = 'gulf';
+      offers.push(off);
+    }
+  }
 
   if (kind === 'end' && career.contract.yearsLeft <= 0) {
     if (rel.boardWillRenew()) {
-      const w = Math.round((wageFor(curR, o) * 1.05 * rel.boardWageMultiplier()) / 50) * 50;
+      const w = Math.round((wageFor(curR, o, myCountry) * 1.05 * rel.boardWageMultiplier()) / 50) * 50;
       offers.unshift({ clubId: career.clubId, wage: Math.max(w, career.contract.wage), years: randInt(2, 3), signingBonus: 0, renewal: true, outlook: outlookFor(curR, o) });
     }
     if (offers.length === 0) {
-      // İşsiz kalmasın: seviyesine uygun bir kulüp mutlaka gelir
-      const fallback = CLUBS.filter((c) => c.id !== career.clubId)
+      // İşsiz kalmasın: seviyesine uygun bir kulüp mutlaka gelir (önce kendi ülkesinden)
+      const pool = all.filter((c) => (c.country || 'tr') === myCountry);
+      const fallback = (pool.length ? pool : all)
         .map((c) => ({ c, r: clubRating(world, c.id) }))
         .filter(({ r }) => r <= o + 6)
-        .sort((a, b) => b.r - a.r)[0] || { c: CLUBS[CLUBS.length - 1], r: clubRating(world, CLUBS[CLUBS.length - 1].id) };
+        .sort((a, b) => b.r - a.r)[0] || { c: all[all.length - 1], r: clubRating(world, all[all.length - 1].id) };
       offers.push(makeOffer(fallback.c.id, fallback.r, o, true));
     }
   }
@@ -127,7 +156,7 @@ export function generateOffers(state, kind) {
 }
 
 function makeOffer(clubId, r, o, move) {
-  const wage = wageFor(r, o);
+  const wage = wageFor(r, o, countryOf(clubId));
   return {
     clubId,
     wage,
@@ -157,6 +186,7 @@ export function acceptOffer(state, offer) {
   if (moving) {
     const from = CLUB_BY_ID[career.clubId]?.name;
     career.clubId = offer.clubId;
+    if (state.world) addFocus(state.world, leagueIdIn(state.world, offer.clubId));
     player.rel.manager = 50;
     player.rel.teammates = 40;
     career.moves = (career.moves || 0) + 1;

@@ -1,6 +1,6 @@
 import { POSITIONS, CLUB_BY_ID, LEAGUES } from './data.js';
 import { clamp, chance, pick, poisson, rand, randInt, round1, weightedPick } from './rng.js';
-import { clubRating, fixtureFor, goalLambda, leagueOf } from './league.js';
+import { clubRating, fixtureFor, goalLambda, leagueOf, leaguePrestige } from './league.js';
 import { addProgress, changeEnergy, changeFame, changeMorale, changeRel, form, ovr } from './player.js';
 import { bigMatchSetup } from './mentor/index.js';
 
@@ -271,7 +271,7 @@ export function finalizeMatch(state, match) {
   const res = my > opp ? 'W' : my < opp ? 'L' : 'D';
   const t = match.tally;
   const wage = career.contract.wage;
-  const tier = LEAGUES[leagueOf(career.clubId)].tier;
+  const prestige = leaguePrestige(leagueOf(career.clubId));
   const before = {
     morale: player.morale,
     energy: player.energy,
@@ -315,7 +315,7 @@ export function finalizeMatch(state, match) {
   else changeRel(player, 'manager', -1);
   changeRel(player, 'teammates', (res === 'W' ? 2 : res === 'L' ? -1 : 0) + t.assists * 2);
   changeRel(player, 'fans', t.goals * 4 + (played ? (rating - 6.5) * 2 : -1) + (res === 'W' ? 1 : 0));
-  changeFame(player, t.goals * (tier === 1 ? 1.2 : 0.7) + (rating && rating >= 8 ? 1 : 0) + (played ? 0.2 : -0.1));
+  changeFame(player, t.goals * (0.45 + 0.85 * prestige) + (rating && rating >= 8 ? 1 : 0) + (played ? 0.2 : -0.1));
 
   // Enerji: dayanıklılık yüksekse maç daha az yorar
   if (played) {

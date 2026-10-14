@@ -1,9 +1,35 @@
+// LİG DÜNYASI — 86 lig, ~1000 kulüp. Her hafta tüm ligler oynanır.
+//
+// Kayıt boyutu küçük kalsın diye:
+//   • Fikstür kaydedilmez; takım listesi + tohumdan her seferinde aynı üretilir (fixturesOf)
+//   • Tüm maç sonuçları sadece "odak" liglerde tutulur (oyuncunun ülkesi + bulunduğu lig);
+//     diğer liglerde yalnızca son haftanın sonuçları (last) saklanır
+// Lig üyeliği dünyaya aittir: sezon sonunda küme düşme / çıkma olur (her kademe arası 2 takım).
 import { ALL_CLUBS, CLUB_BY_ID, LEAGUES, SEASON_WEEKS } from './data.js';
-import { clamp, poisson, shuffle, randInt, rand } from './rng.js';
+import { clamp, poisson, randInt, rand } from './rng.js';
+import { hashStr, seededRng, seededShuffle } from './world/generate.js';
+import { COUNTRY_BY_ID, COUNTRY_PRESTIGE } from './world/countries.js';
 
-/** Çift devreli lig fikstürü (çember yöntemi). 12 takım → 22 hafta. */
-export function roundRobin(ids) {
-  const teams = shuffle(ids);
+/** Lig adı (yabancı liglerde bayrakla): "🏴 Premier Lig" */
+export function leagueLabel(id, { country = false } = {}) {
+  const lg = LEAGUES[id];
+  if (!lg) return '';
+  const c = COUNTRY_BY_ID[lg.country];
+  if (!c || lg.country === 'tr') return lg.name;
+  return country ? `${c.flag} ${c.name} ${lg.name}` : `${c.flag} ${lg.name}`;
+}
+
+const TIER_FACTOR = { 1: 1, 2: 0.47, 3: 0.12, 4: 0.05 };
+/** Ligin dünya sahnesindeki ağırlığı (Türkiye Süper Lig 0.85, Premier Lig 1.25, alt ligler düşük) */
+export function leaguePrestige(leagueId) {
+  const lg = LEAGUES[leagueId];
+  if (!lg || lg.youth) return 0.04;
+  return (COUNTRY_PRESTIGE[lg.country] ?? 0.5) * (TIER_FACTOR[lg.tier] ?? 0.05);
+}
+
+/** Çift devreli lig fikstürü (çember yöntemi). 12 takım → 22 hafta. rnd verilirse tohumlu. */
+export function roundRobin(ids, rnd = Math.random) {
+  const teams = seededShuffle(ids, rnd);
   if (teams.length % 2) teams.push(null);
   const n = teams.length;
   let arr = [...teams];
@@ -28,29 +54,106 @@ function emptyRow(id) {
   return { id, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0, last: [] };
 }
 
-export function createWorld(season = 1, prevRatings = null) {
+/** Fikstür: eski kayıtlarda saklı, yenilerde tohumdan üretilir (bellekte önbellek) */
+const FIXTURE_CACHE = new WeakMap();
+export function fixturesOf(lg) {
+  if (Array.isArray(lg.fixtures)) return lg.fixtures;
+  let f = FIXTURE_CACHE.get(lg);
+  if (!f) {
+    f = roundRobin(lg.teams.slice().sort(), seededRng(lg.seed >>> 0));
+    FIXTURE_CACHE.set(lg, f);
+  }
+  return f;
+}
+
+/** Dünya → (kulüp → lig) dizini */
+const INDEX_CACHE = new WeakMap();
+function indexOf(world) {
+  let idx = INDEX_CACHE.get(world);
+  if (!idx || idx.size === 0) {
+    idx = new Map();
+    for (const lg of Object.values(world.leagues || {})) for (const id of lg.teams || []) idx.set(id, lg.id);
+    INDEX_CACHE.set(world, idx);
+  }
+  return idx;
+}
+export const leagueIdIn = (world, clubId) => (world ? indexOf(world).get(clubId) : null) ?? CLUB_BY_ID[clubId]?.league;
+
+/** Oyunun etkin dünyası (leagueOf dünya parametresi almadan doğru ligi bulsun) */
+let ACTIVE = null;
+export function useWorld(world) {
+  ACTIVE = world || null;
+  if (world) INDEX_CACHE.delete(world);
+  return world;
+}
+
+/** Kulübün şu anki ligi (küme düşme/çıkma sonrası değişebilir) */
+export const leagueOf = (clubId) => leagueIdIn(ACTIVE, clubId);
+export const countryOf = (clubId) => CLUB_BY_ID[clubId]?.country || 'tr';
+
+/** Varsayılan odak: Türkiye ligleri */
+export const DEFAULT_FOCUS = ['super', 'first', 'tr2', 'tr3', 'u17'];
+
+/**
+ * Yeni sezon dünyası.
+ * @param {number} season
+ * @param {object|null} prevRatings önceki sezonun kulüp güçleri
+ * @param {{prev?:object, focus?:string[]}} [opts] prev: önceki dünya (küme düşme/çıkma için)
+ */
+export function createWorld(season = 1, prevRatings = null, opts = {}) {
   const ratings = Object.fromEntries(ALL_CLUBS.map((c) => [c.id, prevRatings?.[c.id] ?? c.rating]));
+  const membership = opts.prev ? promotions(opts.prev) : null;
   const leagues = {};
   for (const lg of Object.values(LEAGUES)) {
-    const ids = ALL_CLUBS.filter((c) => c.league === lg.id).map((c) => c.id);
+    const ids = membership ? membership.teams[lg.id] || [] : ALL_CLUBS.filter((c) => c.league === lg.id).map((c) => c.id);
     leagues[lg.id] = {
       id: lg.id,
       teams: ids,
-      fixtures: roundRobin(ids),
+      seed: hashStr(`${season}-${lg.id}-${randInt(0, 1e6)}`),
       table: Object.fromEntries(ids.map((id) => [id, emptyRow(id)])),
-      results: [], // results[weekIndex] = [{h, a, hg, ag}]
+      results: [],
+      last: [],
       topScorerGoals: 0,
     };
   }
-  return { season, ratings, leagues };
+  const focus = [...new Set([...(opts.focus || DEFAULT_FOCUS)])];
+  return { season, ratings, leagues, focus, moves: membership?.moves || [], v: 2 };
 }
 
-export const clubRating = (world, id) => world.ratings[id] ?? CLUB_BY_ID[id]?.rating ?? 40;
-export const leagueOf = (clubId) => CLUB_BY_ID[clubId]?.league;
+/**
+ * Küme düşme / çıkma: aynı ülkede ardışık kademeler arasında 2'şer takım yer değiştirir.
+ * @returns {{teams:Object<string,string[]>, moves:Array<{clubId:string, from:string, to:string, up:boolean}>}}
+ */
+export function promotions(world) {
+  const teams = Object.fromEntries(Object.values(world.leagues).map((lg) => [lg.id, lg.teams.slice()]));
+  const moves = [];
+  const byCountry = {};
+  for (const lg of Object.values(LEAGUES)) {
+    if (lg.youth || !world.leagues[lg.id]) continue;
+    (byCountry[lg.country] ||= []).push(lg);
+  }
+  for (const list of Object.values(byCountry)) {
+    list.sort((a, b) => a.tier - b.tier);
+    for (let i = 0; i < list.length - 1; i++) {
+      const upper = world.leagues[list[i].id];
+      const lower = world.leagues[list[i + 1].id];
+      const down = sortedTable(upper).slice(-2).map((r) => r.id);
+      const up = sortedTable(lower).slice(0, 2).map((r) => r.id);
+      teams[upper.id] = teams[upper.id].filter((id) => !down.includes(id)).concat(up);
+      teams[lower.id] = teams[lower.id].filter((id) => !up.includes(id)).concat(down);
+      for (const id of up) moves.push({ clubId: id, from: lower.id, to: upper.id, up: true });
+      for (const id of down) moves.push({ clubId: id, from: upper.id, to: lower.id, up: false });
+    }
+  }
+  return { teams, moves };
+}
+
+export const clubRating = (world, id) => world?.ratings?.[id] ?? CLUB_BY_ID[id]?.rating ?? 40;
 
 export function fixtureFor(world, clubId, week) {
-  const lg = world.leagues[leagueOf(clubId)];
-  const round = lg?.fixtures[week - 1] || [];
+  const lg = world.leagues[leagueIdIn(world, clubId)];
+  if (!lg) return null;
+  const round = fixturesOf(lg)[week - 1] || [];
   return round.find(([h, a]) => h === clubId || a === clubId) || null;
 }
 
@@ -82,6 +185,17 @@ function push(row, r) {
   if (row.last.length > 5) row.last.shift();
 }
 
+/** Bu ligin tüm sonuçları saklanıyor mu? */
+export const isFocus = (world, leagueId) => !!world.focus?.includes(leagueId) || Array.isArray(world.leagues[leagueId]?.fixtures);
+
+/** Haftanın sonuçları (odak liglerde tümü, diğerlerinde sadece son hafta) */
+export function weekResults(world, leagueId, week) {
+  const lg = world.leagues[leagueId];
+  if (!lg) return [];
+  if (lg.results?.[week - 1]) return lg.results[week - 1];
+  return lg.lastWeek === week ? lg.last || [] : [];
+}
+
 /**
  * Haftanın tüm maçlarını oynatır. Oyuncunun maçı (myResult) verilirse o skor kullanılır.
  * @returns {{[leagueId]: Array<{h,a,hg,ag}>}}
@@ -89,7 +203,7 @@ function push(row, r) {
 export function simulateWeek(world, week, myResult = null) {
   const out = {};
   for (const lg of Object.values(world.leagues)) {
-    const round = lg.fixtures[week - 1] || [];
+    const round = fixturesOf(lg)[week - 1] || [];
     const results = round.map(([h, a]) => {
       let hg;
       let ag;
@@ -99,10 +213,15 @@ export function simulateWeek(world, week, myResult = null) {
       } else {
         [hg, ag] = simulateScore(world, h, a);
       }
-      applyResult(lg.table, h, a, hg, ag);
+      if (lg.table[h] && lg.table[a]) applyResult(lg.table, h, a, hg, ag);
       return { h, a, hg, ag };
     });
-    lg.results[week - 1] = results;
+    if (isFocus(world, lg.id)) {
+      lg.results = lg.results || [];
+      lg.results[week - 1] = results;
+    }
+    lg.last = results;
+    lg.lastWeek = week;
     out[lg.id] = results;
   }
   return out;
@@ -115,29 +234,81 @@ export function sortedTable(league) {
 }
 
 export function positionOf(world, clubId) {
-  const lg = world.leagues[leagueOf(clubId)];
+  const lg = world.leagues[leagueIdIn(world, clubId)];
+  if (!lg) return 0;
   return sortedTable(lg).findIndex((r) => r.id === clubId) + 1;
 }
 
-/** Sezon sonu: kulüp güçleri biraz değişir (sıralamaya göre). */
+/** Sezon sonu: kulüp güçleri biraz değişir (sıralamaya göre; yükselen güçlenir, düşen zayıflar). */
 export function evolveRatings(world) {
   const next = { ...world.ratings };
+  const moved = new Map((world.moves || []).map((m) => [m.clubId, m.up]));
   for (const lg of Object.values(world.leagues)) {
     const table = sortedTable(lg);
     table.forEach((row, i) => {
       const n = table.length;
       const trend = i < 3 ? 1 : i >= n - 3 ? -1 : 0;
-      const base = CLUB_BY_ID[row.id].rating;
+      const base = CLUB_BY_ID[row.id]?.rating ?? next[row.id];
       // Kulüpler kendi tarihî seviyelerinden çok uzaklaşmaz
-      next[row.id] = clamp(Math.round(next[row.id] + trend + rand(-1.5, 1.5)), base - 6, base + 6);
+      next[row.id] = clamp(Math.round(next[row.id] + trend + rand(-1.5, 1.5)), base - 7, base + 7);
     });
+  }
+  // Yeni ligine uyum (bir önceki küme hareketi): çıkan biraz güçlenir, düşen biraz zayıflar
+  for (const [id, up] of moved) {
+    const base = CLUB_BY_ID[id]?.rating ?? next[id];
+    next[id] = clamp(next[id] + (up ? 2 : -2), base - 7, base + 7);
   }
   return next;
 }
 
 /** Ligdeki yapay gol kralının gol sayısı (ödül karşılaştırması için). */
 export function aiTopScorerGoals(leagueId) {
-  return leagueId === 'super' ? randInt(19, 27) : randInt(16, 23);
+  const tier = LEAGUES[leagueId]?.tier || 2;
+  return tier === 1 ? randInt(19, 27) : randInt(16, 23);
+}
+
+/**
+ * Eski kayıt göçü: eksik ligleri ekler ve mevcut haftaya kadar oynatır (tablolar tutarlı olsun).
+ * @param {object} world
+ * @param {number} week şu anki hafta (bu haftanın maçı henüz oynanmadı)
+ */
+export function upgradeWorld(world, week = 1) {
+  if (!world || world.v >= 2) return world;
+  const fresh = createWorld(world.season || 1);
+  const added = [];
+  for (const [id, lg] of Object.entries(fresh.leagues)) {
+    if (world.leagues[id]) continue;
+    world.leagues[id] = lg;
+    added.push(id);
+  }
+  for (const lg of Object.values(world.leagues)) {
+    lg.last = lg.last || [];
+    if (!lg.teams) lg.teams = Object.keys(lg.table || {});
+  }
+  world.focus = world.focus || DEFAULT_FOCUS.slice();
+  world.moves = world.moves || [];
+  world.v = 2;
+  // Yeni eklenen ligler geçmiş haftaları oynasın
+  for (let w = 1; w < week; w++) {
+    for (const id of added) {
+      const lg = world.leagues[id];
+      const res = (fixturesOf(lg)[w - 1] || []).map(([h, a]) => {
+        const [hg, ag] = simulateScore(world, h, a);
+        applyResult(lg.table, h, a, hg, ag);
+        return { h, a, hg, ag };
+      });
+      if (isFocus(world, id)) lg.results[w - 1] = res;
+      lg.last = res;
+      lg.lastWeek = w;
+    }
+  }
+  return world;
+}
+
+/** Odak listesine lig ekle (oyuncu başka bir lige transfer olduğunda) */
+export function addFocus(world, leagueId) {
+  if (!world.focus) world.focus = DEFAULT_FOCUS.slice();
+  if (!world.focus.includes(leagueId)) world.focus.push(leagueId);
 }
 
 export { SEASON_WEEKS };

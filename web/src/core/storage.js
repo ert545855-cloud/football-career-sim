@@ -8,6 +8,8 @@ import { ensureNational } from './national.js';
 import { ensureBallon } from './ballondor.js';
 import { ensureSocial } from './social/index.js';
 import { ensureGarage } from './garage.js';
+import { addFocus, leagueIdIn, upgradeWorld, useWorld } from './league.js';
+import { ensureEurope } from './world/europe.js';
 
 const KEY = 'krampon.save.v1';
 const SETTINGS_KEY = 'krampon.settings';
@@ -75,6 +77,11 @@ export function migrate(state) {
   ensureBallon(state);
   ensureSocial(state);
   ensureGarage(state);
+  // Dünya ligleri (eski kayıtlarda sadece Türkiye vardı)
+  upgradeWorld(state.world, state.calendar?.week || 1);
+  ensureEurope(state.world, state.calendar?.week || 1);
+  useWorld(state.world);
+  addFocus(state.world, leagueIdIn(state.world, state.career.clubId));
   return state;
 }
 

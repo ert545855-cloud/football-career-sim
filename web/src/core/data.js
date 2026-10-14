@@ -67,13 +67,6 @@ export const TRAINING = {
   stamina: { game: 'endurance', title: 'Dayanıklılık Koşusu', hint: 'Ritmini koru: nefes barı bitmesin, hedef süreyi geç.' },
 };
 
-export const LEAGUES = {
-  super: { id: 'super', name: 'Süper Lig', short: 'SL', tier: 1 },
-  first: { id: 'first', name: '1. Lig', short: '1L', tier: 2 },
-  /** Dev kulüplerin altyapı takımlarından oluşan gelişim ligi (Seçenek C) */
-  u17: { id: 'u17', name: 'U-17 Gelişim Ligi', short: 'U17', tier: 3, youth: true },
-};
-
 // Kurgusal kulüpler. rating = kulübün genel gücü (oyuncu OVR'si ile aynı ölçek).
 export const CLUBS = [
   { id: 'bog', name: 'Boğaziçi SK', short: 'BOĞ', league: 'super', rating: 79, colors: ['#c8102e', '#ffd200'], pattern: 'stripes', city: 'İstanbul' },
@@ -101,7 +94,28 @@ export const CLUBS = [
   { id: 'dat', name: 'Datça Spor', short: 'DAT', league: 'first', rating: 30, colors: ['#2563eb', '#f8fafc'], pattern: 'stripes', city: 'Muğla' },
   { id: 'kiz', name: 'Kızılırmak FK', short: 'KIZ', league: 'first', rating: 28, colors: ['#b91c1c', '#111827'], pattern: 'sash', city: 'Kırşehir' },
   { id: 'van', name: 'Van Gölü SK', short: 'VAN', league: 'first', rating: 26, colors: ['#0ea5e9', '#14532d'], pattern: 'hoops', city: 'Van' },
-];
+].map((c) => ({ ...c, country: 'tr' }));
+
+const WORLD = generateWorld({ tr: CLUBS.map((c) => c.short) });
+
+/** Dünyadaki tüm A takımları (Türkiye'nin Süper Lig + 1. Lig kulüpleri yukarıda, diğerleri üretilir) */
+CLUBS.push(...WORLD.clubs);
+import { generateWorld } from './world/generate.js';
+import { COUNTRIES, COUNTRY_BY_ID } from './world/countries.js';
+
+export { COUNTRIES, COUNTRY_BY_ID };
+
+
+/**
+ * Ligler: 28 ülkenin ilk 3 ligi (Türkiye'de 4) + Türkiye U-17 gelişim ligi.
+ * tier = ülke içindeki kademe (1 = en üst). country = ülke kimliği.
+ */
+export const LEAGUES = {
+  ...Object.fromEntries(WORLD.leagues.map((l) => [l.id, l])),
+  /** Dev kulüplerin altyapı takımlarından oluşan gelişim ligi (Seçenek C) */
+  u17: { id: 'u17', name: 'U-17 Gelişim Ligi', short: 'U17', tier: 3, level: 9, youth: true, country: 'tr' },
+};
+
 
 /**
  * Altyapı (U-17) takımları: Süper Lig kulüplerinin gençleri. Kendi liglerinde oynarlar,

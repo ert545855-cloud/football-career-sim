@@ -9,7 +9,7 @@
 // Kendini temsil etmek (ajan yok) komisyonsuzdur ama pazarlıkta zayıf kalırsın.
 import { CLUBS, CLUB_BY_ID } from './data.js';
 import { chance, clamp, roundTo, shuffle } from './rng.js';
-import { clubRating, leagueOf } from './league.js';
+import { clubRating, countryOf, leagueOf } from './league.js';
 import { form, ovr, changeMorale, changeRel } from './player.js';
 import { outlookFor, wageFor } from './economy.js';
 
@@ -141,9 +141,11 @@ export function agentNetworkOffers(state, offers, kind) {
   const pool = shuffle(CLUBS.filter((c) => !taken.has(c.id)))
     .map((c) => ({ c, r: clubRating(state.world, c.id) }))
     .filter(({ r }) => r > curR && r <= o + reach);
-  const pickC = pool.sort((a, b) => b.r - a.r)[0];
+  // En iddialı 5 kulüpten biri (ajanın ulaşabildiği en üst seviye)
+  const top = pool.sort((a, b) => b.r - a.r).slice(0, 5);
+  const pickC = top[Math.floor(Math.random() * top.length)];
   if (!pickC) return offers;
-  const wage = wageFor(pickC.r, o);
+  const wage = wageFor(pickC.r, o, countryOf(pickC.c.id));
   offers.push({
     clubId: pickC.c.id,
     wage,
@@ -265,7 +267,7 @@ export function raiseOdds(state) {
   const ag = currentAgent(state);
   const o = ovr(state.player);
   const r = clubRating(state.world, state.career.clubId);
-  const market = wageFor(r, o);
+  const market = wageFor(r, o, countryOf(state.career.clubId));
   const gap = (market - state.career.contract.wage) / Math.max(1, state.career.contract.wage);
   const f = form(state.player);
   const p = clamp(0.2 + gap * 1.2 + (f - 6.5) * 0.18 + (state.player.rel.board - 50) / 150 + ag.skill * 0.25, 0.03, 0.92);

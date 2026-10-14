@@ -5,7 +5,7 @@ import {
 } from '../core/game.js';
 import { getEvent } from '../core/events.js';
 import { money } from '../core/economy.js';
-import { clubRating, leagueOf } from '../core/league.js';
+import { clubRating, leagueLabel, leagueOf } from '../core/league.js';
 import { growthMult, ovr } from '../core/player.js';
 import { clearDraft, clearSave, loadDraft, loadGame, loadSettings, saveDraft, saveGame, saveSettings } from '../core/storage.js';
 import { runMiniGame } from '../games/index.js';
@@ -40,6 +40,7 @@ import { socialScreen } from './screens/social.js';
 import { homeScreen } from './screens/home.js';
 import { garageScreen } from './screens/garage.js';
 import { tabloidSheet } from './tabloidView.js';
+import { CUPS, STAGE_LABEL } from '../core/world/europe.js';
 import { nationalScreen } from './screens/national.js';
 import { ballonCeremony, ballonScreen } from './ballonView.js';
 import { afterCareerClick, afterCareerSection, coachScreen, punditScreen } from './screens/afterCareer.js';
@@ -257,7 +258,7 @@ export function createApp(rootEl) {
         ? `${esc(parent.name)} seninle ${s.career.contract.yearsLeft} yıllık sözleşme imzaladı ve gelişmen için seni 1 yıllığına <b>${esc(club.name)}</b> takımına kiraladı. Sözleşmedeki forma şartı sayesinde ilk 11'desin.`
         : st.kind === 'C'
           ? `${esc(parent.name)} altyapısına hoş geldin! <b>${esc(club.name)}</b> takımında ${LEAGUES.u17.name}'nde oynayacaksın. Sezon sonunda A takım sözleşmesi seni bekliyor.`
-          : `${esc(club.city)} · ${LEAGUES[club.league].name}<br>Kulüp sana ilk 11 garantisi verdi. Şimdi formanın hakkını ver!`;
+          : `${esc(club.city)} · ${esc(leagueLabel(club.league))}<br>Kulüp sana ilk 11 garantisi verdi. Şimdi formanın hakkını ver!`;
       confetti();
       sfx('levelup');
       await sheet({
@@ -415,7 +416,7 @@ export function createApp(rootEl) {
       else decision = `<span class="chip warn">${icon('user')} Yedek kulübesi</span><p class="lead" style="margin-top:10px">${match.reason === 'tired' ? 'Hoca: "Çok yorgunsun, bugün kenardan başla."' : 'Hoca: "Sabırlı ol, gerekirse seni oyuna alacağım."'} ${match.subMinute ? '' : ''}</p>`;
       const go = await sheet({
         html: `
-          <div class="center"><span class="chip">${LEAGUES[leagueOf(match.myId)].name} · Hafta ${match.week}</span></div>
+          <div class="center"><span class="chip">${esc(leagueLabel(leagueOf(match.myId)))} · Hafta ${match.week}</span></div>
           <div class="fixture" style="margin:14px 0">
             <div class="team">${crestSVG(home, 'crest lg')}<span>${esc(home.name)}</span></div>
             <span class="vs">VS</span>
@@ -485,6 +486,7 @@ export function createApp(rootEl) {
           ${we.discipline?.outcome === 'ban' ? `<div class="card" style="margin-top:10px;border-color:rgba(255,93,108,.45)"><b style="color:var(--bad)">PFDK kararı: 1 maç men cezası</b><div class="muted small">Hakem açıklamaların yüzünden sonraki maçta forma giyemeyeceksin.</div></div>` : ''}
           ${we.discipline?.outcome === 'fine' ? `<div class="card" style="margin-top:10px;border-color:rgba(255,93,108,.45)"><b style="color:var(--bad)">PFDK kararı: ${money(we.discipline.fine)} para cezası</b></div>` : ''}
           ${we.discipline?.outcome === 'clear' ? `<div class="card" style="margin-top:10px"><b style="color:var(--good)">PFDK dosyayı ceza vermeden kapattı.</b></div>` : ''}
+          ${europeCard(out.europe?.my)}
           ${out.chirp?.length ? `<div class="chips" style="margin-top:10px"><span class="chip accent">${icon('chirp')} Chirp'te ${out.chirp.length} yeni gönderi</span></div>` : ''}
           ${we.mentor?.decay ? `<div class="chips" style="margin-top:10px"><span class="chip warn">${icon('mentor', 'ico sm')} Bu hafta mentorunla buluşmadın: İlişki ${we.mentor.decay}</span></div>` : ''}
           ${we.mentor?.legacy ? `<div class="card" style="margin-top:10px"><b class="small">${icon('sprout', 'ico sm')} Akıl hocalığı</b><div class="muted small" style="margin:4px 0 8px">${esc(we.mentor.legacy.note)}</div>${changeChips(we.mentor.legacy.changes)}</div>` : ''}
@@ -608,7 +610,11 @@ export function createApp(rootEl) {
         this.save();
       }
       const lg = LEAGUES[r.leagueId];
-      const champs = Object.entries(r.champions).map(([lid, cid]) => `<div class="li">${crestSVG(CLUB_BY_ID[cid], 'crest sm')}<div class="grow"><b>${esc(CLUB_BY_ID[cid].name)}</b><div class="muted small">${LEAGUES[lid].name} şampiyonu</div></div>${spriteOr('cup_gold', icon('trophy', 'ico'), { size: 30 })}</div>`).join('');
+      // Şampiyonlar: kendi ülkenin ligleri + Avrupa'nın 5 büyük ligi
+      const myCountry = lg?.country || 'tr';
+      const champs = Object.entries(r.champions)
+        .filter(([lid]) => LEAGUES[lid] && (LEAGUES[lid].country === myCountry || ['en1', 'es1', 'de1', 'it1', 'fr1'].includes(lid)))
+        .map(([lid, cid]) => `<div class="li">${crestSVG(CLUB_BY_ID[cid], 'crest sm')}<div class="grow"><b>${esc(CLUB_BY_ID[cid].name)}</b><div class="muted small">${esc(leagueLabel(lid, { country: true }))} şampiyonu</div></div>${spriteOr('cup_gold', icon('trophy', 'ico'), { size: 30 })}</div>`).join('');
       const ageCh = Object.entries(r.ageChanges).map(([k, v]) => `<span class="chip ${v > 0 ? 'good' : 'bad'}">${STATS[k].name} ${v > 0 ? '+' : ''}${v}</span>`).join('');
       if (r.awards.length) {
         confetti();
@@ -619,7 +625,8 @@ export function createApp(rootEl) {
         html: `
           ${r.awards.length ? `<div class="celebrate">${sprite('firework_gold', { h: 64 })}${sprite(r.awards.some((a) => a.icon === 'trophy') ? 'podium' : 'laurel_gold', { h: 64, w: 130 })}${sprite('firework_red', { h: 64 })}</div>` : ''}
           <div class="center"><span class="chip accent">SEZON ${r.season} BİTTİ</span></div>
-          <h3 class="center" style="margin-top:10px">${lg.name}: ${r.position}. sıra</h3>
+          <h3 class="center" style="margin-top:10px">${esc(leagueLabel(r.leagueId))}: ${r.position}. sıra</h3>
+          ${r.promotion ? `<div class="center" style="margin-top:6px"><span class="chip ${r.promotion.up ? 'good' : 'bad'}">${icon(r.promotion.up ? 'star' : 'x', 'ico xs')} ${r.promotion.up ? 'Yükseldiniz' : 'Küme düştünüz'}: ${esc(LEAGUES[r.promotion.to].name)}</span></div>` : ''}
           <div class="kpis" style="margin-top:14px">
             <div class="kpi"><b>${r.record.apps}</b><span>Maç</span></div>
             <div class="kpi"><b>${r.record.goals}</b><span>Gol</span></div>
@@ -630,7 +637,8 @@ export function createApp(rootEl) {
           ${r.mentor?.farewell ? `<div class="h-sec">Mentorun</div><div class="card"><p class="small" style="margin:0 0 8px">${esc(r.mentor.farewell.text)}</p><div class="chips"><span class="chip">İlişki ${r.mentor.farewell.relationship}</span>${r.mentor.farewell.influence ? `<span class="chip gold">Mentorun mirası: Nüfuz +${r.mentor.farewell.influence}</span>` : ''}</div></div>` : ''}
           ${r.startTerms ? `<div class="card start-terms" style="margin-top:12px"><b>${icon(r.startTerms.kind === 'loan_return' ? 'swap' : 'star', 'ico sm')} ${r.startTerms.kind === 'loan_return' ? 'Kiralık dönüşü' : 'Altyapıdan profesyonelliğe'}</b><p class="small" style="margin:6px 0 0">${esc(r.startTerms.text)}</p>${r.startTerms.numberChanged ? `<div class="chips" style="margin-top:8px"><span class="chip">Yeni formanın numarası #${r.startTerms.number}</span></div>` : ''}</div>` : ''}
           ${r.influenceGain ? `<div class="chips" style="margin-top:8px"><span class="chip gold">${icon('flag', 'ico sm')} Kulüp Nüfuzu +${r.influenceGain}</span></div>` : ''}
-          <div class="h-sec">Şampiyonlar</div><div class="card list" style="padding:4px 12px">${champs}</div>
+          <div class="h-sec">Şampiyonlar</div><div class="card list" style="padding:4px 12px">${champs}${Object.entries(r.europe || {}).filter(([, cid]) => cid).map(([cup, cid]) => `<div class="li">${crestSVG(CLUB_BY_ID[cid], 'crest sm')}<div class="grow"><b>${esc(CLUB_BY_ID[cid].name)}</b><div class="muted small">${CUPS[cup].name} şampiyonu</div></div>${spriteOr('cup_gold', icon('trophy', 'ico'), { size: 30 })}</div>`).join('')}</div>
+          ${r.nextCup ? `<div class="card" style="margin-top:10px;border-color:${CUPS[r.nextCup].color}"><b>${icon('star', 'ico sm')} Gelecek sezon ${CUPS[r.nextCup].name}'ndesin!</b><div class="muted small">Avrupa maçları 3. haftada başlıyor.</div></div>` : ''}
           <p class="muted small" style="margin-top:12px">Ligin gol kralı ${r.aiTop} golle zirvedeydi.</p>
           <div class="h-sec">Yeni sezon</div>
           <p class="lead" style="margin:0 0 8px">Artık ${r.newAge} yaşındasın.${ageCh ? ' Doğal gelişim/yaşlanma:' : ''}</p>
@@ -701,4 +709,18 @@ export function createApp(rootEl) {
   }
 
   return app;
+}
+
+/** Hafta özeti: Avrupa maçı kartı */
+function europeCard(m) {
+  if (!m) return '';
+  const cup = CUPS[m.cup];
+  const H = CLUB_BY_ID[m.match.h];
+  const A = CLUB_BY_ID[m.match.a];
+  return `<div class="card euro-mini" style="margin-top:10px;--c:${cup.color}">
+    <div class="row between small"><b>${icon('trophy', 'ico sm')} ${esc(cup.name)}</b><span class="muted">${STAGE_LABEL[m.stage]}${m.md ? ` · ${m.md}. maç` : ''}</span></div>
+    <div class="row" style="gap:8px;margin-top:8px;justify-content:center">${crestSVG(H, 'crest sm')}<b>${esc(H.short)}</b><b class="tnum" style="font-size:18px">${m.match.hg} - ${m.match.ag}</b><b>${esc(A.short)}</b>${crestSVG(A, 'crest sm')}</div>
+    ${m.match.pen ? `<div class="center muted small">Penaltılar ${m.match.pen[0]}-${m.match.pen[1]}</div>` : ''}
+    <div class="chips" style="justify-content:center;margin-top:8px">${m.played ? `<span class="chip">Not ${m.rating.toFixed(1)}</span>` : '<span class="chip">Forma giymedin</span>'}${m.goals ? `<span class="chip accent">${m.goals} gol</span>` : ''}${m.assists ? `<span class="chip accent">${m.assists} asist</span>` : ''}${m.prize ? `<span class="chip gold">Avrupa primi +${money(m.prize)}</span>` : ''}${m.stage === 'f' && m.won ? '<span class="chip gold">🏆 Kupa bizim!</span>' : m.out ? '<span class="chip bad">Elendik</span>' : ''}</div>
+  </div>`;
 }

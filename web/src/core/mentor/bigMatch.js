@@ -3,7 +3,7 @@
 // mini oyunlarda etkin yetenek düşer, oyun temposu artar ve şut nişangahı titrer.
 // Soğukkanlı mentor heyecanı %20 azaltır ve nişangahı yavaşlatır.
 import { CLUB_BY_ID, SEASON_WEEKS } from '../data.js';
-import { fixtureFor, positionOf } from '../league.js';
+import { fixtureFor, leagueIdIn, positionOf } from '../league.js';
 
 /** Kurgusal kulüpler arasındaki geleneksel rekabetler. */
 export const RIVALRIES = [
@@ -51,7 +51,7 @@ export function bigMatchFor(state, m) {
   if (m.week >= 6 && state.world?.leagues) {
     const a = positionOf(state.world, m.myId);
     const b = positionOf(state.world, m.oppId);
-    const n = Object.keys(state.world.leagues[CLUB_BY_ID[m.myId].league].table).length;
+    const n = Object.keys(state.world.leagues[leagueIdIn(state.world, m.myId)]?.table || {}).length || 12;
     if (a <= 3 && b <= 3) return { kind: 'summit', label: 'Zirve Maçı', title: 'Zirve Maçı', base: BIG_MATCH_KINDS.summit.base };
     if (m.week >= 15 && a > n - 3 && b > n - 3) return { kind: 'decider', label: 'Kader Maçı', title: 'Kümede Kalma Finali', base: BIG_MATCH_KINDS.decider.base };
   }

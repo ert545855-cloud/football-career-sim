@@ -361,3 +361,40 @@
   .scene-canvas { height: 100%; max-height: none; object-fit: cover; object-position: 30% 100%; }
   .scene-dialog { justify-content: flex-end; }
 }
+
+/* ─────────────── Dünya ligleri + Avrupa ─────────────── */
+.crest.xs { width: 16px; height: 19px; filter: none; flex: none; }
+.country-row { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+.country-row::-webkit-scrollbar { display: none; }
+.country { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 7px 11px; border-radius: 99px; border: 1px solid var(--line); background: var(--panel); color: var(--muted); font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.country .flag { font-size: 16px; line-height: 1; }
+.country.on { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.table tr.z-cl td:first-child { box-shadow: inset 3px 0 0 #3b82f6; }
+.table tr.z-el td:first-child { box-shadow: inset 3px 0 0 #f97316; }
+.table tr.z-ecl td:first-child { box-shadow: inset 3px 0 0 #22c55e; }
+.table tr.z-up td:first-child { box-shadow: inset 3px 0 0 var(--good); }
+.table tr.z-down td:first-child { box-shadow: inset 3px 0 0 var(--bad); }
+.table tr.me.z-cl td:first-child, .table tr.me.z-el td:first-child, .table tr.me.z-ecl td:first-child, .table tr.me.z-up td:first-child, .table tr.me.z-down td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+.zones { display: flex; flex-wrap: wrap; gap: 10px; padding: 8px 4px 2px; font-size: 11px; color: var(--muted); }
+.zones span { display: inline-flex; align-items: center; gap: 5px; }
+.zones i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.zones .z-cl { background: #3b82f6; } .zones .z-el { background: #f97316; } .zones .z-ecl { background: #22c55e; }
+.zones .z-up { background: var(--good); } .zones .z-down { background: var(--bad); }
+.li.res { gap: 6px; padding: 8px 2px; }
+.li.res b { min-width: 40px; text-align: center; }
+.li.res.mine { background: rgba(198, 255, 61, 0.08); border-radius: 8px; }
+.flag-xs { font-size: 11px; }
+.cup-hero { padding: 14px; border-radius: var(--radius); color: #fff; background: radial-gradient(120% 140% at 0% 0%, var(--a), transparent 60%), linear-gradient(135deg, var(--c), #0b1220); border: 1px solid rgba(255, 255, 255, 0.12); }
+.cup-hero .ico { width: 30px; height: 30px; color: #fde68a; }
+.cup-hero .small { color: rgba(255, 255, 255, 0.8); }
+.cup-winner { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 10px; border-radius: 12px; background: rgba(0, 0, 0, 0.25); }
+.grp-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.grp { padding: 8px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); min-width: 0; }
+.grp-h { font-size: 11px; font-weight: 800; color: var(--muted); letter-spacing: 0.06em; margin-bottom: 4px; }
+.grp-r { display: flex; align-items: center; gap: 5px; font-size: 11.5px; padding: 3px 2px; border-radius: 6px; min-width: 0; }
+.grp-r .pos { width: 12px; color: var(--dim); font-weight: 700; }
+.grp-r.q .pos { color: var(--good); }
+.grp-r.me { background: rgba(198, 255, 61, 0.12); }
+.grp-r b { min-width: 16px; text-align: right; }
+@media (max-width: 360px) { .grp-grid { grid-template-columns: 1fr; } }
+.euro-mini { border-color: color-mix(in srgb, var(--c) 60%, transparent); background: linear-gradient(135deg, color-mix(in srgb, var(--c) 22%, transparent), var(--panel)); }

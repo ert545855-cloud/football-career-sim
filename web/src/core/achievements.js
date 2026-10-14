@@ -6,7 +6,8 @@
 // sayaçlar achievementsOnMatch / achievementsOnTraining kancalarında güncellenir.
 //
 // Açılan başarımlar kuyruğa (queue) eklenir; arayüz kuyruğu boşaltıp bildirim gösterir.
-import { CLUB_BY_ID, ITEM_BY_ID, STAT_KEYS } from './data.js';
+import { CLUB_BY_ID, ITEM_BY_ID, LEAGUES, STAT_KEYS } from './data.js';
+import { leagueIdIn } from './league.js';
 import { changeFame, changeMorale, ovr } from './player.js';
 
 /** Rozet seviyeleri: renk, ödül */
@@ -30,7 +31,8 @@ const awardCount = (s, word) => (s.career.awards || []).filter((a) => a.title.in
 const c = (s, k) => s.achievements?.c?.[k] || 0;
 const ownsCat = (s, cat, kind) => (s.career.items || []).some((id) => ITEM_BY_ID[id]?.cat === cat && (!kind || ITEM_BY_ID[id].kind === kind));
 const clubsPlayed = (s) => new Set([...(s.career.history || []).map((h) => h.clubId), s.career.clubId].map((id) => CLUB_BY_ID[id]?.parentId || id)).size;
-const playedTopFlight = (s) => (s.career.history || []).some((h) => h.leagueId === 'super' && h.apps > 0) || (CLUB_BY_ID[s.career.clubId]?.league === 'super' && s.career.season.apps > 0);
+const isTop = (lid) => LEAGUES[lid] && !LEAGUES[lid].youth && LEAGUES[lid].tier === 1;
+const playedTopFlight = (s) => (s.career.history || []).some((h) => isTop(h.leagueId) && h.apps > 0) || (isTop(leagueIdIn(s.world, s.career.clubId)) && s.career.season.apps > 0);
 const seasonsAtOneClub = (s) => {
   const counts = {};
   for (const h of s.career.history || []) counts[h.clubId] = (counts[h.clubId] || 0) + 1;

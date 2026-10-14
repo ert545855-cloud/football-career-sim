@@ -1,6 +1,6 @@
 import { ACTIONS, CLUB_BY_ID, MAX_TRAININGS_PER_WEEK, SEASON_WEEKS } from '../../core/data.js';
 import { canDoAction, overview } from '../../core/game.js';
-import { fixtureFor } from '../../core/league.js';
+import { fixtureFor, leagueLabel } from '../../core/league.js';
 import { money } from '../../core/economy.js';
 import { avatarSVG, crestSVG, icon, playerAvatar } from '../art.js';
 import { animateBars, esc } from '../dom.js';
@@ -79,7 +79,7 @@ export function hubScreen(app) {
           <div class="team">${crestSVG(away)}<span>${esc(away.name)}</span></div>
         </div>
         <div class="row between small muted" style="margin-top:12px">
-          <span>${esc(ov.league.name)} · ${calendar.week === 1 ? 'Sezon başlıyor' : `${ov.position}. sıradasınız`}</span>
+          <span>${esc(leagueLabel(ov.league.id))} · ${calendar.week === 1 ? 'Sezon başlıyor' : `${ov.position}. sıradasınız`}</span>
           <span>Kulüp gücü ${ov.clubRating}</span>
         </div>
         ${bigMatchChip(s) ? `<div class="chips" style="margin-top:10px;justify-content:center">${bigMatchChip(s)}</div>` : ''}

@@ -1,7 +1,7 @@
 // Ekranlarda tekrar kullanılan parçalar.
 import { CLUB_BY_ID, LEAGUES, STATS } from '../core/data.js';
 import { money } from '../core/economy.js';
-import { clubRating, leagueOf } from '../core/league.js';
+import { clubRating, leagueLabel, leagueOf } from '../core/league.js';
 import { crestSVG, icon } from './art.js';
 import { esc, signed } from './dom.js';
 
@@ -54,7 +54,7 @@ export function offerCard(state, offer, i, { negotiable = false } = {}) {
       ${crestSVG(c, 'crest')}
       <div class="grow">
         <div style="font-weight:800">${esc(c.name)} ${offer.renewal ? '<span class="chip accent">Yenileme</span>' : ''}</div>
-        <div class="muted small">${lg.name} · Güç ${r}</div>
+        <div class="muted small">${esc(leagueLabel(lg.id, { country: true }))} · Güç ${r}${offer.tag === 'gulf' ? ' · <b style="color:var(--gold)">Körfez parası</b>' : ''}</div>
         <div class="chips" style="margin-top:6px">
           <span class="chip gold">${money(offer.wage)}/hf</span>
           <span class="chip ${diff >= 0 ? 'good' : 'bad'}">${diff >= 0 ? '+' : ''}${money(diff)}</span>

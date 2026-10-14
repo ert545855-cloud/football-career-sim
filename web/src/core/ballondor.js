@@ -6,7 +6,7 @@
 //   + milli takım (turnuva derecesi, milli gol).
 // Gerçekçi olsun diye 1. Lig'de puanlar yarı, altyapıda çok küçük sayılır: Altın Top için büyük sahne gerekir.
 import { LEAGUES } from './data.js';
-import { leagueOf } from './league.js';
+import { leagueOf, leaguePrestige } from './league.js';
 import { clamp, pick, rand, randInt, round1 } from './rng.js';
 import { changeFame, changeMorale, changeRel, ovr } from './player.js';
 
@@ -66,14 +66,24 @@ export function ballonOnMatch(state, summary) {
   return b.me;
 }
 
+/** Avrupa kupası maçı: kupa prestiji × oyuncu kalitesi (final kazanmak büyük puan) */
+export function ballonOnEurope(state, my) {
+  if (!my?.played) return;
+  const b = ensureBallon(state);
+  const q = clamp((ovr(state.player) - 55) / 25, 0.05, 1.2) ** 1.5;
+  const pres = { cl: 1.4, el: 0.9, ecl: 0.6 }[my.cup] || 0.6;
+  const pts = my.goals * 4 + my.assists * 3 + (my.rating - 6.5) * 4 + (my.won ? 2 : 0) + (my.stage === 'f' && my.won ? 25 : 0);
+  b.me = round1(b.me + Math.max(0, pts) * pres * q);
+}
+
 /**
  * Görünürlük çarpanı: lig seviyesi × oyuncu kalitesi. Dünya sahnesinde fark edilmek için OVR 75+ gerekir;
  * 60'lı OVR'lerde parlak bir sezon bile ancak ilk 30'a sokar.
  */
 export function visibility(state) {
-  const tier = LEAGUES[leagueOf(state.career.clubId)]?.tier || 2;
+  // Lig görünürlüğü: Türkiye Süper Lig 0.85, Premier Lig 1.25, 1. Lig ≈ 0.4, alt ligler ≈ 0.1
   const q = clamp((ovr(state.player) - 55) / 25, 0.05, 1.2) ** 1.5;
-  return (BALLON_RULES.tierMult[tier] ?? 0.4) * q;
+  return leaguePrestige(leagueOf(state.career.clubId)) * q;
 }
 
 /** Sıralama: [{name, pts, me?}] */
