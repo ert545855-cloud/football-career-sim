@@ -493,3 +493,25 @@
 .cc-cloth span { font-size: 22px; line-height: 1.05; font-weight: 900; letter-spacing: 0.04em; text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35); font-family: Impact, 'Arial Narrow', sans-serif; text-transform: uppercase; }
 .cc-banner.bad .cc-cloth { color: #fff; }
 .cc-credit { text-align: right; font-size: 11px; opacity: 0.7; margin-top: 8px; }
+
+/* ── Antrenman 2.0: zorluk, yıldız, hoca yorumu ── */
+.note { display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,.05); border: 1px solid var(--line, rgba(255,255,255,.1)); line-height: 1.4; }
+.note.warn { background: rgba(255,158,38,.1); border-color: rgba(255,158,38,.35); color: #ffd59a; }
+.note .ico { flex: none; margin-top: 1px; }
+.stars { display: inline-flex; gap: 2px; line-height: 1; }
+.stars i { font-style: normal; color: rgba(255,255,255,.18); }
+.stars i.on { color: #fbbf24; text-shadow: 0 0 8px rgba(251,191,36,.45); }
+.stars.sm { font-size: 13px; }
+.stars.big { font-size: 34px; gap: 6px; }
+.stars.big i.on { animation: star-pop .5s cubic-bezier(.2,1.6,.4,1) both; }
+@keyframes star-pop { from { transform: scale(0) rotate(-40deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.coach-tip { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 12px; padding: 11px 13px; border-radius: 14px; text-align: left; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); }
+.coach-tip > div { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.coach-tip b { font-size: 12px; letter-spacing: .04em; text-transform: uppercase; opacity: .75; }
+.coach-tip span { line-height: 1.4; }
+.coach-tip em { font-style: normal; font-size: 12px; opacity: .7; }
+.coach-tip.good { border-color: rgba(198,255,61,.35); background: rgba(198,255,61,.07); }
+.coach-tip.warn { border-color: rgba(255,158,38,.4); background: rgba(255,158,38,.08); }
+.coach-tip.bad { border-color: rgba(255,93,108,.4); background: rgba(255,93,108,.08); }
+.coach-tip .ico { flex: none; margin-top: 2px; }
+.diff-seg button { flex: 1; }

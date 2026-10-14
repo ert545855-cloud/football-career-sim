@@ -35,8 +35,8 @@ export const MOMENT_INTRO = {
     final: 'Son bölgede top sende! Gol pası için çiz: rakiplerin etrafından kavisli bir pas.',
   },
   tackle: {
-    threat: 'Kontra atak! Rakip forvet hızla kalene geliyor.',
-    duel: 'Rakip kanat oyuncusu üzerine geliyor, topu kap!',
+    threat: 'Kontra atak! Rakip forvet hızla kalene geliyor. Top ayağından açılınca (halka yeşil) dokun ya da kayarak gir.',
+    duel: 'Rakip kanat oyuncusu üzerine geliyor! Sürükleyerek karşıla; topa uzanmak için dokun, kaymak için hızlı kaydır.',
   },
 };
 
@@ -245,7 +245,24 @@ export function resolveMoment(match, moment, result, playerName) {
     if (result.success) {
       t.won++;
       t.rating += moment.context === 'threat' ? 0.55 : 0.45;
-      lines.push({ minute: m, kind: 'tackle', text: `${playerName} kayarak müthiş bir müdahale yaptı, tehlike geçti!` });
+      const how = {
+        slide: `${playerName} kayarak müthiş bir müdahale yaptı, tehlike geçti!`,
+        poke: `${playerName} zamanlamasını iyi ayarladı, araya uzanıp topu kaptı!`,
+        block: `${playerName} pozisyonunu iyi aldı, rakibin topu ona çarpıp kaldı.`,
+        out: `${playerName} rakibini çizgiye sıkıştırdı, top taca çıktı.`,
+        time: `${playerName} rakibini oyaladı, takım savunmaya döndü.`,
+      }[result.method];
+      lines.push({ minute: m, kind: 'tackle', text: how || `${playerName} kayarak müthiş bir müdahale yaptı, tehlike geçti!` });
+    } else if (result.outcome === 'foul') {
+      // Faul: kart riski + tehlikeli bölgede serbest vuruş
+      t.lost++;
+      t.rating -= result.card ? 0.55 : 0.3;
+      if (result.card) t.yellow = (t.yellow || 0) + 1;
+      lines.push({ minute: m, kind: 'chance', text: result.card ? `${playerName} rakibini düşürdü, hakem sarı kartını çıkardı!` : `${playerName} faul yaptı, hakem düdüğü çaldı.` });
+      if (moment.context === 'threat' && chance(0.12)) {
+        match.score.opp += 1;
+        lines.push({ minute: m + 1, kind: 'goal-opp', text: `Serbest vuruştan gelen top ağlarda. ${scoreLine(match)}` });
+      }
     } else {
       t.lost++;
       t.rating -= 0.45;

@@ -9,6 +9,7 @@ import { clubRating, leagueLabel, leagueOf } from '../core/league.js';
 import { growthMult, ovr } from '../core/player.js';
 import { clearDraft, clearSave, loadDraft, loadGame, loadSettings, saveDraft, saveGame, saveSettings } from '../core/storage.js';
 import { runMiniGame } from '../games/index.js';
+import { DIFFICULTY, DIFF_IDS, ensureTraining, fatigueFactor } from '../core/training.js';
 import { buzz, sfx } from '../audio.js';
 import { crestSVG, icon, playerAvatar } from './art.js';
 import { animateBars, confetti, countUp, el, esc, setRoot, sheet, toast } from './dom.js';
@@ -332,26 +333,47 @@ export function createApp(rootEl) {
         sfx('error');
         return;
       }
+      const T = ensureTraining(s);
+      let diff = T.diff || 'normal';
       const pos = POSITIONS[s.player.position];
-      const opts = STAT_KEYS.map((k) => {
-        const setup = trainingSetup(s, k);
+      const starsHTML = (n, cls = '') => `<span class="stars ${cls}" aria-label="${n} yıldız">${[1, 2, 3].map((i) => `<i class="${i <= n ? 'on' : ''}">★</i>`).join('')}</span>`;
+      const rows = () => STAT_KEYS.map((k) => {
+        const setup = trainingSetup(s, k, diff);
         const mult = growthMult(s.player, k);
-        return `<button class="btn block" style="justify-content:space-between;min-height:62px;text-align:left" data-close="${k}">
+        const best = T.best[k]?.[diff] || 0;
+        return `<button class="btn block train-row" style="justify-content:space-between;min-height:62px;text-align:left" data-close="${k}">
           <span class="row" style="gap:12px"><span class="train-art" style="--c:${STATS[k].color}">${spriteOr(TRAINING_SPRITES[k], `<span style="width:12px;height:12px;border-radius:50%;background:${STATS[k].color};box-shadow:0 0 10px ${STATS[k].color}"></span>`, { size: 34 })}</span>
           <span><b>${STATS[k].name}</b> <span class="muted">${s.player.stats[k]}</span><br><span class="muted small">${TRAINING[k].title} · yetenek %${Math.round(setup.skill * 100)}</span></span></span>
-          <span class="chip ${mult > 1 ? 'accent' : ''}">×${mult}</span></button>`;
+          <span class="col" style="align-items:flex-end;gap:4px"><span class="chip ${mult > 1 ? 'accent' : ''}">×${mult}</span>${starsHTML(best, 'sm')}</span></button>`;
       }).join('');
+      const fat = fatigueFactor(s.player.energy);
       const stat = await sheet({
-        html: `<h3>Antrenman</h3><p class="lead">Hangi özelliğini çalışacaksın? ${pos.name} için <b>${STATS[pos.primary].name}</b> ve <b>${STATS[pos.secondary].name}</b> daha hızlı gelişir.</p><div class="stack">${opts}</div><button class="btn ghost block" style="margin-top:10px" data-close="cancel">Vazgeç</button>`,
+        html: `<h3>Antrenman</h3><p class="lead">Hangi özelliğini çalışacaksın? ${pos.name} için <b>${STATS[pos.primary].name}</b> ve <b>${STATS[pos.secondary].name}</b> daha hızlı gelişir.</p>
+          <div class="seg diff-seg" style="margin:4px 0 6px">${DIFF_IDS.map((d) => `<button class="${d === diff ? 'on' : ''}" data-diff="${d}">${DIFFICULTY[d].name}</button>`).join('')}</div>
+          <p class="muted small" data-diff-desc style="margin:0 0 10px">${DIFFICULTY[diff].desc}</p>
+          ${fat < 1 ? `<div class="note warn small" style="margin-bottom:10px">${icon('bolt', 'ico sm')} Yorgunsun (enerji ${s.player.energy}): antrenman verimi −%${Math.round((1 - fat) * 100)}. Dinlenmek daha iyi olabilir.</div>` : ''}
+          <div class="stack" data-train-rows>${rows()}</div><button class="btn ghost block" style="margin-top:10px" data-close="cancel">Vazgeç</button>`,
+        onMount: (node) => {
+          node.addEventListener('click', (e) => {
+            const b = e.target.closest('[data-diff]');
+            if (!b) return;
+            this.click();
+            diff = b.dataset.diff;
+            T.diff = diff;
+            node.querySelectorAll('[data-diff]').forEach((x) => x.classList.toggle('on', x.dataset.diff === diff));
+            node.querySelector('[data-diff-desc]').textContent = DIFFICULTY[diff].desc;
+            node.querySelector('[data-train-rows]').innerHTML = rows();
+          });
+        },
       });
       if (!stat || stat === true || stat === 'cancel') return;
-      const setup = trainingSetup(s, stat);
+      const setup = trainingSetup(s, stat, diff);
       const club = CLUB_BY_ID[s.career.clubId];
       const result = await runMiniGame({
         type: setup.game,
         skill: setup.skill,
         context: setup.game === 'shot' ? 'box' : setup.game === 'pass' ? 'buildup' : 'duel',
-        title: setup.title,
+        title: `${setup.title} · ${DIFFICULTY[diff].name}`,
         text: setup.hint,
         myKit: club,
         oppKit: { colors: ['#f97316', '#1e293b'] },
@@ -360,28 +382,38 @@ export function createApp(rootEl) {
         name: s.player.name.split(' ')[0].toUpperCase(),
         auto: this.autoplay,
       });
-      const res = finishTraining(s, stat, result);
+      const res = finishTraining(s, stat, result, diff);
       this.save();
       if (res.gained) {
         sfx('levelup');
         buzz([30, 30, 60]);
       }
+      const r = res.result || {};
+      const facts = [];
+      if (r.time != null && r.target != null) facts.push(`${r.time.toFixed(2)} sn / hedef ${r.target.toFixed(2)}`);
+      if (r.topSpeed) facts.push(`zirve ${r.topSpeed.toFixed(1)} km/sa`);
+      if (r.react != null) facts.push(`tepki ${r.react.toFixed(2)} sn`);
+      if (r.rhythm != null) facts.push(`ritim %${Math.round(r.rhythm * 100)}`);
       await sheet({
         center: true,
         onMount: (node) => {
           animateBars(node);
           if (res.gained) countUp(node.querySelector('[data-val]'), res.after, { from: res.before, duration: 900 });
+          node.querySelectorAll('.stars.big i.on').forEach((i, n) => { i.style.animationDelay = `${0.15 + n * 0.18}s`; });
         },
         html: `
           ${eventArt(res.success ? 'star' : 'dumbbell', { spriteName: TRAINING_SPRITES[stat] })}
           <h3 class="center">${res.success ? 'Harika antrenman!' : 'Zorlu bir gün'}</h3>
+          <div class="center" style="margin:2px 0 6px">${starsHTML(res.stars, 'big')}</div>
+          ${res.newBest ? `<div class="center" style="margin-bottom:6px"><span class="chip gold">${icon('trophy', 'ico sm')} Yeni rekor · ${esc(res.diffName)}</span></div>` : ''}
           <p class="lead center">${res.gained ? `<b style="color:var(--accent)">${res.name} +${res.gained}!</b> Çalışmanın karşılığını aldın.` : `${res.name} gelişiyor. Bir sonraki puana az kaldı.`}</p>
+          <div class="coach-tip ${res.tip.tone}">${icon('mentor', 'ico sm')}<div><b>Hoca</b><span>${esc(res.tip.text)}</span>${facts.length ? `<em>${esc(facts.join(' · '))}</em>` : ''}</div></div>
           <div class="card">
             <div class="row between"><b>${res.name}</b><b class="big-num" data-val style="color:${STATS[stat].color}">${res.after}</b></div>
             <div class="muted small" style="margin:8px 0 4px">Sonraki puana ilerleme</div>
             <div class="bar thick"><i style="--c:${STATS[stat].color}" data-w="${Math.round(res.progress * 100)}"></i></div>
           </div>
-          <div class="chips" style="margin-top:10px;justify-content:center"><span class="chip bad">Enerji −18</span>${res.success ? '<span class="chip good">Moral +1</span>' : ''}${res.mentorMult > 1 ? `<span class="chip gold">${icon('mentor', 'ico sm')} ${MENTOR_TRAITS.hardworker.name} mentor +%${Math.round((res.mentorMult - 1) * 100)}</span>` : ''}</div>
+          <div class="chips" style="margin-top:10px;justify-content:center"><span class="chip bad">Enerji −18</span>${res.success ? '<span class="chip good">Moral +1</span>' : ''}<span class="chip ${res.diff === 'hard' ? 'accent' : ''}">${esc(res.diffName)} ×${res.diffMult}</span>${res.fatigue < 1 ? `<span class="chip bad">Yorgunluk ×${res.fatigue}</span>` : ''}${res.mentorMult > 1 ? `<span class="chip gold">${icon('mentor', 'ico sm')} ${MENTOR_TRAITS.hardworker.name} mentor +%${Math.round((res.mentorMult - 1) * 100)}</span>` : ''}</div>
           <button class="btn primary block" style="margin-top:16px" data-close>Tamam</button>`,
       });
       this.go('hub');

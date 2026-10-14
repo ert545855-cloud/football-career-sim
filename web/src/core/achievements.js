@@ -9,6 +9,7 @@
 import { CLUB_BY_ID, ITEM_BY_ID, LEAGUES, STAT_KEYS } from './data.js';
 import { leagueIdIn } from './league.js';
 import { changeFame, changeMorale, ovr } from './player.js';
+import { hardMasters } from './training.js';
 
 /** Rozet seviyeleri: renk, ödül */
 export const TIERS = {
@@ -75,6 +76,7 @@ export const ACHIEVEMENTS = [
   { id: 'ovr75', cat: 'skill', tier: 'silver', title: 'Yıldız Adayı', desc: 'Genel güç (OVR) 75 olsun.', icon: 'chart', goal: 75, value: (s) => ovr(s.player) },
   { id: 'ovr88', cat: 'skill', tier: 'platinum', title: 'Dünya Yıldızı', desc: 'Genel güç (OVR) 88 olsun.', icon: 'crown', sprite: 'golden_ball', goal: 88, value: (s) => ovr(s.player) },
   { id: 'stat90', cat: 'skill', tier: 'gold', title: 'Uzman', desc: 'Herhangi bir özelliğini 90 yap.', icon: 'dumbbell', goal: 90, value: (s) => Math.max(...STAT_KEYS.map((k) => s.player.stats[k])) },
+  { id: 'drill_master', cat: 'skill', tier: 'gold', title: 'Antrenman Ustası', desc: '3 farklı antrenmanda Zor seviyede 3 yıldız al.', icon: 'star', sprite: 'disc_cones', goal: 3, value: (s) => hardMasters(s) },
   { id: 'grinder', cat: 'skill', tier: 'silver', title: 'Antrenman Canavarı', desc: '100 antrenman yap.', icon: 'dumbbell', sprite: 'disc_cones', goal: 100, value: (s) => c(s, 'trainings') },
   { id: 'tryout_perfect', cat: 'skill', tier: 'gold', title: 'Kusursuz Seçme', desc: 'Seçme kampını 9/9 hakla bitir.', icon: 'heartFill', goal: 9, value: (s) => s.career.tryout?.score || 0 },
 

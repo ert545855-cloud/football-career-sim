@@ -26,6 +26,12 @@ export const HAPTICS = {
   tackleLost: [70],
   dribble: [10, 45, 10],
   bump: [45, 30, 45],
+  slide: [35, 20, 70], // kayarak müdahale: çimde kayış … temas
+  shoulder: [55, 15, 35], // omuz omuza
+  foul: [80, 40, 80], // düdük: faul
+  stride: [7], // koşuda ritimli adım
+  perfect: [12, 25, 6], // tam ritim adımı
+  falseStart: [90, 50, 90],
   step: [6],
   record: [40, 30, 80],
   whistle: [60, 60, 60, 60, 220],

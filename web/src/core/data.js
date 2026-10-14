@@ -61,10 +61,10 @@ export const GAME_WEIGHTS = {
 /** Antrenmanda hangi stat hangi mini oyunla çalışılır. */
 export const TRAINING = {
   shooting: { game: 'shot', title: 'Şut Antrenmanı', hint: 'Topu kaleye doğru kaydır. Uzun kaydırma = sert ve yüksek şut.' },
-  passing: { game: 'pass', title: 'Pas Antrenmanı', hint: 'Topa dokun ve arkadaşına doğru çiz; zaman yavaşlar. Rakibin etrafından kavisle dolaş, ama oyalanma!' },
-  defending: { game: 'tackle', title: 'Müdahale Antrenmanı', hint: 'Parmağını sürükleyerek rakibi karşıla, yaklaşınca dokun.' },
-  speed: { game: 'sprint', title: 'Sürat Koşusu', hint: 'SOL ve SAĞ tuşlarına sırayla bas. Aynı tuşa iki kez basma!' },
-  stamina: { game: 'endurance', title: 'Dayanıklılık Koşusu', hint: 'Ritmini koru: nefes barı bitmesin, hedef süreyi geç.' },
+  passing: { game: 'pass', title: 'Pas Antrenmanı', hint: 'Topa dokun ve arkadaşına doğru çiz; zaman yavaşlar. Kavis falsoya döner, uzun çizgi havadan gider. Rakibin etrafından dolaş ama oyalanma!' },
+  defending: { game: 'tackle', title: 'Müdahale Antrenmanı', hint: 'Sürükleyerek pozisyon al. Top rakibin ayağından açılınca (halka yeşil) dokun: topa uzan. Hızlı kaydır: kayarak müdahale; adama girersen faul!' },
+  speed: { game: 'sprint', title: 'Sürat Koşusu', hint: 'BAŞLA işaretini bekle. SOL-SAĞ sırayla, ritim çubuğu yeşilken bas. Deli gibi basmak adımlarını kısaltır!' },
+  stamina: { game: 'endurance', title: 'Dayanıklılık Koşusu', hint: 'Nefes çubuğunu izle: hızlı ritim nefesi bitirir, yavaş ritim toparlar. Tempoyu koru, son düzlükte depar at.' },
 };
 
 // Kurgusal kulüpler. rating = kulübün genel gücü (oyuncu OVR'si ile aynı ölçek).

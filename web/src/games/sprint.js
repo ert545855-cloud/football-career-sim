@@ -1,20 +1,36 @@
-// SÜRAT / DAYANIKLILIK KOŞUSU — yandan görünüm. SOL-SAĞ tuşlarına sırayla bas; hedef koşucuyu geç.
-import { createStage, Particles, BigText, clamp, lerp, roundRect } from './engine.js';
+// SÜRAT / DAYANIKLILIK KOŞUSU — yandan görünüm, adım fiziği + ritim (mantık: sprintLogic.js).
+//   SOL-SAĞ sırayla, RİTİMLE bas: ritim çubuğundaki yeşil bölgede basılan adım "MÜKEMMEL" (en çok hız).
+//   Deli gibi basmak (spam) kısa, verimsiz adımlar; aynı ayak iki kez = tökezleme. "BAŞLA!" demeden basma: hatalı çıkış.
+//   Dayanıklılıkta nefes çubuğunu izle: hızlı ritim nefesi tüketir, yavaş ritim toparlar; son düzlükte depar.
+import { createStage, Particles, BigText, clamp, roundRect } from './engine.js';
 import { drawSprite } from '../assets/sprites.js';
 import { sfx, buzz } from '../audio.js';
+import { sprintParams, createRun, runStep, runTick, targetTime, ghostTrace } from './sprintLogic.js';
+
+const LABELS = {
+  perfect: ['MÜKEMMEL', '#c6ff3d'],
+  early: ['ERKEN', '#ffcf3d'],
+  late: ['GEÇ', '#ffcf3d'],
+  spam: ['ÇOK HIZLI', '#ff9e26'],
+  stumble: ['TÖKEZLEDİN', '#ff5d6c'],
+  false: ['HATALI ÇIKIŞ +0.3', '#ff5d6c'],
+};
 
 export function playSprint(host, opts) {
   return new Promise((resolve) => {
     const endurance = opts.mode === 'endurance';
     const skill = clamp(opts.skill ?? 0.3, 0.02, 1);
-    const distance = endurance ? 120 : 60;
-    const target = endurance ? lerp(26, 17.5, skill) : lerp(10.4, 7.4, skill);
+    const P = sprintParams(skill, endurance ? 'endurance' : 'sprint');
+    const target = targetTime(P);
+    const ghostAt = ghostTrace(P);
+    const distance = P.distance;
     const kit = opts.myKit?.colors || ['#2563eb', '#fff'];
     const particles = new Particles();
     const big = new BigText();
-    const S = { phase: 'count', t: 0, count: 3, x: 0, v: 0, last: null, stam: 100, stumble: 0, time: 0, ph: 0, ghost: 0, done: false, outcome: null, afterT: 0, steps: 0 };
-    const IMP = 1.35;
-    const K = 1.2;
+    const R = createRun();
+    // count: 3-2-1 → set (hazır, rastgele bekleme) → run → after
+    const S = { phase: 'count', t: 0, count: 3, setAt: 2.1, goAt: 2.1 + 0.5 + Math.random() * 0.8, ph: 0, done: false, outcome: null, afterT: 0, pops: [], gassedShown: false, flash: 0 };
+    if (opts.expose) Object.assign(opts.expose, { R, P, S, target });
 
     const btns = document.createElement('div');
     btns.className = 'sprint-btns';
@@ -22,29 +38,39 @@ export function playSprint(host, opts) {
     host.appendChild(btns);
     const [bl, br] = btns.querySelectorAll('button');
 
+    function pop(label) {
+      const L = LABELS[label];
+      if (!L) return;
+      S.pops.push({ text: L[0], color: L[1], t: 0 });
+      if (S.pops.length > 4) S.pops.shift();
+    }
+
     function step(side) {
-      if (S.phase !== 'run') return;
+      if (S.phase === 'after') return;
       const btn = side === 'L' ? bl : br;
       btn.classList.add('hit');
       setTimeout(() => btn.classList.remove('hit'), 70);
-      if (S.last === side) {
-        S.v *= 0.55;
-        S.stumble = 0.35;
+      if (S.phase === 'count' || S.phase === 'set') {
+        // BAŞLA'dan önce: hatalı çıkış (yalnızca bir kez cezalandırılır, sonra kilitli)
+        if (!R.falseStarts) {
+          runStep(R, P, side, 0);
+          pop('false');
+          S.flash = 0.4;
+          sfx('error');
+          buzz('falseStart');
+        }
+        return;
+      }
+      const r = runStep(R, P, side, R.t);
+      if (!r) return;
+      if (r.label === 'stumble') {
         sfx('error');
         buzz('error');
       } else {
-        let imp = IMP;
-        if (endurance) {
-          S.stam = Math.max(0, S.stam - lerp(2.4, 1.4, skill));
-          if (S.stam < 15) imp *= 0.45;
-        }
-        if (S.stumble > 0) imp *= 0.5;
-        S.v += imp;
-        S.steps++;
-        buzz('step');
-        if (S.steps % 2 === 0) sfx('step');
+        buzz(r.label === 'perfect' ? 'perfect' : 'stride');
+        if (R.steps % 2 === 0) sfx('step');
       }
-      S.last = side;
+      if (r.label !== 'start') pop(r.label);
     }
 
     const down = (side) => (e) => { e.preventDefault(); step(side); };
@@ -62,7 +88,7 @@ export function playSprint(host, opts) {
       S.outcome = success ? 'win' : 'lose';
       S.afterT = 0;
       if (success) {
-        big.show('REKOR!', '#c6ff3d', 64);
+        big.show(R.time < target * 0.96 ? 'REKOR!' : 'GEÇTİN!', '#c6ff3d', 64);
         particles.burst(stage.W * 0.32, stage.H * 0.55, { n: 40, colors: ['#c6ff3d', '#ffcf3d', '#fff'], speed: 300, life: 1.2 });
         sfx('levelup');
         buzz('record');
@@ -77,11 +103,23 @@ export function playSprint(host, opts) {
       S.done = true;
       window.removeEventListener('keydown', onKey);
       const success = S.outcome === 'win';
-      const accuracy = success ? clamp(0.5 + (target - S.time) / (target * 0.2), 0, 1) : 0;
+      const time = R.time ?? R.t;
+      const accuracy = success ? clamp(0.5 + (target - time) / (target * 0.08), 0, 1) : 0;
       setTimeout(() => {
         stage.stop();
         btns.remove();
-        resolve({ success, accuracy, outcome: S.outcome, time: S.time });
+        resolve({
+          success,
+          accuracy,
+          outcome: S.outcome,
+          time,
+          target,
+          react: R.react,
+          topSpeed: R.topV * 3.6,
+          rhythm: R.steps ? R.perfect / R.steps : 0,
+          falseStart: R.falseStarts > 0,
+          gassed: !!S.gassedShown,
+        });
       }, 50);
     }
 
@@ -91,46 +129,49 @@ export function playSprint(host, opts) {
         S.t += dt;
         particles.update(dt);
         big.update(dt);
+        for (const p of S.pops) p.t += dt;
+        S.pops = S.pops.filter((p) => p.t < 0.7);
+        S.flash = Math.max(0, S.flash - dt);
         if (S.phase === 'count') {
           const c = 3 - Math.floor(S.t / 0.7);
           if (c !== S.count) {
             S.count = c;
             if (c > 0) sfx('tick');
           }
-          if (S.t >= 2.1) {
+          if (S.t >= S.setAt) S.phase = 'set';
+          return;
+        }
+        if (S.phase === 'set') {
+          if (S.t >= S.goAt) {
             S.phase = 'run';
-            S.time = 0;
+            R.go = true;
             sfx('shortWhistle');
+            buzz('kick');
           }
           return;
         }
         if (S.phase === 'run') {
-          S.time += dt;
-          S.v -= K * S.v * dt;
-          S.v = Math.max(0, S.v);
-          S.x += S.v * dt;
-          S.ph += S.v * dt * 1.7;
-          if (S.stumble > 0) S.stumble -= dt;
-          if (endurance) S.stam = Math.min(100, S.stam + 9 * dt);
-          // hedef koşucu: sabit tempo, hızlı kalkış
-          const gv = distance / target;
-          S.ghost = Math.min(distance, gv * Math.max(0, S.time - 0.4) + (S.time < 0.4 ? 0 : 0));
-          if (S.x >= distance) {
-            S.x = distance;
-            end(S.time <= target);
-          } else if (S.time > target * 1.6) end(false);
+          const fin = runTick(R, P, dt);
+          S.ph += R.v * dt * 1.7;
+          if (endurance && R.gassed && !S.gassedShown) {
+            S.gassedShown = true;
+            big.show('NEFESİN KESİLDİ!', '#ff5d6c', 38);
+            buzz('heartBreak');
+          }
+          if (fin) end(R.time <= target);
+          else if (R.t > target * 1.6) end(false);
         } else {
           S.afterT += dt;
-          S.v *= 0.97;
-          S.x += S.v * dt;
-          S.ph += S.v * dt * 1.7;
+          R.v *= 0.97;
+          R.x += R.v * dt * 0.3;
+          S.ph += R.v * dt * 1.7;
           if (S.afterT > 1.6) finish();
         }
       },
 
       render(ctx, W, H, t) {
         const ppm = W / 9; // metre başına piksel
-        const camX = S.x * ppm - W * 0.32;
+        const camX = R.x * ppm - W * 0.32;
         // gökyüzü
         const sky = ctx.createLinearGradient(0, 0, 0, H * 0.55);
         sky.addColorStop(0, '#0b1730');
@@ -206,63 +247,130 @@ export function playSprint(host, opts) {
           }
         }
         // koşucular
-        const gx = S.ghost * ppm - camX;
-        drawRunner(ctx, gx, H * 0.62, H * 0.16, ['#94a3b8', '#e2e8f0'], S.time * 14, 0.45, 'HEDEF');
-        drawRunner(ctx, W * 0.32, H * 0.74, H * 0.18, kit, S.ph, 1, opts.name || 'SEN', S.stumble > 0);
-        // HUD (okunabilirlik için koyu zemin)
-        const left = Math.max(0, distance - S.x);
-        ctx.fillStyle = 'rgba(4,10,8,.6)';
-        roundRect(ctx, 8, 68, Math.max(230, W * 0.46), endurance ? 96 : 76, 12);
+        const gx = ghostAt(Math.max(0, R.t)) * ppm - camX;
+        drawRunner(ctx, gx, H * 0.62, H * 0.16, ['#94a3b8', '#e2e8f0'], R.t * 14, 0.45, 'HEDEF');
+        drawRunner(ctx, W * 0.32, H * 0.74, H * 0.18, kit, S.ph, 1, opts.name || 'SEN', R.stumble > 0, R.v / P.vmax);
+        // adım etiketleri
+        S.pops.forEach((p, i) => {
+          ctx.globalAlpha = clamp(1 - p.t / 0.7, 0, 1);
+          ctx.font = `900 ${p.text.length > 9 ? 15 : 18}px system-ui, sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.lineWidth = 4;
+          ctx.strokeStyle = 'rgba(0,0,0,.6)';
+          const y = H * 0.5 - p.t * 40 - i * 4;
+          ctx.strokeText(p.text, W * 0.32, y);
+          ctx.fillStyle = p.color;
+          ctx.fillText(p.text, W * 0.32, y);
+          ctx.globalAlpha = 1;
+        });
+        // HUD
+        const left = Math.max(0, distance - R.x);
+        const hudW = Math.max(250, W * 0.5);
+        ctx.fillStyle = 'rgba(4,10,8,.62)';
+        roundRect(ctx, 8, 68, hudW, endurance ? 128 : 108, 12);
         ctx.fill();
         ctx.textAlign = 'left';
         ctx.font = '900 22px system-ui, sans-serif';
         ctx.fillStyle = '#fff';
-        ctx.fillText(`${S.time.toFixed(2)} sn`, 16, 96);
+        ctx.fillText(`${(R.time ?? R.t).toFixed(2)} sn`, 16, 96);
+        ctx.font = '800 15px system-ui, sans-serif';
+        ctx.fillStyle = '#38bdf8';
+        ctx.textAlign = 'right';
+        ctx.fillText(`${(R.v * 3.6).toFixed(1)} km/sa`, 8 + hudW - 10, 95);
+        ctx.textAlign = 'left';
         ctx.font = '700 13px system-ui, sans-serif';
         ctx.fillStyle = 'rgba(255,255,255,.8)';
-        ctx.fillText(`Hedef ${target.toFixed(1)} sn  •  Kalan ${left.toFixed(0)} m`, 16, 116);
-        // hız göstergesi
-        roundRect(ctx, 16, 126, W * 0.4, 8, 4);
-        ctx.fillStyle = 'rgba(0,0,0,.4)';
+        ctx.fillText(`Hedef ${target.toFixed(2)} sn  •  Kalan ${left.toFixed(0)} m`, 16, 116);
+        // ritim çubuğu: son adımdan bu yana geçen süre; yeşil = ideal pencere
+        const bx = 16;
+        const bw = hudW - 16;
+        const by = 128;
+        const span = 0.55;
+        roundRect(ctx, bx, by, bw, 12, 6);
+        ctx.fillStyle = 'rgba(0,0,0,.45)';
         ctx.fill();
-        roundRect(ctx, 16, 126, W * 0.4 * clamp(S.v / 10, 0, 1), 8, 4);
-        ctx.fillStyle = '#38bdf8';
-        ctx.fill();
+        ctx.fillStyle = 'rgba(198,255,61,.55)';
+        ctx.fillRect(bx + (P.win[0] / span) * bw, by, ((P.win[1] - P.win[0]) / span) * bw, 12);
+        ctx.fillStyle = 'rgba(255,158,38,.4)';
+        ctx.fillRect(bx, by, (0.085 / span) * bw, 12);
+        if (S.phase === 'run' && R.lastT != null) {
+          const e = clamp((R.t - R.lastT) / span, 0, 1);
+          const inWin = R.t - R.lastT >= P.win[0] && R.t - R.lastT <= P.win[1];
+          ctx.fillStyle = inWin ? '#fff' : 'rgba(255,255,255,.75)';
+          ctx.fillRect(bx + e * bw - 2, by - 3, 4, 18);
+        }
+        ctx.font = '700 10.5px system-ui, sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,.7)';
+        ctx.fillText('RİTİM', bx, by + 26);
+        ctx.textAlign = 'right';
+        ctx.fillText(`Mükemmel adım %${R.steps ? Math.round((R.perfect / R.steps) * 100) : 0}`, bx + bw, by + 26);
+        ctx.textAlign = 'left';
         if (endurance) {
-          ctx.fillStyle = 'rgba(255,255,255,.8)';
-          ctx.fillText('Nefes', 16, 152);
-          roundRect(ctx, 60, 143, W * 0.4 - 44, 8, 4);
+          ctx.fillStyle = 'rgba(255,255,255,.85)';
+          ctx.font = '700 12px system-ui, sans-serif';
+          ctx.fillText('Nefes', 16, 172);
+          const nw = hudW - 70;
+          roundRect(ctx, 60, 163, nw, 10, 5);
           ctx.fillStyle = 'rgba(0,0,0,.4)';
           ctx.fill();
-          roundRect(ctx, 60, 143, (W * 0.4 - 44) * (S.stam / 100), 8, 4);
-          ctx.fillStyle = S.stam < 15 ? (Math.sin(t * 20) > 0 ? '#ff5d6c' : '#7f1d1d') : '#facc15';
+          roundRect(ctx, 60, 163, Math.max(4, nw * (R.stam / 100)), 10, 5);
+          ctx.fillStyle = R.gassed ? (Math.sin(t * 20) > 0 ? '#ff5d6c' : '#7f1d1d') : R.stam < 35 ? '#ff9e26' : '#facc15';
           ctx.fill();
+          // eşik: bu hızın üstü nefes tüketir
+          const over = R.v / P.vmax > P.thresh;
+          ctx.font = '700 10.5px system-ui, sans-serif';
+          ctx.fillStyle = over ? '#ff9e26' : 'rgba(198,255,61,.9)';
+          ctx.fillText(R.gassed ? 'Yavaşla, toparlan!' : over ? 'Tempo yüksek: nefes azalıyor' : 'Tempo iyi: nefes toplanıyor', 16, 190);
         }
-        if (S.phase === 'count') {
-          const c = Math.max(1, 3 - Math.floor(S.t / 0.7));
-          const k = (S.t % 0.7) / 0.7;
+        if (S.phase === 'count' || S.phase === 'set') {
           ctx.save();
           ctx.translate(W / 2, H * 0.36);
-          ctx.scale(1.4 - k * 0.4, 1.4 - k * 0.4);
-          ctx.globalAlpha = 1 - k * 0.6;
-          ctx.font = '900 96px system-ui, sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillStyle = '#c6ff3d';
-          ctx.fillText(String(c), 0, 0);
+          if (S.phase === 'count') {
+            const c = Math.max(1, 3 - Math.floor(S.t / 0.7));
+            const k = (S.t % 0.7) / 0.7;
+            ctx.scale(1.4 - k * 0.4, 1.4 - k * 0.4);
+            ctx.globalAlpha = 1 - k * 0.6;
+            ctx.font = '900 96px system-ui, sans-serif';
+            ctx.fillStyle = '#c6ff3d';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(String(c), 0, 0);
+          } else {
+            ctx.font = '900 46px system-ui, sans-serif';
+            ctx.fillStyle = '#ffcf3d';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('HAZIR…', 0, 0);
+          }
           ctx.restore();
+        } else if (S.phase === 'run' && R.t < 0.5) {
+          ctx.font = '900 52px system-ui, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillStyle = `rgba(198,255,61,${1 - R.t / 0.5})`;
+          ctx.fillText('BAŞLA!', W / 2, H * 0.36);
+        }
+        if (S.phase === 'after' && R.react != null) {
+          ctx.font = '800 13px system-ui, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillStyle = 'rgba(255,255,255,.9)';
+          ctx.fillText(`Tepki ${R.react.toFixed(2)} sn  •  Zirve ${(R.topV * 3.6).toFixed(1)} km/sa`, W / 2, H * 0.46);
+        }
+        if (S.flash > 0) {
+          ctx.fillStyle = `rgba(255,93,108,${S.flash * 0.5})`;
+          ctx.fillRect(0, 0, W, H);
         }
         particles.render(ctx);
         big.render(ctx, W, H);
       },
     });
 
-    function drawRunner(ctx, x, y, h, colors, ph, alpha, label, stumble) {
+    function drawRunner(ctx, x, y, h, colors, ph, alpha, label, stumble, lean = 0) {
       if (x < -60 || x > stage.W + 60) return;
       ctx.save();
       ctx.globalAlpha = alpha;
       ctx.translate(x, y);
       if (stumble) ctx.rotate(0.35);
+      else if (lean) ctx.rotate(Math.min(0.22, lean * 0.2)); // hızlandıkça öne eğilir
       ctx.fillStyle = 'rgba(0,0,0,.3)';
       ctx.beginPath();
       ctx.ellipse(0, 4, h * 0.28, h * 0.05, 0, 0, Math.PI * 2);

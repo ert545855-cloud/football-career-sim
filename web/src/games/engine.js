@@ -128,6 +128,9 @@ export class BigText {
       ctx.scale(s, s);
       ctx.rotate(-0.05);
       ctx.font = `900 ${Math.min(i.size, W * 0.16)}px system-ui, -apple-system, sans-serif`;
+      // uzun yazılar ekrana sığsın
+      const tw = ctx.measureText(i.text).width + 20;
+      if (tw > W * 0.94) ctx.scale((W * 0.94) / tw, (W * 0.94) / tw);
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.lineWidth = 10;

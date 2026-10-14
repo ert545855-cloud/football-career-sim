@@ -108,3 +108,30 @@ test('Araya girme: yolun üstündeki rakip erken noktaya, uzaktaki iniş noktas�
   const far = interceptPoint(p, 600, { x: 300, y: -100 }, o);
   assert.deepEqual(far, { x: p.p3.x, y: p.p3.y });
 });
+
+test('Fizik: çizilen yol → vuruş; kısa pas yerden, uzun pas havadan; kavis falsoya dönüşür ve hedefi tutar', async () => {
+  const { kickFromPath, passSkill, loftAngle } = await import('../src/games/drawPassLogic.js');
+  const { createBall, kick, predict } = await import('../src/games/physics.js');
+  const ppm = 390 / 34;
+  const sk = passSkill(0.7);
+  const endNear = (path, sol) => {
+    const tr = predict(kick(createBall(sol.from.x, sol.from.y), sol), { T: 5 });
+    const tx = path.p3.x / ppm;
+    const ty = path.p3.y / ppm;
+    return Math.min(...tr.map((p) => Math.hypot(p.x - tx, p.y - ty) + (p.z > 1.7 ? 99 : 0)));
+  };
+  // kısa düz pas (≈15 m): yerden
+  const short = buildPassPath([{ x: 200, y: 700 }, { x: 205, y: 640 }, { x: 210, y: 580 }, { x: 214, y: 528 }], 1);
+  assert.equal(loftAngle(short.loft), 0);
+  const s1 = kickFromPath(short, ppm, sk);
+  assert.ok(s1.loft === 0 && Math.abs(s1.spin) < 1 && endNear(short, s1) < 0.8);
+  // uzun kavisli pas: havadan + falso, hedefe ~1 m
+  const long = buildPassPath(arc(260, 60, 1, 80, 760), 1);
+  const s2 = kickFromPath(long, ppm, sk);
+  assert.ok(s2.loft > 0.2, 'havadan');
+  assert.ok(s2.spin > 5, 'sağa kıvrılan çizim → + falso');
+  assert.ok(endNear(long, s2) < 1.2, `hedefe uzaklık ${endNear(long, s2)}`);
+  // ters kavis → ters falso
+  const s3 = kickFromPath(buildPassPath(arc(260, 60, -1, 320, 760), 1), ppm, sk);
+  assert.ok(s3.spin < -5);
+});

@@ -31,6 +31,7 @@ import { ensureSocial, homeScore, socialOnWeekEnd } from './social/index.js';
 import { ensureGarage, garageOnWeekEnd } from './garage.js';
 import { dative } from './chirp/turkish.js';
 import { CUPS, STAGE_LABEL, createEurope, europeWeek, europeWinners } from './world/europe.js';
+import { DIFFICULTY, coachTip, difficultyGain, ensureTraining, fatigueFactor, recordDrill, starsFor, trainingSkill } from './training.js';
 
 export const SAVE_VERSION = 1;
 
@@ -214,13 +215,15 @@ export function doAction(state, id) {
   return { ok: true, title, text, changes: diffChanges(before, snapshot(state)) };
 }
 
-/** Antrenman başlangıcı: hangi mini oyun, hangi zorluk. */
-export function trainingSetup(state, stat) {
+/** Antrenman başlangıcı: hangi mini oyun, hangi zorluk (Kolay/Normal/Zor etkin yeteneği kaydırır). */
+export function trainingSetup(state, stat, diff = state.training?.diff || 'normal') {
   const t = TRAINING[stat];
-  return { stat, game: t.game, title: t.title, hint: t.hint, skill: effectiveSkill(state.player, GAME_WEIGHTS[t.game]) };
+  const base = effectiveSkill(state.player, GAME_WEIGHTS[t.game]);
+  return { stat, game: t.game, title: t.title, hint: t.hint, diff, baseSkill: base, skill: trainingSkill(base, diff) };
 }
 
-export function finishTraining(state, stat, result) {
+export function finishTraining(state, stat, result, diff = state.training?.diff || 'normal') {
+  ensureTraining(state).diff = diff;
   const { player, flags } = state;
   // Altyapı (Seçenek C): dev kulübün tesisleri antrenman gelişimini artırır
   const academyBonus = state.career.academy && state.calendar.season <= state.career.academy.untilSeason ? state.career.academy.trainingBonus || 0 : 0;
@@ -231,13 +234,22 @@ export function finishTraining(state, stat, result) {
   const progressBefore = player.progress[stat];
   // Çalışkan mentor: antrenman gelişim hızı ×1.2
   const mentorMult = mentorBonus(state).trainingGrowth;
-  const gained = addProgress(player, stat, trainingAmount(result, bonus) * mentorMult);
+  // Zorluk ve yorgunluk: zor antrenman daha çok geliştirir; yorgunken verim düşer
+  const diffMult = difficultyGain(diff, result.success);
+  const fatigue = fatigueFactor(player.energy);
+  const gained = addProgress(player, stat, trainingAmount(result, bonus) * mentorMult * diffMult * fatigue);
+  const stars = starsFor(result);
+  const rec = recordDrill(state, stat, diff, stars);
+  const game = TRAINING[stat].game;
   changeEnergy(player, -18);
   if (result.success) changeMorale(player, 1);
   state.calendar.slots -= 1;
   state.calendar.trainings += 1;
   achievementsOnTraining(state);
-  return { stat, name: STATS[stat].name, before, after: player.stats[stat], gained, progress: player.progress[stat], progressBefore, success: result.success, mentorMult };
+  return {
+    stat, name: STATS[stat].name, before, after: player.stats[stat], gained, progress: player.progress[stat], progressBefore, success: result.success, mentorMult,
+    diff, diffName: DIFFICULTY[diff]?.name || 'Normal', diffMult, fatigue, stars, best: rec.best, newBest: rec.newBest, tip: coachTip(game, result), result,
+  };
 }
 
 // ─────────────────────────────────────────────────────────────
