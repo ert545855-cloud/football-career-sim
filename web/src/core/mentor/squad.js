@@ -3,7 +3,7 @@
 // Kadro yalnızca oyuncunun bulunduğu kulüp için üretilir; her sezon yaşlanır, emeklilik ve
 // yeni transferlerle yenilenir. Sonuç düz JSON olarak state.mentor.squads[clubId] altında tutulur.
 import { CLUB_BY_ID, COUNTRY_BY_ID } from '../data.js';
-import { NAME_POOLS, randomName } from '../world/names.js';
+import { NAME_BLOCK, NAME_POOLS, randomName } from '../world/names.js';
 import { SquadPlayer, TRAIT_IDS } from './models.js';
 
 /** @typedef {import('./models.js').SquadPosition} SquadPosition */
@@ -40,6 +40,7 @@ export function makeSquadPlayer(rnd, o) {
   const lang = foreign ? r.pick(Object.keys(NAME_POOLS).filter((k) => k !== country.lang)) : country.lang;
   for (let i = 0; i < 30 && (!name || o.taken.has(name)); i++) {
     name = lang === 'tr' ? `${r.pick(young ? YOUNG_FIRST : VET_FIRST)} ${r.pick(LAST)}` : randomName(lang, rnd);
+    if (NAME_BLOCK.has(name)) name = '';
   }
   o.taken.add(name);
   const ranges = {

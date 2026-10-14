@@ -313,8 +313,12 @@ export function itemArt(item) {
 /** Gazeteci / oyuncu / taraftar botu avatarı (daire içinde). */
 export function chirpAvatar(author, size = 44) {
   const a = author.avatar || {};
+  // Kulüp resmi hesabı: arma
+  if (a.crest && CLUB_BY_ID[a.crest]) {
+    return `<span class="tw-av crest-av" style="width:${size}px;height:${size}px">${crestSVG(CLUB_BY_ID[a.crest], 'crest')}</span>`;
+  }
   if (a.look) {
     return `<span class="tw-av" style="width:${size}px;height:${size}px;border-color:${a.color || '#475569'}">${avatarSVG(a.look, { colors: a.kit || ['#1e293b', '#e2e8f0'], pattern: 'solid' }, '')}</span>`;
   }
-  return `<span class="tw-av init" style="width:${size}px;height:${size}px;background:${a.color || '#475569'};font-size:${Math.round(size * 0.36)}px">${(a.initials || '?').replace(/[<>&]/g, '')}</span>`;
+  return `<span class="tw-av init" style="width:${size}px;height:${size}px;background:${a.color || '#475569'};font-size:${Math.round(size * 0.36)}px;${a.ring ? `box-shadow:inset 0 0 0 3px ${a.ring}` : ''}">${(a.initials || '?').replace(/[<>&]/g, '')}</span>`;
 }

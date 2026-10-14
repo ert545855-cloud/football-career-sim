@@ -16,7 +16,8 @@ function spoken(name) {
   const last = String(name).trim().split(/\s+/).pop() || '';
   const isAbbr = last.length >= 2 && last.length <= 4 && last === last.toLocaleUpperCase('tr') && /[A-ZÇĞİÖŞÜ]/.test(last);
   if (isAbbr) return lower(last).split('').map((ch) => LETTER_SOUND[ch] || ch).join('');
-  return lower(last);
+  // Yabancı aksanlı ünlüler (División, Série) Türkçe okunuşa çevrilir
+  return lower(last).replace(/[áàâ]/g, 'a').replace(/[éèê]/g, 'e').replace(/[íìî]/g, 'i').replace(/[óòô]/g, 'o').replace(/[úùû]/g, 'u');
 }
 
 function lastVowel(word) {
@@ -49,6 +50,16 @@ export function accusative(name) {
 }
 
 /**
+ * Bulunma (-da/-de/-ta/-te): "Premier Lig" → "Premier Lig'de", "Serie A" → "Serie A'da", "Botola Pro" → "Botola Pro'da"
+ * @param {string} name
+ */
+export function locative(name) {
+  const w = spoken(name);
+  const hard = 'çfhkpsşt'.includes(w[w.length - 1]);
+  return `${name}'${hard ? 't' : 'd'}${twoWay(lastVowel(w))}`;
+}
+
+/**
  * Yönelme (-a/-ya/-na): "Datça Spor" → "Datça Spor'a", "Boğaziçi SK" → "Boğaziçi SK'ya",
  * "Başkent Gücü" → "Başkent Gücü'ne" (iyelik ekli tamlama "n" kaynaştırması alır)
  * @param {string} name
@@ -66,12 +77,13 @@ export function dative(name) {
 
 /** {player}, {club} gibi yer tutucuları doldurur. Ekli biçimler: {player:gen}, {club:dat}, {player:acc} */
 export function fillTemplate(template, vars) {
-  return template.replace(/\{(\w+)(?::(gen|dat|acc))?\}/g, (_, key, suffix) => {
+  return template.replace(/\{(\w+)(?::(gen|dat|acc|loc))?\}/g, (_, key, suffix) => {
     const v = vars[key];
     if (v == null) return '';
     if (suffix === 'gen') return genitive(String(v));
     if (suffix === 'dat') return dative(String(v));
     if (suffix === 'acc') return accusative(String(v));
+    if (suffix === 'loc') return locative(String(v));
     return String(v);
   });
 }

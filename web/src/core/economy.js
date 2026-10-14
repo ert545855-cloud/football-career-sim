@@ -5,6 +5,7 @@ import { addFocus, clubRating, countryOf, leagueIdIn } from './league.js';
 import { ovr, form } from './player.js';
 import { RelationshipService } from './chirp/relationships.js';
 import { onCarSold } from './garage.js';
+import { weekIndex } from './chirp/timeline.js';
 
 /** Haftalık maaş: kulüp gücüyle üstel artar, oyuncunun kulübe göre seviyesi çarpan olur. */
 export function wageFor(clubR, playerOvr, country = 'tr') {
@@ -109,10 +110,12 @@ export function generateOffers(state, kind) {
   const abroad = clamp((player.fame - 18) / 55 + (o - 52) / 45, 0, 1);
   const foreign = abroad > 0 ? shuffle(all.filter((c) => (c.country || 'tr') !== myCountry && clubRating(world, c.id) >= curR + 2 && o >= clubRating(world, c.id) - 7)).slice(0, 60) : [];
 
+  // Chirp'te "150 milyon dolarlık oyuncu" coşkusu: birkaç hafta kulüplerin ilgisi artar
+  const hype = (state.chirp?.hype || 0) >= weekIndex(state);
   for (const c of domestic) {
     if (offers.length >= 3) break;
     const r = clubRating(world, c.id);
-    let p = r < curR ? 0.45 : 0.16 + (f - 6.5) * 0.12 + player.fame / 260;
+    let p = r < curR ? 0.45 : 0.16 + (f - 6.5) * 0.12 + player.fame / 260 + (hype ? 0.08 : 0);
     if (r >= curR && o >= r - 3) p += 0.15;
     if (kind === 'mid') p *= 0.7;
     if (chance(clamp(p, 0.03, 0.85))) offers.push(makeOffer(c.id, r, o, true));
@@ -121,7 +124,7 @@ export function generateOffers(state, kind) {
   for (const c of foreign) {
     if (offers.length >= maxOffers) break;
     const r = clubRating(world, c.id);
-    let p = (0.05 + (f - 6.5) * 0.06 + player.fame / 400) * abroad * (0.6 + (COUNTRY_PRESTIGE[c.country] ?? 0.5) * 0.5);
+    let p = (0.05 + (f - 6.5) * 0.06 + player.fame / 400) * abroad * (0.6 + (COUNTRY_PRESTIGE[c.country] ?? 0.5) * 0.5) * (hype ? 1.4 : 1);
     if (kind === 'mid') p *= 0.7;
     if (chance(clamp(p, 0.005, 0.5))) offers.push(makeOffer(c.id, r, o, true));
   }

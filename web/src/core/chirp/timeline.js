@@ -2,7 +2,7 @@
 // ZAMAN TÜNELİ — tweetleri kayıt dosyasında (state.chirp) saklar, okunmamış sayısını tutar.
 import { TweetModel } from './models.js';
 
-export const TIMELINE_CAP = 80;
+export const TIMELINE_CAP = 160;
 
 /** Chirp verisini kayıtta hazırlar (eski kayıtlarda yoksa oluşturur). */
 export function ensureChirp(state) {
@@ -15,6 +15,10 @@ export function ensureChirp(state) {
     recent: [],
     cooldowns: {},
     discipline: null,
+    trends: [],
+    myTags: {},
+    hype: 0,
+    squadInjuries: [],
     ...(state.chirp || {}),
   };
   return state.chirp;

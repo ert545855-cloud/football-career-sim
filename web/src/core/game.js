@@ -13,6 +13,7 @@ import { finalizeMatch, planMatch, selection } from './match.js';
 import { pickEvent, resolveEvent } from './events.js';
 import {
   RelationshipService, chirpOnInjury, chirpOnMatch, chirpOnOffers, chirpOnSeasonEnd, chirpOnTransfer, chirpOnWeekEnd, ensureChirp,
+  chirpFeedSeasonEnd, chirpNationalSquad, chirpOnEurope, chirpWeekStart, chirpWelcome,
 } from './chirp/index.js';
 import {
   ensureMentor, gainInfluence, mentorBonus, mentorOnAction, mentorOnMatch, mentorOnSeasonEnd, mentorOnSeasonStart, mentorOnTransfer, mentorOnWeekEnd,
@@ -22,7 +23,7 @@ import {
 } from './onboarding/index.js';
 import { random } from './rng.js';
 import { agentNetworkOffers, agentSponsorMult, ensureAgent } from './agent.js';
-import { ensureNational, nationalWindow } from './national.js';
+import { NATIONAL_WEEKS, ensureNational, nationalWindow } from './national.js';
 import { ballonOnEurope, ballonOnMatch, ballonRank, ballonSeasonEnd, ensureBallon } from './ballondor.js';
 import { ChirpTriggerEngine, FABRICIO } from './chirp/index.js';
 import { achievementsOnMatch, achievementsOnTraining, checkAchievements, ensureAchievements } from './achievements.js';
@@ -89,6 +90,8 @@ export function newGame(setup) {
   // Forma numarası: seçilmez, kulüp boştaki genç numaralarından verir
   if (!setup.number) assignYouthNumber(state, random);
   else state.career.numberHistory.push({ season: 1, clubId: state.career.clubId, number: player.number, reason: 'Başlangıç' });
+  // Chirp boş başlamasın: ilk haftanın maç önü kartı ve gündem
+  chirpWeekStart(state);
   return state;
 }
 
@@ -263,6 +266,7 @@ export function completeMatch(state, match) {
     addNews(state, `${line}${m.goals ? ` · ${m.goals} gol` : ''}${m.assists ? ` · ${m.assists} asist` : ''}${m.stage === 'f' && m.won ? ' · KUPA BİZİM! 🏆' : m.out ? ' · Elendik.' : ''}`, m.won ? 'good' : m.out ? 'bad' : 'info');
     if (m.stage === 'f' && m.won) state.career.awards.push({ season: state.calendar.season, title: `${CUPS[m.cup].name} Şampiyonu`, icon: 'trophy', club: state.career.clubId });
   }
+  const euroTweets = chirpOnEurope(state, europe);
 
   // Chirp: paylaşım kartı + gazeteci tweetleri (formsuzluk, büyük performans, kulübe, yönetim)
   const chirp = chirpOnMatch(state, { summary, match });
@@ -286,7 +290,7 @@ export function completeMatch(state, match) {
     if (rank <= 10) chirp.push(new ChirpTriggerEngine(state).post(FABRICIO, 'ballon', 'Altın Top yarışında ara sıralama: {player} {rank}. sırada! Avrupa devleri gözlerini Türkiye\'ye çevirdi.', { rank }));
   }
   const weekEnd = endWeek(state, { summary });
-  return { summary, results, weekEnd, europe, chirp: [...chirp, ...weekEnd.chirp] };
+  return { summary, results, weekEnd, europe, chirp: [...chirp, ...euroTweets, ...weekEnd.chirp] };
 }
 
 function endWeek(state, ctx) {
@@ -336,6 +340,8 @@ function endWeek(state, ctx) {
 
   // Milli ara: bu hafta çağrı varsa kulüp maçından sonra kampa gidilir
   const national = nationalWindow(state);
+  // Milli ara: kadro açıklaması (çağrılsan da çağrılmasan da)
+  if (NATIONAL_WEEKS.includes(calendar.week)) chirpTweets.push(chirpNationalSquad(state, national));
   if (national) addNews(state, `Milli takım çağrısı: ${national.level === 'A' ? 'A Milli Takım' : national.level === 'U21' ? 'U-21' : 'U-19'} kadrosundasın!`, 'good');
 
   const seasonOver = calendar.week >= SEASON_WEEKS;
@@ -344,6 +350,8 @@ function endWeek(state, ctx) {
     calendar.week += 1;
     calendar.slots = WEEK_SLOTS;
     calendar.trainings = 0;
+    // Chirp: yeni haftanın maç önü kartı, sakatlıklar, dünya futbolu, trendler
+    chirpTweets.push(...chirpWeekStart(state));
   }
   return { finance: fin, changes: diffChanges(before, snapshot(state)), event, offers: state.pending.offers, seasonOver, discipline, chirp: chirpTweets, mentor, national, social };
 }
@@ -472,6 +480,9 @@ export function endSeason(state) {
   state.pending.seasonReport = report;
   checkAchievements(state);
   addNews(state, `Sezon ${report.season} bitti: ${league.name} ${position}. sıra.`, 'info');
+  // Chirp: şampiyonlar, yükselenler; yeni sezonun ilk haftası (transferler, maç önü)
+  chirpFeedSeasonEnd(state, report);
+  if (calendar.phase === 'week') chirpWeekStart(state);
   return report;
 }
 
@@ -488,6 +499,7 @@ export function takeOffer(state, offer) {
     if (m.ended) addNews(state, `Mentorun ${m.ended} ile yolların ayrıldı.`, 'info');
     const n = ensureNumberAfterMove(state);
     if (n.changed) addNews(state, `Yeni kulübünde ${n.number} numaralı formayı giyeceksin.`, 'info');
+    chirpWelcome(state, { ...offer, from: fromClubId });
   }
   // Pazarlıkla alınan "ilk 11 garantisi" maddesi: sezon ortasında imzalandıysa gelecek sezonu da kapsar
   if (offer.guarantee) state.career.guarantee = { untilSeason: state.calendar.season + (state.calendar.week > 1 ? 1 : 0), reason: 'contract' };

@@ -102,8 +102,12 @@ test('transfer kesinleşince Romana, yenilemede Yağız yazar', () => {
   const s = newGame({ name: 'Efe Kaya', position: 'DF' });
   takeOffer(s, { clubId: 'pam', wage: 2000, years: 3, signingBonus: 5000 });
   const tl = new Timeline(s).list();
-  assert.equal(tl[0].authorId, 'fabricio');
-  assert.match(tl[0].text, /^It's a deal! Efe Kaya resmen Pamukkale Spor'a transfer oldu\. 3 yıllık/);
+  const romana = tl.find((t) => t.authorId === 'fabricio' && t.topic === 'transfer_done');
+  assert.ok(romana, 'Romana transferi duyurur');
+  assert.match(romana.text, /^It's a deal! Efe Kaya resmen Pamukkale Spor'a transfer oldu\. 3 yıllık/);
+  // Yeni kulübün resmi hesabı "Hoş geldin" kartı paylaşır (sözleşme detaylarıyla)
+  const welcome = tl.find((t) => t.authorId === 'club:pam' && t.card?.kind === 'welcome');
+  assert.ok(welcome && welcome.card.me && welcome.card.years === 3);
   takeOffer(s, { clubId: 'pam', wage: 2500, years: 2, renewal: true });
   assert.equal(new Timeline(s).list()[0].authorId, 'yagiz');
 });

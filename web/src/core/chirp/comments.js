@@ -3,6 +3,8 @@
 // Yorumun olumlu/olumsuz olması bağlama ve taraftar ilişkisine göre seçilir,
 // etiketi ise duygu analizinden gelir (analyzeSentiment).
 import { CommentModel, makeBotUser } from './models.js';
+import { FOREIGN_COMMENTS, RICH_COMMENTS } from './content.js';
+import { FOREIGN_LANGS, randomUser } from './personas.js';
 import { analyzeSentiment } from './sentiment.js';
 import { fillTemplate } from './turkish.js';
 
@@ -130,6 +132,61 @@ export class CommentGenerator {
         text: fillTemplate(template, o),
         sentiment: { label: sentiment.label, score: sentiment.score },
         likes: Math.floor(this.rnd() * 400),
+      }));
+    }
+    return out;
+  }
+
+  /**
+   * Zengin yorumlar: bağlam havuzu + "şu oyuncu oynamalı" yorumları + yabancı kullanıcılar.
+   * @param {string} context RICH_COMMENTS anahtarı
+   * @param {{vars?:object, fansRel?:number, count?:number, mates?:string[], foreign?:number, idPrefix:string, clubShort?:string, lineup?:number}} o
+   */
+  generateRich(context, o) {
+    const pool = RICH_COMMENTS[context] || RICH_COMMENTS.user;
+    const count = o.count ?? 3 + Math.floor(this.rnd() * 3);
+    const pPos = Math.max(0.1, Math.min(0.9, 0.5 + ((o.fansRel ?? 50) - 50) / 120));
+    const mates = (o.mates || []).filter(Boolean);
+    const used = new Set();
+    const handles = new Set();
+    const out = [];
+    const langs = Object.keys(FOREIGN_LANGS);
+    for (let i = 0; i < count; i++) {
+      let item = null;
+      let lang = 'tr';
+      const r = this.rnd();
+      if (mates.length && r < (o.lineup ?? 0.18)) {
+        item = RICH_COMMENTS.lineup[Math.floor(this.rnd() * RICH_COMMENTS.lineup.length)];
+      } else if (r < (o.lineup ?? 0.18) + (o.foreign || 0)) {
+        lang = langs[Math.floor(this.rnd() * langs.length)];
+        const fp = FOREIGN_COMMENTS[lang] || FOREIGN_COMMENTS.en;
+        item = fp[Math.floor(this.rnd() * fp.length)];
+      } else {
+        // Olumlu/olumsuz ağırlık: taraftar ilişkisine göre
+        const weighted = pool.filter((x) => !used.has(x.t)).map((x) => [x, x.s === 'p' ? pPos : x.s === 'n' ? 1 - pPos : 0.45]);
+        const total = weighted.reduce((n, [, w]) => n + w, 0);
+        let roll = this.rnd() * total;
+        for (const [x, w] of weighted) {
+          roll -= w;
+          if (roll <= 0) { item = x; break; }
+        }
+        item = item || weighted[0]?.[0];
+      }
+      if (!item || used.has(item.t)) continue;
+      used.add(item.t);
+      let author = randomUser(this.rnd, lang, o.clubShort);
+      for (let k = 0; k < 8 && handles.has(author.handle); k++) author = randomUser(this.rnd, lang, o.clubShort);
+      handles.add(author.handle);
+      const mate = mates[Math.floor(this.rnd() * mates.length)] || '';
+      const mate2 = mates.filter((m) => m !== mate)[0] || mate;
+      const text = fillTemplate(item.t, { ...(o.vars || {}), mate, mate2 });
+      const label = item.s === 'p' ? 'positive' : item.s === 'n' ? 'negative' : 'neutral';
+      out.push(new CommentModel({
+        id: `${o.idPrefix}-c${i}`,
+        author,
+        text,
+        sentiment: { label, score: label === 'positive' ? 1 : label === 'negative' ? -1 : 0 },
+        likes: Math.floor(this.rnd() * (item.s === 'z' ? 900 : 500)),
       }));
     }
     return out;

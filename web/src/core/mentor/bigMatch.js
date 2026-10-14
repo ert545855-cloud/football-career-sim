@@ -35,7 +35,12 @@ export const BIG_MATCH_KINDS = {
 /** İki kulüp arasındaki derbinin adı (yoksa null). */
 export function derbyName(a, b) {
   const r = RIVALRIES.find(([x, y]) => (x === a && y === b) || (x === b && y === a));
-  return r ? r[2] : null;
+  if (r) return r[2];
+  // Aynı kasabanın iki kulübü (ör. Kingsbridge United – Kingsbridge City): şehir derbisi
+  const A = CLUB_BY_ID[a];
+  const B = CLUB_BY_ID[b];
+  if (A && B && a !== b && A.city && A.city === B.city && A.country === B.country) return `${A.city} Derbisi`;
+  return null;
 }
 
 /**

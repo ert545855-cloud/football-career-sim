@@ -9,6 +9,16 @@
  *   |'award'|'bench'|'board'|'player_post'|'ballon'|'gossip'|'scandal'} TweetTopic
  */
 
+/** Metindeki #etiketler (Türkçe harfler dahil) */
+export function extractTags(text) {
+  // En az bir harf içermeli; "&#39;" gibi HTML varlıkları etiket sayılmaz
+  const out = [];
+  const re = /(^|[^&\p{L}\p{N}_])(#[\p{L}\p{N}_]*\p{L}[\p{L}\p{N}_]*)/gu;
+  let m;
+  while ((m = re.exec(String(text || '')))) out.push(m[2]);
+  return [...new Set(out)];
+}
+
 export class AuthorModel {
   /**
    * @param {{id:string, displayName:string, handle:string, kind:AuthorKind, signature?:string, bio?:string,
@@ -51,10 +61,12 @@ export class CommentModel {
     this.text = p.text;
     this.sentiment = p.sentiment;
     this.likes = p.likes ?? 0;
+    /** Oyuncunun kendi yanıtı */
+    this.me = !!p.me;
   }
 
   toJSON() {
-    return { id: this.id, author: this.author, text: this.text, sentiment: this.sentiment, likes: this.likes };
+    return { id: this.id, author: this.author, text: this.text, sentiment: this.sentiment, likes: this.likes, ...(this.me ? { me: true } : {}) };
   }
 }
 
@@ -75,6 +87,13 @@ export class TweetModel {
     this.retweets = p.retweets ?? 0;
     this.liked = !!p.liked;
     this.meta = p.meta || {};
+    /** Dinamik yazarlar (kulüp, taraftar grubu, rastgele kullanıcı): tweet içinde anlık görüntü */
+    this.author = p.author || null;
+    /** Görselli kart (maç önü, sonuç, transfer, sakatlık, kadro, kupa…) */
+    this.card = p.card || null;
+    /** Hashtag'ler (trend ve keşfet için) */
+    this.tags = p.tags || extractTags(p.text);
+    this.reposted = !!p.reposted;
   }
 
   /** Yorumların olumlu payı (0–1). */
@@ -87,6 +106,10 @@ export class TweetModel {
     return {
       id: this.id, authorId: this.authorId, text: this.text, topic: this.topic, season: this.season, week: this.week,
       comments: this.comments.map((c) => c.toJSON()), likes: this.likes, retweets: this.retweets, liked: this.liked, meta: this.meta,
+      ...(this.author ? { author: this.author } : {}),
+      ...(this.card ? { card: this.card } : {}),
+      ...(this.tags?.length ? { tags: this.tags } : {}),
+      ...(this.reposted ? { reposted: true } : {}),
     };
   }
 

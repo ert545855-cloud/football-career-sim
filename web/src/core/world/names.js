@@ -42,8 +42,8 @@ export const NAME_POOLS = {
     last: L('Pereira,Oliveira,Costa,Rodrigues,Almeida,Ferreira,Carvalho,Gomes,Martins,Barbosa,Ribeiro,Cardoso,Teixeira,Moreira,Nunes,Lopes,Rocha,Batista'),
   },
   br: {
-    first: L('Lucas,Gabriel,Matheus,Caio,Renan,Felipe,Igor,Wesley,Leandro,Rodrigo,Gustavo,Vitor,Thales,Luan,Davi,Kauã,Murilo,Enzo'),
-    last: L('Souza,Oliveira,Costa,Pereira,Almeida,Ferreira,Rodrigues,Barbosa,Araújo,Cavalcanti,Nascimento,Moura,Teixeira,Correia,Freitas,Pinto,Campos,Duarte'),
+    first: L('Lucas,Gabriel,Matheus,Caio,Renan,Felipe,Igor,Wesley,Leandro,Rodrigo,Gustavo,Heitor,Thales,Luan,Davi,Kauã,Murilo,Enzo'),
+    last: L('Souza,Oliveira,Costa,Pereira,Almeida,Ferreira,Rodrigues,Barbosa,Araújo,Cavalcanti,Nascimento,Lacerda,Teixeira,Correia,Freitas,Pinto,Campos,Duarte'),
   },
   de: {
     first: L('Lukas,Jonas,Felix,Leon,Niklas,Tim,Jan,Florian,Maximilian,Moritz,Tobias,Fabian,Dennis,Sebastian,Julian,Paul,Elias,Nico,Lennart,Malte'),
@@ -117,6 +117,12 @@ export const NAME_POOLS = {
   },
 };
 
+/** Gerçek ünlü futbolcu/teknik adamlarla birebir çakışan birleşimler üretilmez */
+export const NAME_BLOCK = new Set(['Burak Yılmaz', 'Umut Bulut', 'Ahmet Kaya', 'Erol Bulut', 'Barış Yılmaz', 'Rui Costa', 'Diogo Costa', 'Nuno Gomes',
+  'Ricardo Carvalho', 'Hugo Almeida', 'André Gomes', 'João Pereira', 'Ricardo Pereira', 'Diego López', 'Raúl García', 'Hugo Sánchez', 'Nicolás González',
+  'Ezequiel Fernández', 'Matías Fernández', 'Lucas Pérez', 'Marco Rossi', 'Andrea Conti', 'Lorenzo Colombo', 'Andreas Christensen', 'Mathias Jensen',
+  'Mikkel Hansen', 'Ryan Fraser', 'Gabriel Barbosa', 'Lucas Moura', 'Thiago Silva', 'Gonzalo Rodríguez', 'Franco Romero', 'Facundo Pérez']);
+
 /** Ülke → isim havuzu */
 export const poolFor = (lang) => NAME_POOLS[lang] || NAME_POOLS.tr;
 
@@ -127,7 +133,11 @@ export const poolFor = (lang) => NAME_POOLS[lang] || NAME_POOLS.tr;
  */
 export function randomName(lang, rnd = Math.random) {
   const p = poolFor(lang);
-  const f = p.first[Math.floor(rnd() * p.first.length)];
-  const l = p.last[Math.floor(rnd() * p.last.length)];
-  return p.order === 'lf' ? `${l} ${f}` : `${f} ${l}`;
+  let name = '';
+  for (let i = 0; i < 12 && (!name || NAME_BLOCK.has(name)); i++) {
+    const f = p.first[Math.floor(rnd() * p.first.length)];
+    const l = p.last[Math.floor(rnd() * p.last.length)];
+    name = p.order === 'lf' ? `${l} ${f}` : `${f} ${l}`;
+  }
+  return name;
 }
