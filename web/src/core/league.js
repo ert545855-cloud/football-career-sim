@@ -4,7 +4,8 @@
 //   • Fikstür kaydedilmez; takım listesi + tohumdan her seferinde aynı üretilir (fixturesOf)
 //   • Tüm maç sonuçları sadece "odak" liglerde tutulur (oyuncunun ülkesi + bulunduğu lig);
 //     diğer liglerde yalnızca son haftanın sonuçları (last) saklanır
-// Lig üyeliği dünyaya aittir: sezon sonunda küme düşme / çıkma olur (her kademe arası 2 takım).
+// Lig üyeliği dünyaya aittir: sezon sonunda küme düşme / çıkma olur (her kademe arası 3 takım:
+// alt ligin ilk 2'si doğrudan, 3–6. sıralar arasında play-off; üst ligin son 3'ü düşer). Avrupa'ya yalnız 1. kademe gider.
 import { ALL_CLUBS, CLUB_BY_ID, LEAGUES, SEASON_WEEKS } from './data.js';
 import { clamp, poisson, randInt, rand } from './rng.js';
 import { hashStr, seededRng, seededShuffle } from './world/generate.js';
@@ -117,7 +118,7 @@ export function createWorld(season = 1, prevRatings = null, opts = {}) {
     };
   }
   const focus = [...new Set([...(opts.focus || DEFAULT_FOCUS)])];
-  return { season, ratings, leagues, focus, moves: membership?.moves || [], v: 2 };
+  return { season, ratings, leagues, focus, moves: membership?.moves || [], playoffs: membership?.playoffs || {}, v: 2 };
 }
 
 /**
@@ -132,20 +133,37 @@ export function promotions(world) {
     if (lg.youth || !world.leagues[lg.id]) continue;
     (byCountry[lg.country] ||= []).push(lg);
   }
+  const playoffs = {};
   for (const list of Object.values(byCountry)) {
     list.sort((a, b) => a.tier - b.tier);
     for (let i = 0; i < list.length - 1; i++) {
       const upper = world.leagues[list[i].id];
       const lower = world.leagues[list[i + 1].id];
-      const down = sortedTable(upper).slice(-2).map((r) => r.id);
-      const up = sortedTable(lower).slice(0, 2).map((r) => r.id);
+      const down = sortedTable(upper).slice(-3).map((r) => r.id);
+      const table = sortedTable(lower).map((r) => r.id);
+      const po = playoff(world, table.slice(2, 6));
+      playoffs[lower.id] = po;
+      const up = [...table.slice(0, 2), po.winner];
       teams[upper.id] = teams[upper.id].filter((id) => !down.includes(id)).concat(up);
       teams[lower.id] = teams[lower.id].filter((id) => !up.includes(id)).concat(down);
-      for (const id of up) moves.push({ clubId: id, from: lower.id, to: upper.id, up: true });
+      for (const id of up) moves.push({ clubId: id, from: lower.id, to: upper.id, up: true, playoff: id === po.winner });
       for (const id of down) moves.push({ clubId: id, from: upper.id, to: lower.id, up: false });
     }
   }
-  return { teams, moves };
+  return { teams, moves, playoffs };
+}
+
+/** Play-off: 3–6. sıralar; yarı final (3–6, 4–5) ve tek maç final. Güçlü olan biraz daha şanslı. */
+export function playoff(world, ids) {
+  const play = (a, b) => {
+    const p = 1 / (1 + Math.exp(-(clubRating(world, a) - clubRating(world, b)) / 7));
+    return rand() < p ? a : b;
+  };
+  if (ids.length < 4) return { semis: [], final: null, winner: ids[0] };
+  const s1 = [ids[0], ids[3]];
+  const s2 = [ids[1], ids[2]];
+  const f = [play(...s1), play(...s2)];
+  return { semis: [s1, s2], final: f, winner: play(...f) };
 }
 
 export const clubRating = (world, id) => world?.ratings?.[id] ?? CLUB_BY_ID[id]?.rating ?? 40;

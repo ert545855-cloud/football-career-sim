@@ -1,7 +1,7 @@
 // Chirp görünüm parçaları: gönderi kartı (görselli kartlar, #etiketler, yanıtlar), paylaşım kartı,
 // serbest gönderi yazma, yanıtlama, keşfet için anlık (kaydedilmeyen) gönderiler.
 import { CLUB_BY_ID } from '../core/data.js';
-import { JOURNALISTS, PERSONAS, PlayerPostService, RELATIONS, TweetModel, playerAuthor } from '../core/chirp/index.js';
+import { JOURNALISTS, PERSONAS, PlayerPostService, RELATIONS, Timeline, TweetModel, playerAuthor } from '../core/chirp/index.js';
 import { FOREIGN_POSTS, USER_POSTS } from '../core/chirp/content.js';
 import { randomUser } from '../core/chirp/personas.js';
 import { fillTemplate } from '../core/chirp/turkish.js';
@@ -47,7 +47,7 @@ function replyHTML(c) {
     <div class="grow">
       <div class="r-head"><b>${esc(c.author.displayName)}</b> <span class="muted">${esc(c.author.handle || '')}</span>${c.me ? ' <span class="chip xs" style="--c:var(--accent)">Sen</span>' : ''}</div>
       <p>${formatText(c.text, null)}</p>
-      <div class="row" style="gap:8px"><span class="muted small">${icon('heart', 'ico xs')} ${compact(c.likes)}</span></div>
+      <div class="row" style="gap:8px"><button class="c-like ${c.liked ? 'liked' : ''}" data-clike="${esc(c.id)}" aria-label="Yorumu beğen">${icon(c.liked ? 'heartFill' : 'heart', 'ico xs')} <span>${compact(c.likes)}</span></button></div>
     </div>
   </div>`;
 }
@@ -341,6 +341,31 @@ export function bindTweetActions(app, scope, { onTag, onChange } = {}) {
     const eph = card.hasAttribute('data-eph');
     const id = card.dataset.tweet;
     const tl = eph ? null : app.state.chirp.timeline.find((t) => t.id === id);
+    const cl = e.target.closest('[data-clike]');
+    if (cl) {
+      // yorum beğenisi
+      let r = null;
+      if (tl) {
+        r = new Timeline(app.state).toggleCommentLike(id, cl.dataset.clike);
+        app.save();
+      }
+      const liked = r ? r.liked : !cl.classList.contains('liked');
+      const n = r ? r.likes : Math.max(0, Number(cl.querySelector('span')?.textContent?.replace(/\D/g, '') || 0) + (liked ? 1 : -1));
+      cl.classList.toggle('liked', liked);
+      cl.innerHTML = `${icon(liked ? 'heartFill' : 'heart', 'ico xs')} <span>${compact(n)}</span>`;
+      cl.classList.remove('pop');
+      void cl.offsetWidth;
+      cl.classList.add('pop');
+      if (liked) {
+        sfx('tick');
+        buzz('tap');
+      }
+      if (r?.thanks) {
+        toast(`${r.thanks.author.displayName}: "${r.thanks.text}"`);
+        onChange?.();
+      }
+      return;
+    }
     if (e.target.closest('[data-like]')) {
       const btn = e.target.closest('[data-like]');
       const span = btn.querySelector('span');

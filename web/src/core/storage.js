@@ -9,6 +9,7 @@ import { ensureBallon } from './ballondor.js';
 import { ensureSocial } from './social/index.js';
 import { ensureGarage } from './garage.js';
 import { ensureCosmetics } from './cosmetics.js';
+import { ensureRanking } from './world/ranking.js';
 import { addFocus, leagueIdIn, upgradeWorld, useWorld } from './league.js';
 import { ensureEurope } from './world/europe.js';
 
@@ -84,6 +85,7 @@ export function migrate(state) {
   ensureEurope(state.world, state.calendar?.week || 1);
   useWorld(state.world);
   addFocus(state.world, leagueIdIn(state.world, state.career.clubId));
+  ensureRanking(state);
   return state;
 }
 

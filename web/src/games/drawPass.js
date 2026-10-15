@@ -93,6 +93,7 @@ export function playDrawPass(host, opts) {
         defs: defs.map((p, i) => ({
           x: p.x, y: p.y, hx: p.x, hy: p.y, ph: Math.random() * 6, mode: p.mark != null ? 'mark' : 'hold', mark: p.mark,
           body: body(p.x, p.y, { maxSpeed: sk.defSpeed, accel: 6.6, mass: 78 }), lunge: null, scan: 0,
+          zone: mates.reduce((best, m, j) => (Math.hypot(m.x - p.x, m.y - p.y) < Math.hypot(mates[best].x - p.x, mates[best].y - p.y) ? j : best), 0),
           look: npcLook(oppClub, 101 + i * 13 + (opts.seed || 0), [4, 5, 6, 8][i]), st: { ph: Math.random() * 4, last: 'down' },
         })),
         spacing: 6 * k,
@@ -233,6 +234,11 @@ export function playDrawPass(host, opts) {
       S.ts = 1;
       S.tsTarget = 1;
       const curved = Math.abs(path.curve) >= 0.25;
+      if (opts.warm && outcome !== 'success') {
+        big.show('ISINMA · CAN GİTMEDİ', '#ffcf3d', 40);
+        sfx('miss');
+        return;
+      }
       if (outcome === 'success') {
         big.show(curved ? 'FALSOLU PAS!' : 'İSABETLİ PAS!', '#c6ff3d', 50);
         particles.burst(S.ball.x, S.ball.y, { n: curved ? 34 : 24, colors: ['#c6ff3d', '#fff'], speed: 220, life: 0.8 });
@@ -330,7 +336,15 @@ export function playDrawPass(host, opts) {
         } else if (S.phase === 'after') {
           steer(bd, bd.x, bd.y, h);
         } else {
-          steer(bd, m.hx / ppm + Math.sin(m.ph * 1.3) * 0.7, m.hy / ppm + Math.cos(m.ph * 0.9) * 0.5, h, { speed: 2.2 });
+          // boşa çıkma koşuları: arkadaşlar yerinde durmaz, rakipten uzaklaşan kısa koşular yapar
+          m.wander = (m.wander ?? Math.random() * 1.5) - h;
+          if (m.wander <= 0 || !m.spot) {
+            m.wander = lerp(1.3, 2.6, Math.random());
+            const near = L.defs.reduce((a, d) => (!a || Math.hypot(d.body.x - bd.x, d.body.y - bd.y) < Math.hypot(a.body.x - bd.x, a.body.y - bd.y) ? d : a), null);
+            const ax = near ? Math.sign(bd.x - near.body.x) || 1 : (Math.random() < 0.5 ? -1 : 1);
+            m.spot = { x: clamp(m.hx / ppm + ax * lerp(1, 3.2, Math.random()), 1.5, L.W / ppm - 1.5), y: m.hy / ppm + lerp(-2.5, 1.5, Math.random()) };
+          }
+          steer(bd, m.spot.x, m.spot.y, h, { speed: 3.6, arrive: 0.6 });
         }
         stepBody(bd, h);
       });
@@ -373,7 +387,17 @@ export function playDrawPass(host, opts) {
           steer(bd, m.x + (d.hx / ppm - m.x) * 0.15, m.y - 1.2, h, { speed: bd.maxSpeed * 0.9, arrive: 0.4 });
         } else {
           if (d.lunge && !flying) d.lunge = null;
-          steer(bd, d.hx / ppm + Math.sin(d.ph * 0.25) * 0.45, d.hy / ppm + Math.cos(d.ph * 0.2) * 0.35, h, { speed: 1.8 });
+          // bölge savunması: kendi bölgesindeki arkadaşın pas koridorunu gölgeler (topun gideceği yere koşmaz)
+          const mate = L.mates[d.zone ?? 0];
+          let tx = d.hx / ppm;
+          let ty = d.hy / ppm;
+          if (mate) {
+            const cx = meX + (mate.body.x - meX) * 0.58;
+            const cy = meY + (mate.body.y - meY) * 0.58;
+            tx = lerp(tx, cx, 0.35) + Math.sin(d.ph * 0.25) * 0.6;
+            ty = lerp(ty, cy, 0.35) + Math.cos(d.ph * 0.2) * 0.4;
+          }
+          steer(bd, tx, ty, h, { speed: 3.4, arrive: 0.8 });
         }
         stepBody(bd, h);
       }

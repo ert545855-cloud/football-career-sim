@@ -26,7 +26,7 @@ export function homeScreen(app) {
   const size = roomSize(plan);
 
   return {
-    tabs: 'home',
+    tabs: 'social',
     html: `
       <div class="row" style="gap:10px">
         <button class="icon-btn" data-act="back" aria-label="Geri">${icon('back')}</button>

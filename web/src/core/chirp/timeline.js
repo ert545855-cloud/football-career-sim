@@ -56,6 +56,27 @@ export class Timeline {
     this.data.unread = 0;
   }
 
+  /**
+   * Yorum beğenisi aç/kapa. Ünlü bir oyuncunun beğenisi taraftarı çıldırtır: bazen yorumun sahibi sevinçle yanıt yazar.
+   * @returns {{liked:boolean, likes:number, thanks?:object}|null}
+   */
+  toggleCommentLike(tweetId, commentId, rnd = Math.random) {
+    const t = this.data.timeline.find((x) => x.id === tweetId);
+    const c = t?.comments?.find((x) => x.id === commentId);
+    if (!c) return null;
+    c.liked = !c.liked;
+    c.likes = Math.max(0, (c.likes || 0) + (c.liked ? 1 : -1));
+    let thanks = null;
+    if (c.liked && !c.me && !c.thanked && rnd() < 0.35) {
+      c.thanked = true;
+      const lines = ['BEĞENDİ!!! Ekran görüntüsü aldım 😭❤️', 'Yorumumu beğendi, bugün okula gitmiyorum 😂', 'Kral beğendi, çerçeveletip duvara asıyorum', 'Abi beğendin ya, ölsem gam yemem 🙏', 'Bunu torunlarıma anlatacağım'];
+      thanks = { id: `${c.id}-t`, author: c.author, text: lines[Math.floor(rnd() * lines.length)], sentiment: { label: 'positive', score: 0.9 }, likes: Math.round(5 + rnd() * 60) };
+      const i = t.comments.indexOf(c);
+      t.comments.splice(i + 1, 0, thanks);
+    }
+    return { liked: c.liked, likes: c.likes, thanks };
+  }
+
   /** Beğeni aç/kapa. @returns {{liked:boolean, likes:number}|null} */
   toggleLike(id) {
     const t = this.data.timeline.find((x) => x.id === id);

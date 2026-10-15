@@ -33,6 +33,7 @@ import { dative } from './chirp/turkish.js';
 import { CUPS, STAGE_LABEL, createEurope, europeWeek, europeWinners } from './world/europe.js';
 import { DIFFICULTY, coachTip, difficultyGain, ensureTraining, fatigueFactor, recordDrill, starsFor, trainingSkill } from './training.js';
 import { cosmeticFame, ensureCosmetics } from './cosmetics.js';
+import { ensureRanking, rankingSeasonEnd } from './world/ranking.js';
 
 export const SAVE_VERSION = 1;
 
@@ -90,6 +91,7 @@ export function newGame(setup) {
   ensureSocial(state);
   ensureGarage(state);
   ensureCosmetics(state);
+  ensureRanking(state);
   // Forma numarası: seçilmez, kulüp boştaki genç numaralarından verir
   if (!setup.number) assignYouthNumber(state, random);
   else state.career.numberHistory.push({ season: 1, clubId: state.career.clubId, number: player.number, reason: 'Başlangıç' });
@@ -449,6 +451,8 @@ export function endSeason(state) {
   chirpOnOffers(state, offers);
 
   // Yeni sezon dünyası: küme düşme / çıkma, oyuncunun liginin sonuçları tutulur
+  // Kulüp sıralaması: bu sezonun puanları kalıcı puana işlenir (dünya değişmeden önce)
+  rankingSeasonEnd(state, world);
   const nextWorld = createWorld(calendar.season + 1, evolveRatings(world), { prev: world, focus: DEFAULT_FOCUS });
   // Avrupa: bu sezonun kazananları, gelecek sezonun katılımcıları (bu sezonun tablolarından)
   const euroWinners = europeWinners(world);
@@ -456,7 +460,14 @@ export function endSeason(state) {
   state.world = useWorld(nextWorld);
   addFocus(nextWorld, leagueIdIn(nextWorld, career.clubId));
   const myMove = nextWorld.moves.find((m) => m.clubId === career.clubId);
-  if (myMove) addNews(state, myMove.up ? `${CLUB_BY_ID[career.clubId].name} ${dative(LEAGUES[myMove.to].name)} yükseldi! 🎉` : `${CLUB_BY_ID[career.clubId].name} ${dative(LEAGUES[myMove.to].name)} düştü.`, myMove.up ? 'good' : 'bad');
+  if (myMove) addNews(state, myMove.up ? `${CLUB_BY_ID[career.clubId].name} ${myMove.playoff ? 'play-off finalini kazandı ve ' : ''}${dative(LEAGUES[myMove.to].name)} yükseldi! 🎉` : `${CLUB_BY_ID[career.clubId].name} ${dative(LEAGUES[myMove.to].name)} düştü.`, myMove.up ? 'good' : 'bad');
+  // play-off'ta kaybettiysek
+  const po = nextWorld.playoffs?.[leagueId];
+  if (po && !myMove && po.semis.flat().includes(career.clubId)) {
+    const inFinal = po.final?.includes(career.clubId);
+    addNews(state, inFinal ? `Play-off finalinde ${CLUB_BY_ID[po.winner]?.name || 'rakibe'} kaybettik. Yükselme hayali gelecek sezona kaldı.` : 'Play-off yarı finalinde elendik.', 'bad');
+  }
+  delete nextWorld.playoffs;
   const report = {
     season: calendar.season,
     leagueId,

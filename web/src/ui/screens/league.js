@@ -5,6 +5,33 @@ import { fixturesOf, leagueOf, sortedTable, weekResults } from '../../core/leagu
 import { crestSVG } from '../art.js';
 import { esc } from '../dom.js';
 import { europeSection } from '../europeView.js';
+import { clubRanking } from '../../core/world/ranking.js';
+
+/** Kulüp sıralaması bölümü: dünya / Avrupa / kendi ülken */
+function rankingSection(app, view) {
+  const s = app.state;
+  const all = clubRanking(s);
+  const scope = view.rankScope || 'world';
+  const myCountry = CLUB_BY_ID[s.career.clubId]?.country || 'tr';
+  const list = all.filter((x) => scope === 'world' || (scope === 'europe' ? COUNTRY_BY_ID[CLUB_BY_ID[x.id]?.country]?.euro : CLUB_BY_ID[x.id]?.country === myCountry));
+  const top = list.slice(0, 50);
+  const mine = list.findIndex((x) => x.id === s.career.clubId);
+  const row = (x, i) => {
+    const c = CLUB_BY_ID[x.id];
+    const lg = LEAGUES[c.league] || {};
+    const ch = x.change > 0 ? `<span class="rk-up">▲${x.change}</span>` : x.change < 0 ? `<span class="rk-down">▼${-x.change}</span>` : '<span class="muted">–</span>';
+    return `<div class="li rk ${x.id === s.career.clubId ? 'me' : ''}"><b class="rk-pos tnum">${i + 1}</b>${crestSVG(c, 'crest sm')}<div class="grow" style="min-width:0"><b class="ellipsis" style="display:block">${esc(c.name)}</b><span class="muted small ellipsis">${COUNTRY_BY_ID[c.country]?.flag || ''} ${esc(lg.name || '')}</span></div><span class="small" style="width:34px;text-align:right">${ch}</span><b class="tnum" style="width:52px;text-align:right">${x.pts.toFixed(1)}</b></div>`;
+  };
+  return `
+    <div class="seg" style="margin-bottom:10px">
+      <button class="${scope === 'world' ? 'on' : ''}" data-rscope="world">Dünya</button>
+      <button class="${scope === 'europe' ? 'on' : ''}" data-rscope="europe">Avrupa</button>
+      <button class="${scope === 'country' ? 'on' : ''}" data-rscope="country">${COUNTRY_BY_ID[myCountry]?.flag || ''} Ülkem</button>
+    </div>
+    ${mine >= 0 ? `<div class="card list rk-mine">${row(list[mine], mine)}</div>` : ''}
+    <div class="card list" style="padding:4px 12px;margin-top:10px">${top.map(row).join('')}</div>
+    <p class="muted small" style="margin-top:10px">Puan: lig sıralaması × lig prestiji, şampiyonluk ve Avrupa kupalarındaki galibiyetler ve turlar. Eski sezonların puanı her yıl azalır.</p>`;
+}
 
 /** Ülkenin ligleri (kademe sırasıyla) */
 const leaguesOf = (country) => Object.values(LEAGUES).filter((l) => l.country === country).sort((a, b) => (a.level || a.tier) - (b.level || b.tier));
@@ -15,7 +42,8 @@ function zoneOf(lg, i, n) {
   const idx = list.findIndex((l) => l.id === lg.id);
   if (lg.youth) return '';
   if (idx > 0 && i < 2) return 'up';
-  if (idx >= 0 && idx < list.length - 1 && i >= n - 2) return 'down';
+  if (idx > 0 && i < 6) return 'po';
+  if (idx >= 0 && idx < list.length - 1 && i >= n - 3) return 'down';
   if (lg.tier === 1 && COUNTRY_BY_ID[lg.country]?.euro) {
     const cl = EURO_SLOTS.cl[lg.country] || 0;
     const el = EURO_SLOTS.el[lg.country] || 0;
@@ -85,10 +113,11 @@ export function leagueScreen(app, params = {}) {
       <h1 class="h-title">Lig</h1>
       <p class="muted small" style="margin:4px 0 12px">Sezon ${s.calendar.season} · Hafta ${Math.min(s.calendar.week, SEASON_WEEKS)}/${SEASON_WEEKS}</p>
       <div class="seg" style="margin-bottom:10px">
-        <button class="${view.tab !== 'europe' ? 'on' : ''}" data-mode="leagues">🌍 Dünya ligleri</button>
-        <button class="${view.tab === 'europe' ? 'on' : ''}" data-mode="europe">🏆 Avrupa kupaları</button>
+        <button class="${view.tab !== 'europe' && view.tab !== 'rank' ? 'on' : ''}" data-mode="leagues">🌍 Ligler</button>
+        <button class="${view.tab === 'europe' ? 'on' : ''}" data-mode="europe">🏆 Avrupa</button>
+        <button class="${view.tab === 'rank' ? 'on' : ''}" data-mode="rank">📊 Sıralama</button>
       </div>
-      ${view.tab === 'europe' ? europeSection(app) : `
+      ${view.tab === 'rank' ? rankingSection(app, view) : view.tab === 'europe' ? europeSection(app) : `
       <div class="country-row" data-countries>${countries.map((c) => `<button class="country ${c.id === view.country ? 'on' : ''}" data-country="${c.id}"><span class="flag">${c.flag}</span><span>${esc(c.name)}</span></button>`).join('')}</div>
       <div class="seg wrap" style="margin:10px 0">
         ${leaguesOf(view.country).filter((l) => !l.youth || myLeague === l.id).map((l) => `<button class="${view.league === l.id ? 'on' : ''}" data-lg="${l.id}">${esc(l.name)}</button>`).join('')}
@@ -100,7 +129,7 @@ export function leagueScreen(app, params = {}) {
       ${view.tab === 'fix' ? `<div class="card" style="margin-top:12px;padding:8px 10px"><div class="muted small" style="margin:4px 2px 6px">${esc(CLUB_BY_ID[s.career.clubId].name)} · ${esc(LEAGUES[myLeague].name)}</div><div class="list">${fixtures}</div></div>`
         : `<div class="card" style="margin-top:12px;padding:8px 10px">${!isMine ? `<div class="muted small" style="margin:4px 2px 6px">${COUNTRY_BY_ID[meta.country].flag} ${esc(COUNTRY_BY_ID[meta.country].name)} · ${esc(meta.name)}</div>` : ''}${table}</div>
       ${lastResults ? `<div class="h-sec">Hafta ${lastWeek} sonuçları</div><div class="card list" style="padding:4px 12px">${lastResults}</div>` : ''}`}
-      <p class="muted small" style="margin-top:12px">Lider sezon sonunda şampiyon olur. Her ligden son 2 takım düşer, alt ligin ilk 2'si yükselir. Avrupa ülkelerinde üst sıralar kupalara katılır.</p>`}`,
+      <p class="muted small" style="margin-top:12px">Lider sezon sonunda şampiyon olur. Her ligden son 3 takım düşer; alt ligin ilk 2'si doğrudan yükselir, 3–6. sıralar play-off oynar. Avrupa kupalarına yalnız 1. liglerin üst sıraları katılır.</p>`}`,
     mount(el) {
       el.querySelector('.country.on')?.scrollIntoView({ inline: 'center', block: 'nearest' });
       el.addEventListener('click', (e) => {
@@ -108,7 +137,8 @@ export function leagueScreen(app, params = {}) {
         if (!t) return;
         if (t.dataset.europe !== undefined) return; // Avrupa bölümü kendi tıklamalarını yönetir
         app.click();
-        if (t.dataset.mode) view.tab = t.dataset.mode === 'europe' ? 'europe' : 'table';
+        if (t.dataset.mode) view.tab = t.dataset.mode === 'europe' ? 'europe' : t.dataset.mode === 'rank' ? 'rank' : 'table';
+        if (t.dataset.rscope) view.rankScope = t.dataset.rscope;
         if (t.dataset.country) {
           view.country = t.dataset.country;
           view.league = leaguesOf(t.dataset.country).find((l) => !l.youth).id;
@@ -127,7 +157,8 @@ function zoneLegend(meta) {
   const list = leaguesOf(meta.country).filter((l) => !l.youth);
   const idx = list.findIndex((l) => l.id === meta.id);
   if (meta.tier === 1 && COUNTRY_BY_ID[meta.country]?.euro) items.push('<span><i class="z-cl"></i>Şampiyonlar Ligi</span><span><i class="z-el"></i>Avrupa Ligi</span><span><i class="z-ecl"></i>Konferans Ligi</span>');
-  if (idx > 0) items.push('<span><i class="z-up"></i>Yükselme</span>');
+  if (idx > 0) items.push('<span><i class="z-up"></i>Yükselme</span><span><i class="z-po"></i>Play-off (1 bilet)</span>');
+  if (meta.tier > 1) items.push('<span class="muted">Avrupa kupalarına yalnız 1. lig takımları katılır</span>');
   if (idx >= 0 && idx < list.length - 1) items.push('<span><i class="z-down"></i>Düşme</span>');
   return items.join('');
 }

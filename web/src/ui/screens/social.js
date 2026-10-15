@@ -62,10 +62,9 @@ export function socialScreen(app) {
   const log = (s.social.log || []).slice(0, 6).map((l) => `<div class="li"><span class="news-dot info"></span><div class="grow small">${esc(l.text)}</div><span class="muted small">S${l.s}·H${l.w}</span></div>`).join('');
 
   return {
-    tabs: 'home',
+    tabs: 'social',
     html: `
       <div class="row" style="gap:10px">
-        <button class="icon-btn" data-act="back" aria-label="Geri">${icon('back')}</button>
         <h1 class="h-title grow">Sosyal Yaşam</h1>
         <span class="chip ${left ? 'accent' : ''}">${icon('calendar', 'ico xs')} Bu hafta ${left}/${SOCIAL_RULES.maxOutingsPerWeek}</span>
       </div>

@@ -44,14 +44,18 @@ test('fikstür tohumdan aynı üretilir, her takım her hafta bir kez oynar', ()
   assert.equal(w.leagues.es1.fixtures, undefined, 'fikstür kayda yazılmaz');
 });
 
-test('küme düşme / çıkma: 2 takım yer değiştirir, ligler 12 kalır, leagueOf güncellenir', () => {
+test('küme düşme / çıkma: 3 takım yer değiştirir (2 doğrudan + play-off), ligler 12 kalır, leagueOf güncellenir', () => {
   setRandom(seeded(4));
   const w = useWorld(createWorld(1));
   for (let wk = 1; wk <= 22; wk++) simulateWeek(w, wk);
-  const relegated = sortedTable(w.leagues.super).slice(-2).map((r) => r.id);
+  const relegated = sortedTable(w.leagues.super).slice(-3).map((r) => r.id);
   const promoted = sortedTable(w.leagues.first).slice(0, 2).map((r) => r.id);
-  const { moves } = promotions(w);
-  assert.equal(moves.length, (27 * 2 + 3) * 4);
+  const { moves, playoffs } = promotions(w);
+  assert.equal(moves.length, (27 * 2 + 3) * 6);
+  const po = playoffs.first;
+  const table = sortedTable(w.leagues.first).map((r) => r.id);
+  assert.ok(table.slice(2, 6).includes(po.winner), 'play-off galibi 3–6. sıralardan');
+  assert.ok(moves.some((m) => m.clubId === po.winner && m.up && m.playoff));
   const next = useWorld(createWorld(2, null, { prev: w }));
   for (const lg of Object.values(next.leagues)) assert.equal(lg.teams.length, 12, lg.id);
   for (const id of promoted) assert.equal(leagueOf(id), 'super');
@@ -139,4 +143,21 @@ test('transfer: tanınmayan gence yurt dışı teklifi gelmez; yıldız oyuncuya
   for (let i = 0; i < 60; i++) foreign += generateOffers(s, 'end').filter((o) => CLUBS.find((c) => c.id === o.clubId).country !== 'tr').length;
   assert.ok(foreign > 5, `yurt dışı teklif sayısı ${foreign}`);
   assert.ok(wageFor(70, 70, 'en') > wageFor(70, 70, 'tr') && wageFor(70, 70, 'tr') > wageFor(70, 70, 'ng'));
+});
+
+test('kulüp sıralaması: başlangıç puanı, canlı sıra ve sezon sonu sönümlenmesi', async () => {
+  const { clubRanking, rankingSeasonEnd, myRank } = await import('../src/core/world/ranking.js');
+  setRandom(seeded(11));
+  const s = newGame({ name: 'Test Oyuncu', position: 'FW' });
+  const list = clubRanking(s);
+  assert.ok(list.length > 100);
+  for (let i = 1; i < list.length; i++) assert.ok(list[i - 1].pts >= list[i].pts);
+  assert.equal(list[0].rank, 1);
+  assert.ok(myRank(s));
+  const before = { ...s.ranking.pts };
+  const top = list[0].id;
+  rankingSeasonEnd(s, s.world);
+  assert.ok(s.ranking.pts[top] <= before[top] + 1e-9 + 200);
+  assert.equal(s.ranking.prev[top], 1);
+  setRandom(Math.random);
 });

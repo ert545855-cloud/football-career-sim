@@ -40,6 +40,7 @@ import { AGENT_RULES, currentAgent } from '../core/agent.js';
 import { agentAvatar, negotiationSheet } from './agentView.js';
 import { agentScreen } from './screens/agent.js';
 import { socialScreen } from './screens/social.js';
+import { outingsLeft } from '../core/social/index.js';
 import { homeScreen } from './screens/home.js';
 import { garageScreen } from './screens/garage.js';
 import { tabloidSheet } from './tabloidView.js';
@@ -58,6 +59,7 @@ import { MAX_SCORE, TryoutSession, buildStarterOffers, randomAvatar, tryoutStatB
 const TABS = [
   { id: 'home', screen: 'hub', label: 'Ana Sayfa', icon: 'home' },
   { id: 'player', screen: 'player', label: 'Oyuncu', icon: 'user' },
+  { id: 'social', screen: 'social', label: 'Sosyal', icon: 'coffee' },
   { id: 'league', screen: 'league', label: 'Lig', icon: 'table' },
   { id: 'chirp', screen: 'chirp', label: 'Chirp', icon: 'chirp' },
   { id: 'shop', screen: 'shop', label: 'Mağaza', icon: 'bag' },
@@ -692,7 +694,13 @@ export function createApp(rootEl) {
 
   function tabbar(active) {
     const unread = app.state ? unreadCount(app.state) : 0;
-    const bar = el(`<nav class="tabbar" style="grid-template-columns:repeat(${TABS.length},1fr)">${TABS.map((t) => `<button class="tab ${t.id === active ? 'active' : ''}" data-screen="${t.screen}">${icon(t.icon)}<span>${t.label}</span>${t.id === 'chirp' && unread && active !== 'chirp' ? `<i class="badge">${unread > 9 ? '9+' : unread}</i>` : ''}</button>`).join('')}</nav>`);
+    const outing = app.state && !app.state.career?.retired && app.state.calendar?.slots > 0 && outingsLeft(app.state) > 0;
+    const extra = (t) => {
+      if (t.id === 'chirp' && unread && active !== 'chirp') return `<i class="badge">${unread > 9 ? '9+' : unread}</i>`;
+      if (t.id === 'social' && outing && active !== 'social') return '<i class="dot soc"></i>';
+      return '';
+    };
+    const bar = el(`<nav class="tabbar n${TABS.length}" style="grid-template-columns:repeat(${TABS.length},1fr)">${TABS.map((t) => `<button class="tab ${t.id === active ? 'active' : ''}" data-screen="${t.screen}">${icon(t.icon)}<span>${t.label}</span>${extra(t)}</button>`).join('')}</nav>`);
     bar.addEventListener('click', (e) => {
       const b = e.target.closest('[data-screen]');
       if (!b) return;

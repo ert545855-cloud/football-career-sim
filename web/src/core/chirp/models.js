@@ -63,10 +63,12 @@ export class CommentModel {
     this.likes = p.likes ?? 0;
     /** Oyuncunun kendi yanıtı */
     this.me = !!p.me;
+    /** Oyuncu bu yorumu beğendi mi */
+    this.liked = !!p.liked;
   }
 
   toJSON() {
-    return { id: this.id, author: this.author, text: this.text, sentiment: this.sentiment, likes: this.likes, ...(this.me ? { me: true } : {}) };
+    return { id: this.id, author: this.author, text: this.text, sentiment: this.sentiment, likes: this.likes, ...(this.me ? { me: true } : {}), ...(this.liked ? { liked: true } : {}) };
   }
 }
 

@@ -51,7 +51,7 @@ export function playDribble(host, opts = {}) {
     function layout(W, H) {
       const k = Math.min(W / 390, H / 700);
       const first = !L;
-      L = { W, H, k, py: H * 0.76, pr: 12 * k, cr: 10 * k, spacing: 46 * k, v0: lerp(165, 205, e) * k, lat: lerp(330, 480, e) * k, ph: 46 * k };
+      L = { W, H, k, py: H * 0.76, pr: 14 * k, cr: 10 * k, spacing: 46 * k, v0: lerp(165, 205, e) * k, lat: lerp(330, 480, e) * k, ph: 46 * k };
       if (first) {
         S.x = W / 2;
         S.speed = L.v0;
@@ -91,7 +91,7 @@ export function playDribble(host, opts = {}) {
       }
       const res = station ? opts.onAttempt(success) : null;
       if (success) {
-        big.show(row.warm ? 'SÜPER!' : row.type === 'cones' ? 'TEMİZ!' : 'GEÇTİN!', '#c6ff3d', 46);
+        big.show(row.warm ? 'SÜPER!' : row.type === 'cones' ? 'TEMİZ!' : row.close ? 'KIL PAYI!' : 'GEÇTİN!', '#c6ff3d', 46);
         sfx('swish');
         buzz('dribble');
       }
@@ -102,7 +102,7 @@ export function playDribble(host, opts = {}) {
       if (row.hit) return;
       row.hit = true;
       S.stumble = 0.55;
-      big.show(row.warm ? 'DİKKAT!' : row.type === 'cones' ? 'ÇARPTIN!' : 'TOPU KAPTIRDIN!', '#ff5d6c', 44);
+      big.show(row.warm ? 'ISINMA · CAN GİTMEDİ' : row.type === 'cones' ? 'ÇARPTIN!' : 'TOPU KAPTIRDIN!', row.warm ? '#ffcf3d' : '#ff5d6c', 40);
       sfx('tackle');
       buzz('bump');
       stage.shake(9);
@@ -165,7 +165,8 @@ export function playDribble(host, opts = {}) {
                 }
                 m.vx = clamp((want - m.x) * 5, -row.vmax, row.vmax);
                 m.x = clamp(m.x + m.vx * dt, 20 * L.k, L.W - 20 * L.k);
-                if (Math.abs(dy) < 70 * L.k && Math.abs(m.x - S.x) < m.half * 2.2) m.lunge = Math.min(1, m.lunge + dt * 6);
+                if (Math.abs(dy) < 60 * L.k && Math.abs(m.x - S.x) < m.half * 1.5) m.lunge = Math.min(1, m.lunge + dt * 6);
+                if (Math.abs(dy) < 40 * L.k && Math.abs(m.x - S.x) < m.half + L.pr + 12 * L.k) row.close = true;
               }
               if (Math.abs(dy) < L.pr + 10 * L.k && Math.abs(m.x - S.x) < m.half + L.pr * 0.6) hitRow(row, S.x, sy);
             }

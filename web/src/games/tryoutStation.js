@@ -91,6 +91,13 @@ export async function runTryoutStation(o) {
       buzz('heartBreak');
     }
     label();
+    if (r.warmup) {
+      // ısınma bilgisi: can gitmedi; bundan sonra her hata can götürür
+      const n = el(`<div class="warm-note">${success ? 'Isınma tamam! Şimdi her hata <b>1 can</b> götürür.' : 'Isınma denemesiydi: <b>can gitmedi</b>. Şimdi her hata 1 can götürür.'}</div>`);
+      layer.appendChild(n);
+      setTimeout(() => n.classList.add('out'), 2200);
+      setTimeout(() => n.remove(), 2700);
+    }
     return r;
   };
 

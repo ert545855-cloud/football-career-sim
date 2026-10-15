@@ -522,3 +522,20 @@
 .wr-side { min-width: 0; flex: 1; }
 .wr-item { cursor: pointer; }
 .wr-px { width: 100%; height: 84px; image-rendering: pixelated; }
+.c-like { appearance: none; border: 0; background: none; color: var(--muted); display: inline-flex; align-items: center; gap: 4px; font: inherit; font-size: 12px; padding: 2px 4px; border-radius: 8px; cursor: pointer; }
+.c-like.liked { color: #ff5d6c; }
+.c-like.pop { animation: likepop .35s ease; }
+@keyframes likepop { 40% { transform: scale(1.3); } }
+.warm-note { position: absolute; left: 50%; top: 92px; transform: translateX(-50%); z-index: 5; background: rgba(4,10,8,.82); border: 1px solid rgba(255,207,61,.6); color: #ffe08a; padding: 8px 14px; border-radius: 12px; font-size: 13px; text-align: center; width: max-content; max-width: 88vw; animation: warmIn .25s ease; transition: opacity .4s; pointer-events: none; }
+.warm-note.out { opacity: 0; }
+@keyframes warmIn { from { opacity: 0; transform: translate(-50%, -6px); } }
+.table tr.z-po td:first-child { box-shadow: inset 3px 0 0 #38bdf8; }
+.zones .z-po { background: #38bdf8; }
+/* Kulüp sıralaması */
+.li.rk { gap: 10px; }
+.rk-pos { width: 26px; text-align: center; color: var(--muted); }
+.li.rk.me { background: rgba(198,255,61,.08); border-radius: 10px; }
+.li.rk.me .rk-pos { color: var(--accent); }
+.rk-up { color: var(--good); font-weight: 800; }
+.rk-down { color: var(--bad); font-weight: 800; }
+.rk-mine { padding: 4px 12px; border-color: rgba(198,255,61,.4); }

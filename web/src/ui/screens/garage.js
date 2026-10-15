@@ -45,7 +45,7 @@ export function garageScreen(app) {
 
   if (!carId) {
     return {
-      tabs: 'home',
+      tabs: 'social',
       html: `
         <div class="row" style="gap:10px"><button class="icon-btn" data-act="back" aria-label="Geri">${icon('back')}</button><h1 class="h-title grow">Garaj</h1></div>
         <div class="card center" style="margin-top:14px;padding:24px 16px">
@@ -68,7 +68,7 @@ export function garageScreen(app) {
   }
 
   return {
-    tabs: 'home',
+    tabs: 'social',
     html: `
       <div class="row" style="gap:10px">
         <button class="icon-btn" data-act="back" aria-label="Geri">${icon('back')}</button>

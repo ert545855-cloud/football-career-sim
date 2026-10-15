@@ -2,14 +2,13 @@ import { ACTIONS, CLUB_BY_ID, MAX_TRAININGS_PER_WEEK, SEASON_WEEKS } from '../..
 import { canDoAction, overview } from '../../core/game.js';
 import { fixtureFor, leagueLabel } from '../../core/league.js';
 import { money } from '../../core/economy.js';
-import { avatarSVG, crestSVG, icon, playerAvatar } from '../art.js';
+import { crestSVG, icon, playerAvatar } from '../art.js';
 import { animateBars, esc } from '../dom.js';
 import { energyColor, meter, moraleColor, ratingColor } from '../components.js';
 import { RELATIONS } from '../../core/chirp/index.js';
 import { shareCard, shareFlow } from '../chirpView.js';
 import { bigMatchChip, hubMentorCard, meetingFlow, requestsSheet, selectionSheet } from '../mentorView.js';
 import { actionArt } from '../spriteMap.js';
-import { SOCIAL_RULES, outingsLeft, partnerOf, socialContacts } from '../../core/social/index.js';
 
 
 export function hubScreen(app) {
@@ -87,7 +86,6 @@ export function hubScreen(app) {
 
       <div class="h-sec">Bu hafta <span class="slots">${slots}</span></div>
       <div class="actions">${actionTiles}</div>
-      ${socialEntry(s)}
       ${hubMentorCard(s)}
       <button class="btn primary lg block ${calendar.slots === 0 ? 'pulse' : ''}" style="margin-top:12px" data-act="match">${icon('whistle')} Maç Gününe Geç</button>
 
@@ -137,22 +135,8 @@ export function hubScreen(app) {
         if (t.dataset.action) app.runAction(t.dataset.action);
         else if (t.dataset.act === 'match') app.matchDay();
         else if (t.dataset.act === 'settings') app.go('settings');
-        else if (t.dataset.act === 'social') app.go('social');
       });
     },
   };
 }
 
-/** Ana sayfadaki "Sosyal Yaşam" girişi: sevgili / rehberden yüzler + bu haftaki çıkış hakkı */
-function socialEntry(s) {
-  const left = outingsLeft(s);
-  const partner = partnerOf(s);
-  const faces = socialContacts(s).slice(0, 3).map((c) => `<i>${avatarSVG(c.look, { colors: c.clothes }, '')}</i>`).join('');
-  const sub = partner ? `♥ ${partner.name} ile birliktesin` : 'Kafe, bar, ev partisi';
-  return `<button class="social-entry ${left && s.calendar.slots > 0 ? '' : 'off'}" data-act="social">
-    <span class="se-ic">${icon('coffee')}</span>
-    <span class="grow" style="min-width:0;text-align:left"><b>Sosyal Yaşam</b><span class="muted small ellipsis" style="display:block">${sub}</span></span>
-    <span class="se-faces">${faces}</span>
-    <span class="chip ${left ? 'accent' : ''}">${left}/${SOCIAL_RULES.maxOutingsPerWeek}</span>
-  </button>`;
-}

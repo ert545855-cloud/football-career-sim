@@ -610,3 +610,7 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.01em; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
+/* 7 sekmeli alt çubuk (Sosyal ayrı sekme) */
+.tabbar.n7 .tab svg { width: 21px; height: 21px; }
+.tabbar.n7 .tab span { font-size: 9.5px; letter-spacing: -0.1px; white-space: nowrap; }
+.tab .dot.soc { background: #f59e0b; right: calc(50% - 16px); animation: popIn 0.3s; }
