@@ -585,3 +585,15 @@
 .li.sq .pos { font-size: 10.5px; font-weight: 900; width: 26px; text-align: center; border-radius: 5px; background: rgba(255,255,255,.08); padding: 2px 0; }
 .li.sq.me { background: rgba(198,255,61,.08); border-radius: 8px; }
 .chip.xs { font-size: 9.5px; padding: 1px 5px; }
+
+/* ── Kesintisiz atak zinciri ── */
+.chain-stage { position: absolute; inset: 0; }
+.chain-bar { position: absolute; z-index: 4; left: 50%; transform: translateX(-50%); top: calc(var(--safe-top) + 58px); display: flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; background: rgba(4, 10, 8, 0.7); border: 1px solid var(--line); pointer-events: none; }
+.chain-bar span { font-size: 11px; font-weight: 900; letter-spacing: .06em; color: var(--muted); padding: 2px 8px; border-radius: 999px; }
+.chain-bar span.on { color: #0b1a05; background: var(--accent); }
+.chain-bar span.done { color: var(--accent); background: rgba(198,255,61,.15); }
+.chain-bar span.fail { color: #fff; background: var(--bad); }
+.chain-bar i { font-style: normal; color: var(--muted); font-weight: 900; }
+.chain-next { position: absolute; z-index: 5; inset: 0; display: grid; place-content: center; text-align: center; gap: 6px; background: rgba(4, 10, 8, 0.55); animation: fade .2s; pointer-events: none; }
+.chain-next b { font-size: 34px; font-weight: 900; color: var(--accent); text-shadow: 0 4px 18px rgba(0,0,0,.6); }
+.chain-next span { font-size: 15px; font-weight: 800; color: #fff; padding: 0 30px; }

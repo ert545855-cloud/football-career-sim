@@ -25,6 +25,8 @@ export function playDrawPass(host, opts) {
     const scenario = opts.context === 'final' ? 'final' : opts.context === 'tryout' ? 'tryout' : 'buildup';
     const final = scenario === 'final';
     const tryout = scenario === 'tryout';
+    // OFSAYT: son bölgede (maçta ve atak zincirinde) savunma çizgisinin gerisindeki arkadaşa pas = ofsayt
+    const offsideOn = final && opts.offside !== false;
     const level = clamp(opts.level ?? 0, 0, 1);
     const myClub = opts.myKit || { colors: ['#2563eb', '#ffffff'] };
     const oppClub = opts.oppKit || { colors: ['#b91c1c', '#ffffff'] };
@@ -65,7 +67,8 @@ export function playDrawPass(host, opts) {
         mates = [{ x, y, hx: x, hy: y, ph: 0, num: 10, run: null, lane: { dir, v: lerp(3.2, 6.8, level) * (opts.warm ? 0.85 : 1) } }];
         defs = level > 0.25 ? [{ x: W * lerp(0.35, 0.65, Math.random()), y: lerp(me.y, y, lerp(0.45, 0.6, Math.random())) }] : [];
       } else {
-        const spots = final ? [[0.2, 0.32], [0.5, 0.17], [0.8, 0.3]] : [[0.18, 0.5], [0.5, 0.3], [0.82, 0.47]];
+        const dy = offsideOn ? 0.07 : 0; // ofsayt çizgisi ve forvetin koşusu için üstte yer aç
+        const spots = final ? [[0.2, 0.32 + dy], [0.5, 0.17 + dy], [0.8, 0.3 + dy]] : [[0.18, 0.5], [0.5, 0.3], [0.82, 0.47]];
         mates = spots.map(([fx, fy], i) => {
           const x = W * fx + j();
           const y = H * fy + j();
@@ -223,6 +226,9 @@ export function playDrawPass(host, opts) {
         });
       }
       S.runner = runner;
+      // Pas anında alıcı ofsayttaysa (topu alsa bile) bayrak kalkar
+      S.offside = runner >= 0 && !tryout && isOffside(L.mates[runner]);
+      S.through = runner >= 0 && offsideOn && !S.offside && L.mates[runner].body.y < offsideLine() + 1.5;
       L.mates.forEach((m) => { m.run = null; m.plan = 0; });
       if (runner >= 0 && !tryout) L.mates[runner].run = { x: path.p3.x / L.ppm, y: path.p3.y / L.ppm };
       sfx('kick');
@@ -232,6 +238,7 @@ export function playDrawPass(host, opts) {
     // ─────────────── Sonuç ───────────────
     function end(outcome) {
       if (S.phase === 'after') return;
+      if (outcome === 'success' && S.offside) outcome = 'offside';
       S.outcome = outcome;
       S.phase = 'after';
       S.afterT = 0;
@@ -262,6 +269,11 @@ export function playDrawPass(host, opts) {
         big.show('TOP DIŞARIDA', '#ff5d6c', 46);
         sfx('miss');
         buzz('miss');
+      } else if (outcome === 'offside') {
+        big.show('OFSAYT!', '#ffcf3d', 56);
+        S.flag = 1;
+        sfx('whistle');
+        buzz('miss');
       } else if (outcome === 'timeout') {
         big.show('GEÇ KALDIN', '#ff5d6c', 46);
         sfx('miss');
@@ -280,13 +292,20 @@ export function playDrawPass(host, opts) {
       let accuracy = 0;
       if (success) {
         const c = Number.isFinite(S.clearance) ? clamp(S.clearance / (50 * L.k), 0, 1) : 1;
-        accuracy = clamp(0.45 + 0.3 * c + 0.25 * Math.min(1, Math.abs(path.curve) * 1.5) - (S.heavy ? 0.25 : 0), 0, 1);
+        accuracy = clamp(0.45 + 0.3 * c + 0.25 * Math.min(1, Math.abs(path.curve) * 1.5) - (S.heavy ? 0.25 : 0) + (S.through ? 0.15 : 0), 0, 1);
       }
       setTimeout(() => {
         stage.stop();
-        resolve({ success, accuracy, outcome: S.outcome, curve: path.valid ? path.curve : 0 });
+        resolve({ success, accuracy, outcome: S.outcome, curve: path.valid ? path.curve : 0, through: !!S.through && success });
       }, 50);
     }
+
+    /** Ofsayt çizgisi (metre, ekran y'si): kaleye en yakın savunmacı */
+    function offsideLine() {
+      if (!L.defs.length) return -99;
+      return Math.min(...L.defs.map((d) => d.body.y));
+    }
+    const isOffside = (m) => offsideOn && m.body.y < offsideLine() - 0.25 && m.body.y < L.me.y / L.ppm;
 
     // ─────────────── Oyuncular (fizik adımı) ───────────────
     function aiStep(h) {
@@ -339,6 +358,15 @@ export function playDrawPass(host, opts) {
           steer(bd, m.run.x, m.run.y, h, { arrive: 0.5 });
         } else if (S.phase === 'after') {
           steer(bd, bd.x, bd.y, h);
+        } else if (offsideOn && i === 1) {
+          // FORVET: çizgide bekler → arkaya koşu (ofsayta düşer) → geri döner. Pası koşu başlamadan hemen önce ver!
+          m.cycle = (m.cycle ?? Math.random() * 1.2) + h;
+          const c = m.cycle % 3.4;
+          const line = offsideLine();
+          const tx = clamp(m.hx / ppm + Math.sin(m.cycle * 0.9) * 2.2, 2, L.W / ppm - 2);
+          if (c < 1.5) steer(bd, tx, line + 1.1, h, { speed: 3.2, arrive: 0.5 });
+          else if (c < 2.3) steer(bd, tx, line - 3.2, h, { speed: 7, arrive: 0.3 });
+          else steer(bd, tx, line + 2.2, h, { speed: 3.4, arrive: 0.5 });
         } else {
           // boşa çıkma koşuları: arkadaşlar yerinde durmaz, rakipten uzaklaşan kısa koşular yapar
           m.wander = (m.wander ?? Math.random() * 1.5) - h;
@@ -386,9 +414,15 @@ export function playDrawPass(host, opts) {
           if (d.lunge.t > 0.7) d.lunge = null;
         } else if (d.mode === 'press') steer(bd, meX, meY - 0.55, h, { arrive: 0.3 });
         else if (d.mode === 'mark' && L.mates[d.mark]) {
-          // adamını takip eder: kaleye dönük tarafında (üstünde) 1.2 m
           const m = L.mates[d.mark].body;
-          steer(bd, m.x + (d.hx / ppm - m.x) * 0.15, m.y - 1.2, h, { speed: bd.maxSpeed * 0.9, arrive: 0.4 });
+          if (offsideOn) {
+            // savunma çizgisini korur: yalnız yatayda adamını gölgeler, çizgiyi yavaşça kaydırır (ofsayt tuzağı)
+            const lineY = d.hy / ppm + Math.sin(S.t * 0.7 + d.ph) * 0.8;
+            steer(bd, m.x + (d.hx / ppm - m.x) * 0.2, lineY, h, { speed: bd.maxSpeed * 0.8, arrive: 0.4 });
+          } else {
+            // adamını takip eder: kaleye dönük tarafında (üstünde) 1.2 m
+            steer(bd, m.x + (d.hx / ppm - m.x) * 0.15, m.y - 1.2, h, { speed: bd.maxSpeed * 0.9, arrive: 0.4 });
+          }
         } else {
           if (d.lunge && !flying) d.lunge = null;
           // bölge savunması: kendi bölgesindeki arkadaşın pas koridorunu gölgeler (topun gideceği yere koşmaz)
@@ -580,6 +614,28 @@ export function playDrawPass(host, opts) {
           ctx.stroke();
           ctx.setLineDash([]);
         }
+        // Ofsayt çizgisi (son savunmacı) — yan hakemin gözü
+        if (offsideOn && L.defs.length) {
+          const ly = offsideLine() * L.ppm;
+          ctx.setLineDash([10, 8]);
+          ctx.strokeStyle = S.flag ? 'rgba(255,207,61,.95)' : 'rgba(255,207,61,.45)';
+          ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(0, ly); ctx.lineTo(W, ly); ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.font = `800 ${Math.round(10 * Math.min(1.3, k))}px system-ui, sans-serif`;
+          ctx.fillStyle = 'rgba(255,207,61,.8)';
+          ctx.textAlign = 'left';
+          ctx.fillText('OFSAYT ÇİZGİSİ', 14 * k, ly - 5 * k);
+          // yan hakem bayrağı (sağ kenarda), ofsaytta kalkar
+          const fy = ly;
+          const up = S.flag ? 1 : 0;
+          ctx.fillStyle = '#222';
+          ctx.fillRect(W - 14 * k, fy - 4 * k, 2 * k, 18 * k);
+          ctx.fillStyle = '#ffcf3d';
+          ctx.fillRect(W - 14 * k - (up ? 0 : 8 * k), fy - 4 * k - up * 14 * k, 10 * k, 7 * k);
+          ctx.fillStyle = '#e11d48';
+          ctx.fillRect(W - 14 * k - (up ? 0 : 8 * k) + 5 * k, fy - 4 * k - up * 14 * k, 5 * k, 7 * k);
+        }
         // oyuncular: y sırasına göre (arkadaki önce)
         const drawables = [];
         L.defs.forEach((d) => drawables.push({ y: d.y, fn: () => drawMovingPlayer(ctx, d.x, d.y, L.ph, d.look, d.body.vx, d.body.vy, d.st, { face: 'down', ring: d.mode === 'press' ? '#ff9e26' : 'rgba(255,93,108,.7)', frame: d.lunge && d.lunge.tx != null && S.phase === 'flight' ? 'lunge' : undefined }) }));
@@ -593,7 +649,15 @@ export function playDrawPass(host, opts) {
               ctx.ellipse(m.x, m.y, 20 * k, 9 * k, 0, 0, Math.PI * 2);
               ctx.stroke();
             }
-            drawMovingPlayer(ctx, m.x, m.y, L.ph, m.look, m.body.vx, m.body.vy, m.st, { face: 'down', ring: 'rgba(224,242,254,.55)' });
+            const off = offsideOn && S.phase !== 'after' && S.phase !== 'flight' && isOffside(m);
+            drawMovingPlayer(ctx, m.x, m.y, L.ph, m.look, m.body.vx, m.body.vy, m.st, { face: 'down', ring: off ? 'rgba(255,93,108,.9)' : 'rgba(224,242,254,.55)' });
+            if (off) {
+              // kırmızı küçük bayrak: şu an ofsaytta
+              ctx.fillStyle = '#ff5d6c';
+              ctx.fillRect(m.x + 10 * k, m.y - L.ph - 8 * k, 8 * k, 6 * k);
+              ctx.fillStyle = '#fff';
+              ctx.fillRect(m.x + 9 * k, m.y - L.ph - 9 * k, 1.5 * k, 14 * k);
+            }
           } });
         });
         const kicking = S.kickT > 0;

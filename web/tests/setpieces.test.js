@@ -35,3 +35,21 @@ test('duran toplar: stoperin şut anları çoğunlukla korner; başlık ve anlat
   assert.ok(miss[0].text.includes('kafa'));
   setRandom(Math.random);
 });
+
+test('kesintisiz atak: aşamaya göre anlatım, gol ve ofsayt', () => {
+  setRandom(seeded(78));
+  const s = newGame({ name: 'Forvet Test', position: 'FW' });
+  let seen = 0;
+  for (let i = 0; i < 80; i++) seen += planMatch(s).moments.filter((m) => m.type === 'attack').length;
+  assert.ok(seen > 0, 'forvetin atak anları olur');
+  const m = planMatch(s);
+  const goal = resolveMoment(m, { minute: 20, type: 'attack', context: 'counter' }, { success: true, stage: 'shot', stages: [{ step: 'pass', success: true }, { step: 'dribble', success: true }, { step: 'shot', success: true }] }, 'Test');
+  assert.equal(goal[0].kind, 'goal-me');
+  assert.equal(m.tally.goals, 1);
+  const off = resolveMoment(m, { minute: 30, type: 'attack', context: 'build' }, { success: false, stage: 'pass', outcome: 'offside', stages: [{ step: 'pass', success: false }] }, 'Test');
+  assert.ok(off[0].text.includes('ofsayt'));
+  const pass = resolveMoment(m, { minute: 40, type: 'pass', context: 'final' }, { success: false, outcome: 'offside' }, 'Test');
+  assert.ok(pass[0].text.includes('ofsayt'));
+  assert.equal(momentTitle({ type: 'attack', context: 'counter' }), 'Hücum Anı');
+  setRandom(Math.random);
+});

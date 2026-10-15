@@ -37,13 +37,17 @@ export const MOMENT_INTRO = {
     buildup: 'Orta sahada top sende. Topa dokun, arkadaşına doğru çiz: zaman yavaşlar. Rakip yoldaysa kavisle dolaş.',
     final: 'Son bölgede top sende! Gol pası için çiz: rakiplerin etrafından kavisli bir pas.',
   },
+  attack: {
+    counter: 'Kontra atak! Ver-kaç pasıyla başla (ofsayta dikkat), son adamı geç ve kaleciyle karşı karşıya vur.',
+    build: 'Hücum organizasyonu! Savunma çizgisinin arkasına pası tam zamanında at, dönen topla kaleyi bul.',
+  },
   tackle: {
     threat: 'Kontra atak! Üç rakip paslaşarak kalene geliyor. Top sahibinin bakışını oku, koridoru kapat, pası kes!',
     duel: 'Rakipler orta sahada paslaşıyor. Bakış çizgisini izle; sürükleyerek koridoru kapat, top yanından geçerken dokun.',
   },
 };
 
-export const MOMENT_TITLE = { shot: 'Şut Fırsatı', pass: 'Pas Anı', tackle: 'Savunma Anı' };
+export const MOMENT_TITLE = { shot: 'Şut Fırsatı', pass: 'Pas Anı', tackle: 'Savunma Anı', attack: 'Hücum Anı' };
 const CONTEXT_TITLE = { penalty: 'Penaltı', freekick: 'Serbest Vuruş', corner: 'Korner · Kafa Düellosu' };
 /** Anın başlığı (duran toplarda özel) */
 export const momentTitle = (m) => CONTEXT_TITLE[m.context] || MOMENT_TITLE[m.type];
@@ -71,6 +75,7 @@ function makeMoment(position, minute) {
     context = weightedPick(w);
   }
   else if (type === 'pass') context = weightedPick([['buildup', 0.45], ['final', 0.55]]);
+  else if (type === 'attack') context = weightedPick([['counter', 0.6], ['build', 0.4]]);
   else context = weightedPick([['threat', 0.6], ['duel', 0.4]]);
   return { minute, type, context, done: false, outcome: null };
 }
@@ -271,6 +276,33 @@ export function resolveMoment(match, moment, result, playerName) {
       else if (o === 'timeout') { t.rating -= 0.3; lines.push({ minute: m, kind: 'chance', text: `${playerName} çok bekledi, top elinden alındı.` }); }
       else { t.rating += pen ? -0.6 : -0.25; lines.push({ minute: m, kind: 'chance', text: `${playerName} vurdu ama top ${o === 'over' ? 'üstten' : 'yandan'} auta gitti.` }); }
     }
+  } else if (moment.type === 'attack') {
+    t.progress.push(['passing', result.stages?.[0]?.success ? 0.15 : 0.05]);
+    t.progress.push(['speed', result.stages?.some((x) => x.step === 'dribble' && x.success) ? 0.15 : 0.05]);
+    t.progress.push(['shooting', result.success ? 0.2 : 0.05]);
+    const st = result.stage;
+    if (result.success) {
+      match.score.my += 1;
+      t.goals += 1;
+      t.won += 2;
+      t.rating += 1.2;
+      lines.push({ minute: m, kind: 'goal-me', text: `GOOOL! ${playerName} ver-kaçla başladı, ${moment.context === 'counter' ? 'son adamı da geçip' : 'savunmanın arkasına sarkıp'} topu ağlara gönderdi! Muhteşem bir atak! ${scoreLine(match)}` });
+    } else if (st === 'pass') {
+      t.lost++;
+      t.rating -= result.outcome === 'offside' ? 0.15 : 0.3;
+      lines.push({ minute: m, kind: result.outcome === 'offside' ? 'offside' : 'chance', text: result.outcome === 'offside' ? `${playerName} ara pasını verdi ama arkadaşı ofsayttaydı. Yan hakemin bayrağı havada.` : `${playerName} atağı başlatamadı, pas rakipte kaldı.` });
+    } else if (st === 'dribble') {
+      t.won++;
+      t.lost++;
+      t.rating += 0.05;
+      lines.push({ minute: m, kind: 'chance', text: `${playerName} ver-kaçla sıyrıldı ama son adamı geçemedi, atak söndü.` });
+    } else {
+      t.won += 2;
+      t.lost++;
+      t.rating += 0.25;
+      const o = result.outcome;
+      lines.push({ minute: m, kind: o === 'save' ? 'save' : o === 'post' ? 'post' : 'chance', text: `${playerName} harika bir atakla kaleciyle karşı karşıya kaldı... ${o === 'save' ? 'kaleci son anda kurtardı!' : o === 'post' ? 'top direkten döndü!' : 'ama vuruş auta gitti.'}` });
+    }
   } else if (moment.type === 'pass') {
     t.progress.push(['passing', result.success ? 0.3 : 0.08]);
     if (result.success) {
@@ -294,6 +326,7 @@ export function resolveMoment(match, moment, result, playerName) {
         stolen: `${playerName} çok bekledi, rakip topu ayağından aldı.`,
         out: `${playerName} pası çok sert attı, top taca çıktı.`,
         missed: `${playerName} pası boşluğa attı, kimse yetişemedi.`,
+        offside: `${playerName} ara pasını verdi ama arkadaşı ofsayttaydı. Yan hakem bayrağı kaldırdı.`,
       }[result.outcome];
       lines.push({ minute: m, kind: 'chance', text: why || `Pas rakipte kaldı: ${playerName} topu kaptırdı.` });
       if (moment.context === 'buildup' && chance(0.15)) {

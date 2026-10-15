@@ -10,7 +10,7 @@ import { sfx, buzz } from '../audio.js';
 import { weatherFx } from './weatherFx.js';
 
 /** Parkur üretimi (saf): sıra tipleri ve boşluklar. Testlerde de kullanılır. */
-export function buildCourse({ rows = 8, warmup = true, men = true, rnd = Math.random, k = 1, W = 390 } = {}) {
+export function buildCourse({ rows = 8, warmup = true, men = true, rnd = Math.random, k = 1, W = 390, attack = false } = {}) {
   const out = [];
   let y = 300 * k;
   let side = rnd() < 0.5 ? -1 : 1;
@@ -20,7 +20,8 @@ export function buildCourse({ rows = 8, warmup = true, men = true, rnd = Math.ra
     const level = warm ? 0 : (i - (warmup ? 1 : 0)) / Math.max(1, rows - 1);
     // ilk iki sıra hep duba; sonra duba/rakip dönüşümlü, sona doğru çift rakip
     const idx = i - (warmup ? 1 : 0);
-    const type = !men || warm || idx < 2 ? 'cones' : idx % 2 === 0 ? 'man' : level > 0.6 ? 'pair' : 'cones';
+    // Atak zinciri: yalnız savunmacılar (adam, ikili, adam)
+    const type = attack ? (idx % 2 ? 'pair' : 'man') : !men || warm || idx < 2 ? 'cones' : idx % 2 === 0 ? 'man' : level > 0.6 ? 'pair' : 'cones';
     const gap = lerp(130, 84, level) * k;
     const gx = clamp(W / 2 + side * lerp(0.12, 0.3, rnd()) * W, gap / 2 + 18 * k, W - gap / 2 - 18 * k);
     side *= -1;
@@ -57,7 +58,7 @@ export function playDribble(host, opts = {}) {
       if (first) {
         S.x = W / 2;
         S.speed = L.v0;
-        const c = buildCourse({ rows: nRows, warmup: station ? opts.isWarmup?.() !== false : true, men: true, k, W });
+        const c = buildCourse({ rows: nRows, warmup: opts.warmup ?? (station ? opts.isWarmup?.() !== false : true), men: true, k, W, attack: !!opts.attack });
         S.finishY = c.finishY;
         S.rows = c.rows.map((r, i) => {
           const row = { ...r, hit: false, resolved: false };
@@ -116,10 +117,10 @@ export function playDribble(host, opts = {}) {
       S.done = true;
       const n = Math.max(1, S.scored);
       const ratio = S.clean / n;
-      const success = ratio >= 0.75;
+      const success = ratio >= (opts.passRatio ?? 0.75);
       setTimeout(() => {
         stage.stop();
-        resolve({ success, accuracy: success ? clamp((ratio - 0.75) / 0.25 * 0.6 + 0.4, 0, 1) : 0, outcome: success ? 'clean' : 'hit', clean: S.clean, rows: S.scored });
+        resolve({ success, accuracy: success ? clamp((ratio - (opts.passRatio ?? 0.75)) / 0.25 * 0.6 + 0.4, 0, 1) : 0, outcome: success ? 'clean' : 'hit', clean: S.clean, rows: S.scored });
       }, 60);
     }
 

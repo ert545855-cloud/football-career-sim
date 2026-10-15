@@ -20,7 +20,7 @@ export const POSITIONS = {
     primary: 'shooting',
     secondary: 'speed',
     ovr: { shooting: 0.4, speed: 0.3, passing: 0.15, stamina: 0.1, defending: 0.05 },
-    moments: { shot: 0.52, pass: 0.36, tackle: 0.12 },
+    moments: { shot: 0.44, pass: 0.28, attack: 0.18, tackle: 0.1 },
   },
   MF: {
     id: 'MF',
@@ -31,7 +31,7 @@ export const POSITIONS = {
     primary: 'passing',
     secondary: 'stamina',
     ovr: { passing: 0.4, stamina: 0.25, speed: 0.15, shooting: 0.12, defending: 0.08 },
-    moments: { pass: 0.55, shot: 0.25, tackle: 0.2 },
+    moments: { pass: 0.46, shot: 0.2, attack: 0.16, tackle: 0.18 },
   },
   DF: {
     id: 'DF',
@@ -55,6 +55,7 @@ export const GAME_WEIGHTS = {
   pass: { passing: 1 },
   tackle: { defending: 0.75, speed: 0.25 },
   dribble: { speed: 1 },
+  attack: { passing: 0.35, speed: 0.3, shooting: 0.35 },
   shuttle: { stamina: 1 },
 };
 

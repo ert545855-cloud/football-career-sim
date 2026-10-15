@@ -1,5 +1,5 @@
 // Otomatik oyuncu: denge testleri ve simülasyon için oyunu baştan sona oynar.
-import { POSITIONS, SHOP_ITEMS } from '../src/core/data.js';
+import { GAME_WEIGHTS, POSITIONS, SHOP_ITEMS } from '../src/core/data.js';
 import { chance, rand } from '../src/core/rng.js';
 import { canDoAction, chooseEvent, completeMatch, declineOffers, doAction, endSeason, finishTraining, getMatch, takeOffer, trainingSetup } from '../src/core/game.js';
 import { applyAiEvent, resolveMoment } from '../src/core/match.js';
@@ -61,7 +61,7 @@ export function playWeek(state, humanSkill = 0.5) {
   for (const item of timeline) {
     if (item.ev) applyAiEvent(match, item.ev);
     else {
-      const w = { shot: { shooting: 1 }, pass: { passing: 1 }, tackle: { defending: 0.7, speed: 0.3 } }[item.m.type];
+      const w = GAME_WEIGHTS[item.m.type] || { shooting: 1 };
       let s = 0; let tw = 0;
       for (const [k, v] of Object.entries(w)) { s += state.player.stats[k] * v; tw += v; }
       resolveMoment(match, item.m, fakeGame((s / tw / 100) * (match.big?.skillMult ?? 1), humanSkill), state.player.name);

@@ -9,6 +9,7 @@ import { playIntercept } from './intercept.js';
 import { playDribble } from './dribble.js';
 import { playShuttle } from './shuttle.js';
 import { playHeader } from './header.js';
+import { playAttack } from './attack.js';
 import { playUnityMoment, unityBuildAvailable } from './unity3d.js';
 import { setBallVariant } from './pixel/sprites.js';
 import { duckMusic } from '../music/player.js';
@@ -88,6 +89,8 @@ export async function runMiniGame(o) {
     if (!result) switch (o.type) {
       // Korner: kafa düellosu; diğer şutlar (ceza sahası, uzaktan, serbest vuruş, penaltı) şut oyununda
       case 'shot': result = o.context === 'corner' ? await playHeader(host, { ...common, keeper: o.keeper }) : await playShot(host, { ...common, keeper: o.keeper }); break;
+      // Kesintisiz atak: pas (ofsayt) → çalım → şut, tek anda
+      case 'attack': result = await playAttack(host, common, { context: o.context, keeper: o.keeper }); break;
       // Tek pas sistemi: çizerek kavisli pas (seçmelerde de aynı)
       case 'pass': result = await playDrawPass(host, common); break;
       // Defans: pas arası (maçta ve antrenmanda aynı)
