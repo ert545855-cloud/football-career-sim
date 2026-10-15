@@ -62,11 +62,12 @@ test('yorgunluk: enerji düşükken verim düşer', () => {
 });
 
 test('hoca yorumu sonuca göre değişir', () => {
-  assert.match(coachTip('tackle', { success: false, outcome: 'foul', card: 'yellow' }).text, /Sarı kart/);
-  assert.match(coachTip('tackle', { success: false, outcome: 'early' }).text, /Erken/);
+  assert.match(coachTip('tackle', { success: true, method: 'lunge' }).text, /Pas arası/);
+  assert.match(coachTip('tackle', { success: false, outcome: 'beaten', method: 'dribble' }).text, /uzak/);
   assert.match(coachTip('pass', { success: false, outcome: 'intercept' }).text, /kavis/);
-  assert.match(coachTip('sprint', { success: false, falseStart: true }).text, /Hatalı çıkış/);
-  assert.match(coachTip('endurance', { success: false, gassed: true }).text, /Nefes/);
+  assert.match(coachTip('dribble', { success: false, clean: 3, rows: 8 }).text, /yüklen/);
+  assert.match(coachTip('shuttle', { success: false, gassed: true }).text, /Nefes/);
+  assert.match(coachTip('shuttle', { success: true, level: '6.1', perfectTurns: 5 }).text, /Seviye 6.1/);
   assert.equal(coachTip('shot', { success: true, accuracy: 0.9 }).tone, 'good');
 });
 

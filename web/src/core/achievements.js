@@ -10,6 +10,7 @@ import { CLUB_BY_ID, ITEM_BY_ID, LEAGUES, STAT_KEYS } from './data.js';
 import { leagueIdIn } from './league.js';
 import { changeFame, changeMorale, ovr } from './player.js';
 import { hardMasters } from './training.js';
+import { cosmeticCount } from './cosmetics.js';
 
 /** Rozet seviyeleri: renk, ödül */
 export const TIERS = {
@@ -107,6 +108,7 @@ export const ACHIEVEMENTS = [
   { id: 'social10', cat: 'life', tier: 'bronze', title: 'Sosyal Kelebek', desc: 'Kafe, bar ya da ev partisinde 10 kez buluş.', icon: 'coffee', goal: 10, value: (s) => s.social?.outings || 0 },
   { id: 'in_love', cat: 'life', tier: 'silver', title: 'Kalbim Sende', desc: 'Bir sevgilin olsun.', icon: 'heartFill', goal: 1, value: (s) => (s.social?.partner ? 1 : 0) },
   { id: 'interior', cat: 'life', tier: 'gold', title: 'İç Mimar', desc: 'Evine 12 mobilya yerleştir.', icon: 'sofa', goal: 12, value: (s) => s.social?.home?.placed?.length || 0 },
+  { id: 'stylish', cat: 'life', tier: 'silver', title: 'Tarz İkonu', desc: 'Dolaptan 6 kozmetik ürün edin.', icon: 'star', sprite: 'boots', goal: 6, value: (s) => cosmeticCount(s) },
   { id: 'tuner', cat: 'life', tier: 'silver', title: 'Modifiye Ustası', desc: 'Arabana 5 modifiye parçası taktır.', icon: 'wrench', goal: 5, value: (s) => s.garage?.installs || 0 },
 ];
 

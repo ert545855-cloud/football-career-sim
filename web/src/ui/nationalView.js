@@ -6,6 +6,7 @@ import {
   HOME_NATION, NATIONAL_TEAMS, RESULT_LABEL, declineCallUp, finishTournament, nationByShort, nationalMoment, playNationalMatch, startTournament,
 } from '../core/national.js';
 import { runMiniGame } from '../games/index.js';
+import { playerLook } from '../core/cosmetics.js';
 import { buzz, sfx } from '../audio.js';
 import { icon } from './art.js';
 import { changeChips } from './components.js';
@@ -46,6 +47,7 @@ async function playMoment(app, title, minute, oppShort) {
     text: MOMENT_INTRO[mom.type][mom.context],
     minute,
     myKit: { colors: HOME_NATION.colors, pattern: 'solid' },
+    me: playerLook(s, { club: { colors: HOME_NATION.colors, pattern: 'solid' } }),
     oppKit: { colors: opp?.colors || ['#334155', '#fff'] },
     keeper: Math.min(0.95, (opp?.r || 75) / 95),
     number: s.player.number,

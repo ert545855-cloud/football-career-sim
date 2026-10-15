@@ -10,6 +10,8 @@ import { growthMult, ovr } from '../core/player.js';
 import { clearDraft, clearSave, loadDraft, loadGame, loadSettings, saveDraft, saveGame, saveSettings } from '../core/storage.js';
 import { runMiniGame } from '../games/index.js';
 import { DIFFICULTY, DIFF_IDS, ensureTraining, fatigueFactor } from '../core/training.js';
+import { playerLook } from '../core/cosmetics.js';
+import { lookFromAvatar } from '../games/pixel/looks.js';
 import { buzz, sfx } from '../audio.js';
 import { crestSVG, icon, playerAvatar } from './art.js';
 import { animateBars, confetti, countUp, el, esc, setRoot, sheet, toast } from './dom.js';
@@ -188,6 +190,7 @@ export function createApp(rootEl) {
         station,
         session,
         myKit: { colors: ['#334155', '#f8fafc'] },
+        me: lookFromAvatar(d.avatar || {}, { colors: ['#334155', '#f8fafc'] }, { number: '' }),
         number: '?',
         auto: this.autoplay,
         // Her denemeden sonra kaydet: sayfayı yenileyerek kaybedilen hak geri alınamaz
@@ -376,6 +379,7 @@ export function createApp(rootEl) {
         title: `${setup.title} · ${DIFFICULTY[diff].name}`,
         text: setup.hint,
         myKit: club,
+        me: playerLook(s, { training: true }),
         oppKit: { colors: ['#f97316', '#1e293b'] },
         keeper: 0.45,
         number: s.player.number,
@@ -390,10 +394,10 @@ export function createApp(rootEl) {
       }
       const r = res.result || {};
       const facts = [];
-      if (r.time != null && r.target != null) facts.push(`${r.time.toFixed(2)} sn / hedef ${r.target.toFixed(2)}`);
-      if (r.topSpeed) facts.push(`zirve ${r.topSpeed.toFixed(1)} km/sa`);
-      if (r.react != null) facts.push(`tepki ${r.react.toFixed(2)} sn`);
-      if (r.rhythm != null) facts.push(`ritim %${Math.round(r.rhythm * 100)}`);
+      if (r.level != null && r.target != null) facts.push(`seviye ${r.level} / hedef ${r.target}`);
+      if (r.turns) facts.push(`${r.perfectTurns || 0}/${r.turns} süper dönüş`);
+      if (r.rows) facts.push(`${r.clean}/${r.rows} temiz geçiş`);
+      if (r.passes != null && setup.game === 'tackle') facts.push(r.success ? `${r.passes + 1}. pasta kestin` : `${r.passes} pas yedin`);
       await sheet({
         center: true,
         onMount: (node) => {

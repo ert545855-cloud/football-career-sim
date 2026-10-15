@@ -53,18 +53,18 @@ export const GROWTH = { primary: 1.5, secondary: 1.25, other: 1.0 };
 export const GAME_WEIGHTS = {
   shot: { shooting: 1 },
   pass: { passing: 1 },
-  tackle: { defending: 0.7, speed: 0.3 },
-  sprint: { speed: 1 },
-  endurance: { stamina: 1 },
+  tackle: { defending: 0.75, speed: 0.25 },
+  dribble: { speed: 1 },
+  shuttle: { stamina: 1 },
 };
 
 /** Antrenmanda hangi stat hangi mini oyunla çalışılır. */
 export const TRAINING = {
   shooting: { game: 'shot', title: 'Şut Antrenmanı', hint: 'Topu kaleye doğru kaydır. Uzun kaydırma = sert ve yüksek şut.' },
   passing: { game: 'pass', title: 'Pas Antrenmanı', hint: 'Topa dokun ve arkadaşına doğru çiz; zaman yavaşlar. Kavis falsoya döner, uzun çizgi havadan gider. Rakibin etrafından dolaş ama oyalanma!' },
-  defending: { game: 'tackle', title: 'Müdahale Antrenmanı', hint: 'Sürükleyerek pozisyon al. Top rakibin ayağından açılınca (halka yeşil) dokun: topa uzan. Hızlı kaydır: kayarak müdahale; adama girersen faul!' },
-  speed: { game: 'sprint', title: 'Sürat Koşusu', hint: 'BAŞLA işaretini bekle. SOL-SAĞ sırayla, ritim çubuğu yeşilken bas. Deli gibi basmak adımlarını kısaltır!' },
-  stamina: { game: 'endurance', title: 'Dayanıklılık Koşusu', hint: 'Nefes çubuğunu izle: hızlı ritim nefesi bitirir, yavaş ritim toparlar. Tempoyu koru, son düzlükte depar at.' },
+  defending: { game: 'tackle', title: 'Pas Arası Antrenmanı', hint: 'Rakipler paslaşıyor. Top sahibinin bakış çizgisi pasın nereye gideceğini gösterir (bazen sahte!). Sürükleyerek koridoru kapat, top yanından geçerken dokun: ayağını uzat.' },
+  speed: { game: 'dribble', title: 'Adamı Geç', hint: 'Top ayağında ileri koşuyorsun. Sürükleyerek dubaların arasındaki boşluktan geç; rakip gelince bir yana yüklen, o gelince öbür yana kır!' },
+  stamina: { game: 'shuttle', title: 'Mekik Koşusu (Bip Testi)', hint: 'KOŞ\'a basılı tut, bip\'ten önce çizgiye var. Çizgiye yaklaşınca DÖN\'e bas. Hızlı koşmak nefesi bitirir: tempoyu ayarla, erken varırsan bip\'i bekle.' },
 };
 
 // Kurgusal kulüpler. rating = kulübün genel gücü (oyuncu OVR'si ile aynı ölçek).
@@ -160,6 +160,7 @@ export const MAX_TRAININGS_PER_WEEK = 3;
  * kind: 'own' (sahip ol), 'sub' (abonelik), 'use' (tek kullanımlık).
  */
 export const SHOP_CATEGORIES = [
+  { id: 'style', name: 'Dolap' },
   { id: 'vehicle', name: 'Araçlar' },
   { id: 'home', name: 'Ev' },
   { id: 'health', name: 'Gelişim' },

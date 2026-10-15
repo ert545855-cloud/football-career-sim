@@ -515,3 +515,10 @@
 .coach-tip.bad { border-color: rgba(255,93,108,.4); background: rgba(255,93,108,.08); }
 .coach-tip .ico { flex: none; margin-top: 2px; }
 .diff-seg button { flex: 1; }
+
+/* ── Dolap (kozmetik) ── */
+.wr-stage { display: flex; gap: 14px; align-items: center; padding: 12px; background: linear-gradient(180deg, rgba(34,135,63,.35), rgba(31,122,58,.15)); }
+.wr-big { width: 170px; height: 150px; flex: none; image-rendering: pixelated; }
+.wr-side { min-width: 0; flex: 1; }
+.wr-item { cursor: pointer; }
+.wr-px { width: 100%; height: 84px; image-rendering: pixelated; }

@@ -6,8 +6,8 @@ import { icon } from '../ui/art.js';
 import { sprite } from '../assets/sprites.js';
 import { sfx, buzz, unlock } from '../audio.js';
 import { TRYOUT_RULES } from '../core/onboarding/tryouts.js';
-import { playTryoutPass } from './tryoutPass.js';
-import { playTryoutDribble } from './tryoutDribble.js';
+import { playPassStation } from './drawPass.js';
+import { playDribble } from './dribble.js';
 import { playShot } from './shot.js';
 
 /** Şut istasyonu hedefleri: kalenin dört köşesi (kale koordinatı: u −1…1, v 0…1) */
@@ -101,9 +101,9 @@ export async function runTryoutStation(o) {
       onAttempt(Math.random() < 0.7);
     }
   } else if (station.id === 'pass') {
-    await playTryoutPass(host, { onAttempt, isWarmup: () => session.isWarmup(station.id), myKit: o.myKit, number: o.number });
+    await playPassStation(host, { onAttempt, isWarmup: () => session.isWarmup(station.id), myKit: o.myKit, me: o.me, number: o.number });
   } else if (station.id === 'dribble') {
-    await playTryoutDribble(host, { onAttempt, isWarmup: () => session.isWarmup(station.id), myKit: o.myKit, number: o.number, rows: station.attempts });
+    await playDribble(host, { onAttempt, isWarmup: () => session.isWarmup(station.id), myKit: o.myKit, me: o.me, number: o.number, rows: station.attempts, skill: 0.45 });
   } else {
     let last = -1;
     while (!st().done) {

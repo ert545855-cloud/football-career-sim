@@ -34,8 +34,8 @@ export const STATIONS = [
     statKey: 'passing',
     tutorial: [
       'Arkadaşın sahanın üst tarafında koşuyor.',
-      'Ekrana dokunduğun noktaya pas gider.',
-      'Koştuğu yönün biraz önüne at: top oraya vardığında o da orada olsun.',
+      'Topa dokun ve parmağını kaldırmadan, onun koşu yolunun ÖNÜNE doğru çiz; bırakınca pas gider.',
+      'Top oraya vardığında o da orada olsun. Çizgiyi kavisli çizersen top falsolu gider (maçtaki pasla aynı).',
     ],
   },
   {
@@ -66,8 +66,8 @@ export const STATIONS = [
     statKey: 'speed',
     tutorial: [
       'Top ayağında, kendiliğinden ileri koşuyorsun.',
-      'Parmağını sağa sola sürükleyerek yön ver.',
-      'Her dubalı sıradaki boşluktan geç. Dubaya çarpmak 1 hak götürür.',
+      'Parmağını sağa sola sürükleyerek yön ver; dubalı sıralarda boşluktan geç.',
+      'Rakip seni kollar: bir yana yüklen, o gelince öbür yana kır. Çarpmak ya da topu kaptırmak 1 hak götürür.',
     ],
   },
 ];

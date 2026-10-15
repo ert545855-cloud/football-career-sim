@@ -32,6 +32,7 @@ import { ensureGarage, garageOnWeekEnd } from './garage.js';
 import { dative } from './chirp/turkish.js';
 import { CUPS, STAGE_LABEL, createEurope, europeWeek, europeWinners } from './world/europe.js';
 import { DIFFICULTY, coachTip, difficultyGain, ensureTraining, fatigueFactor, recordDrill, starsFor, trainingSkill } from './training.js';
+import { cosmeticFame, ensureCosmetics } from './cosmetics.js';
 
 export const SAVE_VERSION = 1;
 
@@ -88,6 +89,7 @@ export function newGame(setup) {
   ensureBallon(state);
   ensureSocial(state);
   ensureGarage(state);
+  ensureCosmetics(state);
   // Forma numarası: seçilmez, kulüp boştaki genç numaralarından verir
   if (!setup.number) assignYouthNumber(state, random);
   else state.career.numberHistory.push({ season: 1, clubId: state.career.clubId, number: player.number, reason: 'Başlangıç' });
@@ -294,6 +296,9 @@ export function completeMatch(state, match) {
   addNews(state, news, summary.result === 'W' ? 'good' : summary.result === 'L' ? 'bad' : 'info');
   if (!summary.played) addNews(state, `${opp} maçında forma giymedin.`, 'bad');
 
+  // Altın Krampon gibi kozmetiklerin küçük ün etkisi
+  const cf = cosmeticFame(state);
+  if (cf && summary.played) changeFame(state.player, cf);
   achievementsOnMatch(state, summary, match);
   ballonOnMatch(state, summary);
   // Devre arası: Altın Top yarışında ilk 10'daysan transfer gazetecisi yazar

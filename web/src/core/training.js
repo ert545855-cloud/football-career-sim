@@ -101,25 +101,28 @@ export function coachTip(game, r = {}) {
   if (game === 'tackle') {
     if (ok) {
       const t = {
-        slide: 'Kayarak kusursuz zamanlama. Önce top, sonra adam!',
-        poke: 'Topun ayağından açıldığı anı iyi yakaladın.',
-        block: 'Pozisyon almak her şeydir: top sana çarpıp kaldı.',
-        out: 'Rakibi çizgiye sıkıştırdın, top dışarı.',
-        time: 'Acele etmedin, rakibi oyaladın. Takım geri döndü.',
+        lunge: 'Bakışı okudun, koridoru kapattın ve tam zamanında uzandın. Pas arası!',
+        intercept: 'Doğru yerdeydin: pas ayağına geldi.',
+        tackle: 'Top sahibine yapıştın ve topu aldın. Cesur ama riskli!',
+        loose: 'Baskın pası boşa çıkardı.',
+        time: 'Rakibi oyaladın, takım geri döndü.',
       }[r.method];
-      return { tone: 'good', text: t || 'Topu kaptın!' };
+      return { tone: 'good', text: t || 'Topu kazandın!' };
     }
-    if (o === 'foul') return { tone: 'bad', text: r.card ? 'Sarı kart! Adama girdin. Top açıkken (halka yeşil) kay.' : 'Faul. Topa değil adama girdin; zamanlamayı bekle.' };
-    if (o === 'early') return { tone: 'bad', text: 'Erken daldın. Halka yeşile dönmeden yere yatma.' };
-    return { tone: 'warn', text: 'Çalımına yattın. Jokey yap, rakibin topu açmasını bekle.' };
+    if (r.method === 'dribble') return { tone: 'bad', text: 'Top sahibinden çok uzak kaldın; topu sürüp ceza sahasına girdi. Yaklaş ama dibine girme.' };
+    return { tone: 'bad', text: 'Ara pasını kesemedin. Bakış çizgisini izle, koridorun ortasına koş; top yanından geçerken dokun.' };
   }
-  if (game === 'sprint' || game === 'endurance') {
-    if (r.falseStart) return { tone: 'warn', text: 'Hatalı çıkış! "BAŞLA" işaretini bekle, 0.3 sn kaybettin.' };
-    if (game === 'endurance' && r.gassed) return { tone: ok ? 'warn' : 'bad', text: 'Nefesin erken bitti. Tempoyu nefes çubuğuna göre ayarla, depara sona sakla.' };
-    if ((r.rhythm ?? 1) < 0.35) return { tone: ok ? 'warn' : 'bad', text: `Ritim dağınık (mükemmel adım ${pct(r.rhythm || 0)}). Ritim çubuğu yeşilken bas.` };
-    if (r.react != null && r.react > 0.4) return { tone: 'warn', text: `Çıkışın geç (tepki ${r.react.toFixed(2)} sn). İşarete hazır bekle.` };
-    if (ok) return { tone: 'good', text: `Harika ritim! Zirve hızın ${(r.topSpeed || 0).toFixed(1)} km/sa.` };
-    return { tone: 'bad', text: 'Hedefe yetişemedin. Spam yapma; ritimli adım daha hızlı.' };
+  if (game === 'dribble') {
+    const n = r.rows || 0;
+    const c = r.clean || 0;
+    if (ok) return { tone: 'good', text: c === n ? `Kusursuz! ${n} sıranın hepsini temiz geçtin.` : `${n} sıranın ${c} tanesini temiz geçtin. Rakibe yaklaşınca daha erken yüklen.` };
+    return { tone: 'bad', text: `${n} sıranın ${c} tanesini geçebildin. Rakip seni kolluyor: bir yana yüklen, o gelince sert şekilde öbür yana kır.` };
+  }
+  if (game === 'shuttle') {
+    if (ok) return { tone: 'good', text: `Seviye ${r.level}! ${r.perfectTurns ? `${r.perfectTurns} süper dönüş.` : ''} Tempo ayarın iyiydi.` };
+    if (r.gassed) return { tone: 'bad', text: 'Nefesin bitti. Hep basılı tutma: bip\'e yetişecek kadar koş, erken varınca nefes topla.' };
+    if ((r.perfectTurns || 0) < (r.turns || 0) / 2) return { tone: 'bad', text: 'Dönüşlerde çok zaman kaybettin. Çizgiye yaklaşınca DÖN\'e bas.' };
+    return { tone: 'bad', text: `Seviye ${r.level}'de kaldın (hedef ${r.target}). Bip temposu çizgisini izle, onun önünde kal.` };
   }
   return { tone: ok ? 'good' : 'bad', text: ok ? 'İyi iş.' : 'Bir dahaki sefere.' };
 }

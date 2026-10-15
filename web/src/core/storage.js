@@ -8,6 +8,7 @@ import { ensureNational } from './national.js';
 import { ensureBallon } from './ballondor.js';
 import { ensureSocial } from './social/index.js';
 import { ensureGarage } from './garage.js';
+import { ensureCosmetics } from './cosmetics.js';
 import { addFocus, leagueIdIn, upgradeWorld, useWorld } from './league.js';
 import { ensureEurope } from './world/europe.js';
 
@@ -77,6 +78,7 @@ export function migrate(state) {
   ensureBallon(state);
   ensureSocial(state);
   ensureGarage(state);
+  ensureCosmetics(state);
   // Dünya ligleri (eski kayıtlarda sadece Türkiye vardı)
   upgradeWorld(state.world, state.calendar?.week || 1);
   ensureEurope(state.world, state.calendar?.week || 1);
@@ -126,7 +128,7 @@ export function importSave(code) {
 }
 
 export function loadSettings() {
-  const defaults = { sound: true, vibrate: true, haptic: 'normal', speed: 1, easyPass: false, unity3d: false };
+  const defaults = { sound: true, vibrate: true, haptic: 'normal', speed: 1, unity3d: false };
   try {
     return { ...defaults, ...(JSON.parse(storage()?.getItem(SETTINGS_KEY) || '{}')) };
   } catch {

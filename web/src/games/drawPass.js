@@ -1,19 +1,19 @@
-// PAS (ÇİZEREK) — Score! Hero / New Star Soccer tarzı. Unity'deki PasManager'ın tarayıcı (2B, kuşbakışı) karşılığı.
+// PAS — TEK PAS SİSTEMİ (seçmeler, antrenman, maç). Kuşbakışı, piksel oyuncular, fizik motoru.
 //
-//  1) AĞIR ÇEKİM: Topa dokunup sürüklemeye başlayınca zaman yumuşakça yavaşlar (pas statı yüksekse daha çok).
-//  2) ÇİZİM + KAVİS: Parmağın izlediği hattan kübik Bezier uydurulur (CurvePath) ve canlı gösterilir.
-//     Çizgi rengi: yeşil = temiz, turuncu = rakip yolda, beyaz = ucunda arkadaş yok.
-//  3) BASKI: Çizim başladığı an en yakın iki rakip koşar: biri sana, biri pasın düşeceği yere. Ağır çekimde
-//     yavaşlar ama durmazlar; oyalanırsan top kapılır. Hiç çizmeden beklersen de baskı başlar.
-//  4) FİZİK: Parmak kalkınca top FİZİK MOTORUYLA (physics.js) vurulur: çizginin başı çıkış yönü, kavis Magnus
-//     falsosu, uzunluk yükselme açısı olur. Havadaki top yerçekimiyle iner, seker, çimde sürtünmeyle yavaşlar.
-//  5) OYUNCULAR: Herkesin ivmesi, azami hızı ve ataleti var. Arkadaşın topun geleceği yere koşar; rakipler fiziksel
-//     tahminle araya girer ama falsoyu geç okur (kavisli pas onları şaşırtır). Çok sert pas ilk kontrolde kaçabilir.
-// Statlar: etkin yetenek (pas statı × yorgunluk) ağır çekimi, falso ustalığını, isabeti, vuruş gücünü belirler.
-import { createStage, Particles, BigText, drawBall, drawTopPlayer, drawPitchTop, drawShadow, drawTimer, roundRect, clamp, lerp, dist } from './engine.js';
+//  1) AĞIR ÇEKİM: Topa dokunup sürüklemeye başlayınca zaman yavaşlar (pas statı yüksekse daha çok).
+//  2) ÇİZİM + KAVİS: Parmağın izlediği hattan Bezier uydurulur; çizgi rengi: yeşil temiz, turuncu rakip yolda,
+//     beyaz ucunda arkadaş yok.
+//  3) FİZİK: Bırakınca top fizikle vurulur: çizginin başı çıkış yönü, kavis falso (Magnus), uzunluk yükselme.
+//  4) RAKİPLER topun gideceği yere KOŞMAZ: bölgesini tutar, adamını markajlar; biri pasöre baskı yapar.
+//     Top yanından geçerse refleksle ayağını uzatır (yerinden en çok ~1 m).
+//  5) ARKADAŞ topa koşar ve kontrol eder; çok sert pas ilk dokunuşta kaçabilir.
+// Senaryolar: 'buildup' (orta saha), 'final' (son bölge, 10 numaraya markaj), 'tryout' (seçme: koşan arkadaşın önüne).
+import { createStage, Particles, BigText, drawPitchTop, drawTimer, roundRect, clamp, lerp, dist } from './engine.js';
 import { CurvePath } from './curvePath.js';
 import { passSkill, kickFromPath } from './drawPassLogic.js';
 import { FixedStep, createBall, kick, stepBall, createBody, steer, stepBody, bodySpeed, interceptBall, restPoint, collideBodies, firstTouch, groundSpeed, predict, ENV } from './physics.js';
+import { drawPixelPlayer, drawMovingPlayer, drawPixelBall } from './pixel/sprites.js';
+import { npcLook, lookFromAvatar } from './pixel/looks.js';
 import { sfx, buzz } from '../audio.js';
 
 export function playDrawPass(host, opts) {
@@ -21,91 +21,89 @@ export function playDrawPass(host, opts) {
     const skill = clamp(opts.skill ?? 0.3, 0.02, 1);
     const sk = passSkill(skill);
     const nerves = clamp(opts.nerves ?? 0, 0, 1);
-    const final = opts.context === 'final';
-    const myKit = opts.myKit?.colors || ['#2563eb', '#fff'];
-    const oppKit = opts.oppKit?.colors || ['#b91c1c', '#fff'];
+    const scenario = opts.context === 'final' ? 'final' : opts.context === 'tryout' ? 'tryout' : 'buildup';
+    const final = scenario === 'final';
+    const tryout = scenario === 'tryout';
+    const level = clamp(opts.level ?? 0, 0, 1);
+    const myClub = opts.myKit || { colors: ['#2563eb', '#ffffff'] };
+    const oppClub = opts.oppKit || { colors: ['#b91c1c', '#ffffff'] };
+    const meLook = opts.me || lookFromAvatar({}, myClub, { number: String(opts.number ?? 8) });
     const particles = new Particles();
     const big = new BigText();
     const path = new CurvePath();
     const preview = [];
     const IDLE_PRESS = 4.5; // hiç çizmeden bu kadar beklenirse baskı başlar (oyun saniyesi)
+    const TS = 1.9; // fizik saniyesi / oyun saniyesi
+    const fixed = new FixedStep(1 / 120, 30);
 
     let L = null;
     const S = {
-      phase: 'idle', // idle → draw (→ aim) → flight → roll → after
-      t: 0,
-      ts: 1,
-      tsTarget: 1,
-      pts: [],
-      tailOk: false,
-      pressure: false,
-      pressStartD: 1,
-      pressLevel: 0,
-      target: -1,
-      contested: false,
-      ball: null,
-      s: 0,
-      speed: 0,
-      roll: null,
-      outcome: null,
-      afterT: 0,
-      hint: 0,
-      done: false,
-      clearance: 0,
+      phase: 'idle', // idle → draw (→ aim) → flight → after
+      t: 0, ts: 1, tsTarget: 1, pts: [], pressure: false, pressStartD: 1, pressLevel: 0,
+      target: -1, contested: false, ball: null, outcome: null, afterT: 0, hint: 0, done: false, clearance: 0,
+      pb: null, trail: [], flightT: 0, heavy: false, runner: -1,
     };
 
     // ─────────────── Diziliş ───────────────
     function layout(W, H) {
       const k = W / 390;
+      const ppm = W / 34; // ekran ≈ 34 m genişlik
       const me = { x: W / 2, y: H * 0.84 };
       const j = () => (Math.random() - 0.5) * W * 0.08;
-      const spots = final
-        ? [[0.2, 0.32], [0.5, 0.17], [0.8, 0.3]]
-        : [[0.18, 0.5], [0.5, 0.3], [0.82, 0.47]];
-      const mates = spots.map(([fx, fy], i) => {
-        const x = W * fx + j();
-        const y = H * fy + j();
-        return { x, y, hx: x, hy: y, ph: Math.random() * 6, num: [7, 10, 11][i], skin: ['#e8b58f', '#c98e62', '#6b4329'][i], run: null };
-      });
-      // Koridorlar: biri tam kapalı (kavis şart), biri çekişmeli, biri açık; final bölgesinde bir de markaj
-      const order = [0, 1, 2].sort(() => Math.random() - 0.5);
-      const lane = (m, t, perp) => {
-        const dx = m.x - me.x;
-        const dy = m.y - me.y;
-        const len = Math.hypot(dx, dy) || 1;
-        return { x: me.x + dx * t + (-dy / len) * perp, y: me.y + dy * t + (dx / len) * perp };
-      };
-      const sign = () => (Math.random() < 0.5 ? -1 : 1);
-      const defs = [
-        lane(mates[order[0]], lerp(0.5, 0.6, Math.random()), sign() * Math.random() * 6 * k),
-        lane(mates[order[1]], lerp(0.55, 0.68, Math.random()), sign() * lerp(24, 34, Math.random()) * k),
-        lane(mates[order[2]], lerp(0.4, 0.5, Math.random()), sign() * lerp(70, 92, Math.random()) * k),
-      ];
-      if (final) defs.push({ x: mates[1].x + sign() * 22 * k, y: mates[1].y + 30 * k }); // 10 numarayı markaj
-      const ppm = W / 34; // metre başına piksel: ekran ≈ 34 m genişlik
       const body = (x, y, o) => createBody(x / ppm, y / ppm, o);
-      mates.forEach((m) => { m.body = body(m.x, m.y, { maxSpeed: 7.4, accel: 7, mass: 74 }); });
+      let mates;
+      let defs;
+      if (tryout) {
+        // seçme: üst tarafta yatay koşan tek arkadaş; seviye arttıkça hızlanır, bir rakip bölge tutar
+        const dir = Math.random() < 0.5 ? 1 : -1;
+        const y = H * lerp(0.28, 0.42, Math.random());
+        const x = dir > 0 ? -20 * k : W + 20 * k;
+        mates = [{ x, y, hx: x, hy: y, ph: 0, num: 10, run: null, lane: { dir, v: lerp(3.2, 6.8, level) * (opts.warm ? 0.85 : 1) } }];
+        defs = level > 0.25 ? [{ x: W * lerp(0.35, 0.65, Math.random()), y: lerp(me.y, y, lerp(0.45, 0.6, Math.random())) }] : [];
+      } else {
+        const spots = final ? [[0.2, 0.32], [0.5, 0.17], [0.8, 0.3]] : [[0.18, 0.5], [0.5, 0.3], [0.82, 0.47]];
+        mates = spots.map(([fx, fy], i) => {
+          const x = W * fx + j();
+          const y = H * fy + j();
+          return { x, y, hx: x, hy: y, ph: Math.random() * 6, num: [7, 10, 11][i], run: null };
+        });
+        // Koridorlar: biri tam kapalı (kavis şart), biri çekişmeli, biri açık; son bölgede 10 numaraya markaj
+        const order = [0, 1, 2].sort(() => Math.random() - 0.5);
+        const lane = (m, t, perp) => {
+          const dx = m.x - me.x;
+          const dy = m.y - me.y;
+          const len = Math.hypot(dx, dy) || 1;
+          return { x: me.x + dx * t + (-dy / len) * perp, y: me.y + dy * t + (dx / len) * perp };
+        };
+        const sign = () => (Math.random() < 0.5 ? -1 : 1);
+        defs = [
+          lane(mates[order[0]], lerp(0.5, 0.6, Math.random()), sign() * Math.random() * 6 * k),
+          lane(mates[order[1]], lerp(0.55, 0.68, Math.random()), sign() * lerp(24, 34, Math.random()) * k),
+          lane(mates[order[2]], lerp(0.4, 0.5, Math.random()), sign() * lerp(70, 92, Math.random()) * k),
+        ];
+        if (final) defs.push({ x: mates[1].x + sign() * 22 * k, y: mates[1].y - 26 * k, mark: 1 });
+      }
+      mates.forEach((m, i) => {
+        m.body = body(m.x, m.y, { maxSpeed: 7.4, accel: 7, mass: 74 });
+        m.look = npcLook(myClub, 11 + i * 7 + (opts.seed || 0), m.num);
+        m.st = { ph: Math.random() * 4, last: 'down' };
+      });
       L = {
         W, H, k, me, mates, ppm,
-        meBody: body(me.x, me.y, { maxSpeed: 0.01, mass: 78 }),
-        defs: defs.map((p) => ({ x: p.x, y: p.y, hx: p.x, hy: p.y, ph: Math.random() * 6, mode: 'hold', tx: p.x, ty: p.y, body: body(p.x, p.y, { maxSpeed: sk.defSpeed, accel: 6.6, mass: 78 }), plan: 0 })),
-        rBall: 7 * k,
-        startR: 70 * k, // çizim topa bu kadar yakın başlamalı
+        defs: defs.map((p, i) => ({
+          x: p.x, y: p.y, hx: p.x, hy: p.y, ph: Math.random() * 6, mode: p.mark != null ? 'mark' : 'hold', mark: p.mark,
+          body: body(p.x, p.y, { maxSpeed: sk.defSpeed, accel: 6.6, mass: 78 }), lunge: null, scan: 0,
+          look: npcLook(oppClub, 101 + i * 13 + (opts.seed || 0), [4, 5, 6, 8][i]), st: { ph: Math.random() * 4, last: 'down' },
+        })),
         spacing: 6 * k,
+        startR: 70 * k, // çizim topa bu kadar yakın başlamalı
         minLen: 40 * k,
-        receiveR: 26 * k,
-        interceptR: 17 * k,
         stealR: 22 * k * sk.steal,
         targetR: 42 * k,
         contestR: 24 * k,
-        vPress: 150 * k,
-        vInt: 175 * k,
-        vRun: 120 * k,
-        reachH: 0.55,
+        ph: 44 * k, // oyuncu boyu (piksel)
       };
       S.ball = { x: me.x, y: me.y - 14 * k, h: 0, rot: 0, spin: 0 };
-      S.pb = null;
-      S.trail = [];
       if (opts.expose) Object.assign(opts.expose, { L, S, path }); // uçtan uca testler için
     }
 
@@ -117,11 +115,10 @@ export function playDrawPass(host, opts) {
         return;
       }
       const last = pts.length - 1;
-      pts[last] = { x: p.x, y: p.y }; // canlı uç
+      pts[last] = { x: p.x, y: p.y };
       if (Math.hypot(pts[last - 1].x - p.x, pts[last - 1].y - p.y) >= L.spacing) {
         pts.push({ x: p.x, y: p.y });
         if (pts.length > 160) {
-          // her iki noktadan birini at (yol yalnızca 4 noktayı kullanır)
           const keep = [pts[0]];
           for (let i = 2; i < pts.length - 1; i += 2) keep.push(pts[i]);
           keep.push(pts[pts.length - 1]);
@@ -136,15 +133,14 @@ export function playDrawPass(host, opts) {
       S.pts[0] = { x: S.ball.x, y: S.ball.y };
       path.build(S.pts, { loftPerPx: 1 / (600 * L.k), maxLoft: 1 });
       path.scaleCurve(sk.curveFidelity);
-      // hedef arkadaş
       let best = -1;
-      let bestD = L.targetR;
+      let bestD = L.targetR * (tryout ? 1.6 : 1);
       L.mates.forEach((m, i) => {
-        const d = dist(m.x, m.y, path.p3.x, path.p3.y);
+        // seçmede koşan arkadaş: çizginin ucu onun koşu yolunun üstündeyse hedef sayılır
+        const d = tryout ? Math.abs(m.y - path.p3.y) + Math.max(0, (path.p3.x - m.x) * -m.lane.dir) * 0.2 : dist(m.x, m.y, path.p3.x, path.p3.y);
         if (d < bestD) { bestD = d; best = i; }
       });
       S.target = best;
-      // yolda rakip var mı (top alçakken)
       S.contested = false;
       S.clearance = Infinity;
       for (const d of L.defs) {
@@ -163,29 +159,24 @@ export function playDrawPass(host, opts) {
       addPoint(p);
       rebuild();
       S.tsTarget = sk.slow;
-      if (!S.pressure) startPressure();
+      if (!S.pressure && !tryout) startPressure();
       buzz('touch');
       sfx('tick');
     }
 
-    // ─────────────── Baskı ───────────────
-    function landingGuess() {
-      if (S.pts.length >= 2 && path.valid) return path.p3;
-      return { x: L.me.x, y: L.me.y - 200 * L.k };
-    }
-
+    // ─────────────── Baskı: yalnız EN YAKIN rakip pasöre basar; diğerleri yerini korur ───────────────
     function startPressure() {
+      if (!L.defs.length) return;
       S.pressure = true;
-      const sorted = [...L.defs].sort((a, b) => dist(a.x, a.y, L.me.x, L.me.y) - dist(b.x, b.y, L.me.x, L.me.y));
-      if (sorted[0]) sorted[0].mode = 'press';
-      if (sorted[1]) sorted[1].mode = 'landing';
+      const free = L.defs.filter((d) => d.mode !== 'mark');
+      const sorted = (free.length ? free : L.defs).sort((a, b) => dist(a.x, a.y, L.me.x, L.me.y) - dist(b.x, b.y, L.me.x, L.me.y));
+      sorted[0].mode = 'press';
       S.pressStartD = Math.max(L.stealR + 10, dist(sorted[0].x, sorted[0].y, L.me.x, L.me.y));
     }
 
     // ─────────────── Pas ───────────────
     function release() {
       if (!path.valid || Math.hypot(path.p3.x - path.p0.x, path.p3.y - path.p0.y) < L.minLen) {
-        // çok kısa: pas sayılmaz, ağır çekimde yeniden çiz (baskı sürer)
         S.phase = 'aim';
         S.pts = [];
         S.target = -1;
@@ -199,7 +190,6 @@ export function playDrawPass(host, opts) {
       S.tsTarget = 1;
       S.ball.x = L.me.x;
       S.ball.y = L.me.y - 14 * L.k;
-      // isabet sapması (statlar + heyecan): üçgen dağılım, mesafeyle orantılı
       const len = Math.hypot(path.p3.x - path.p0.x, path.p3.y - path.p0.y);
       const err = (sk.error + nerves * 18) * L.k * clamp(len / (300 * L.k), 0.3, 1.5);
       if (err > 0.01) {
@@ -208,18 +198,17 @@ export function playDrawPass(host, opts) {
         const e = (Math.random() - Math.random()) * err;
         path.shiftEnd(nx * e, ny * e);
       }
-      // Fiziksel vuruş: çizilen yol → yön, falso, yükselme, güç
       const sol = kickFromPath(path, L.ppm, sk, ENV);
       S.kick = sol;
       S.pb = kick(createBall(S.ball.x / L.ppm, S.ball.y / L.ppm, 0), sol);
-      S.ball.spin = clamp(sol.spin / 4, -22, 22); // görsel dönüş
+      S.ball.spin = clamp(sol.spin / 4, -22, 22);
       S.flightT = 0;
-      S.touched = -1;
       S.heavy = false;
       S.trail = [];
       S.phase = 'flight';
-      // rakipler önce düz okur (falsoyu geç fark eder); hedef arkadaş topa koşar
-      for (const d of L.defs) { d.mode = 'intercept'; d.plan = 0; }
+      S.kickT = 0.25;
+      // pasör baskısı biter; baskıcı geri bölgesine döner
+      for (const d of L.defs) if (d.mode === 'press') d.mode = 'hold';
       let runner = S.target;
       if (runner < 0) {
         let bd = 90 * L.k;
@@ -230,7 +219,7 @@ export function playDrawPass(host, opts) {
       }
       S.runner = runner;
       L.mates.forEach((m) => { m.run = null; m.plan = 0; });
-      if (runner >= 0) L.mates[runner].run = { x: path.p3.x / L.ppm, y: path.p3.y / L.ppm };
+      if (runner >= 0 && !tryout) L.mates[runner].run = { x: path.p3.x / L.ppm, y: path.p3.y / L.ppm };
       sfx('kick');
       buzz('kick');
     }
@@ -263,6 +252,10 @@ export function playDrawPass(host, opts) {
         big.show('TOP DIŞARIDA', '#ff5d6c', 46);
         sfx('miss');
         buzz('miss');
+      } else if (outcome === 'timeout') {
+        big.show('GEÇ KALDIN', '#ff5d6c', 46);
+        sfx('miss');
+        buzz('miss');
       } else {
         big.show('BOŞA GİTTİ', '#ff5d6c', 46);
         sfx('miss');
@@ -285,21 +278,50 @@ export function playDrawPass(host, opts) {
       }, 50);
     }
 
-    // ─────────────── Döngü (fizik) ───────────────
-    const TS = 1.9; // fizik saniyesi / oyun saniyesi: sahne temposu
-    const fixed = new FixedStep(1 / 120, 30);
-
-    /** Oyuncuların bir fizik adımı: hedefe ivmeyle koşu, ataletli dönüş, omuz omuza çarpışma. */
+    // ─────────────── Oyuncular (fizik adımı) ───────────────
     function aiStep(h) {
       const ppm = L.ppm;
       const flying = S.phase === 'flight' && S.pb;
-      for (const m of L.mates) {
+      L.mates.forEach((m, i) => {
         const bd = m.body;
         if (m.cool > 0) m.cool -= h;
-        if (m.run && flying) {
+        if (m.lane) {
+          // seçme koşucusu: koşu yolunu sürdürür; top yakına gelirse ona doğru küçük düzeltme
+          let ty = m.hy / ppm;
+          let tx = bd.x + m.lane.dir * 5;
+          let speed = m.lane.v;
+          if (flying) {
+            // top koşu yoluna yaklaşıyorsa koşucu temposunu ayarlar (yolunu değiştirmez): öne atılan pasa yetişir
+            m.plan -= h;
+            if (!(m.plan > 0)) {
+              m.plan = 0.12;
+              const pathAhead = predict(S.pb, { T: 3, h: 1 / 30, env: ENV });
+              let best = null;
+              for (const q of pathAhead) {
+                if (q.z > 1.7) continue;
+                const dy = Math.abs(q.y - ty);
+                if (!best || dy < best.dy) best = { dy, x: q.x, t: q.t };
+              }
+              m.meet = best && best.dy < 2.5 && best.t > 0.05 ? { x: best.x, at: S.flightT + best.t } : null;
+            }
+            if (m.meet) {
+              const need = (m.meet.x - bd.x) / Math.max(0.15, m.meet.at - S.flightT);
+              if (Math.sign(need) === m.lane.dir || Math.abs(need) < 1.5) {
+                tx = m.meet.x;
+                speed = clamp(Math.abs(need), 1.5, m.lane.v * 1.35);
+              }
+            }
+            if (Math.hypot(S.pb.x - bd.x, S.pb.y - bd.y) < 3.2 && S.pb.z < 1.7) {
+              tx = bd.x + (S.pb.x - bd.x) * 0.6 + m.lane.dir * 0.8;
+              ty = S.pb.y;
+              speed = m.lane.v * 1.2;
+            }
+          }
+          if (S.phase === 'after') steer(bd, bd.x + m.lane.dir * 0.5, bd.y, h, { speed: 2 });
+          else steer(bd, tx, ty, h, { speed, arrive: 0.05 });
+        } else if (m.run && flying && i === S.runner) {
           m.plan -= h;
           if (m.plan <= 0) {
-            // topun geleceği yere koş: fiziksel tahmin (arkadaş falsoyu okur)
             m.plan = 0.12;
             const ip = interceptBall(bd, S.pb, { reaction: 0, reach: 0.7, maxZ: 1.7, T: 4, env: ENV });
             m.run = ip ? { x: ip.x, y: ip.y } : restPoint(S.pb, { env: ENV });
@@ -311,51 +333,57 @@ export function playDrawPass(host, opts) {
           steer(bd, m.hx / ppm + Math.sin(m.ph * 1.3) * 0.7, m.hy / ppm + Math.cos(m.ph * 0.9) * 0.5, h, { speed: 2.2 });
         }
         stepBody(bd, h);
-      }
+      });
       const meX = L.me.x / ppm;
       const meY = L.me.y / ppm;
       for (const d of L.defs) {
         const bd = d.body;
-        if (S.phase === 'after') steer(bd, bd.x, bd.y, h);
-        else if (d.mode === 'press') steer(bd, meX, meY - 0.55, h, { arrive: 0.3 });
-        else if (d.mode === 'landing') {
-          const p = landingGuess();
-          steer(bd, p.x / ppm, p.y / ppm, h, { speed: bd.maxSpeed * 0.85 });
-        } else if (d.mode === 'intercept' && flying) {
-          d.plan -= h;
-          if (d.plan <= 0) {
-            // araya girme: önce düz okur (falsoyu sk.read saniye sonra fark eder), sonra gerçek yolu
-            d.plan = 0.1;
-            const reads = S.flightT >= sk.read;
-            // top zaten üstüne geliyorsa yerinde kal (koridoru kapatan oyuncu yerini terk etmez)
-            const path = predict(S.pb, { T: 2.5, h: 1 / 90, env: ENV, noSpin: !reads });
-            const onLine = path.some((q) => q.z <= 2.3 && Math.hypot(q.x - bd.x, q.y - bd.y) <= (q.z < 0.9 ? 0.8 : q.z < 1.8 ? 0.5 : 0.38));
-            if (onLine) {
-              d.tx = bd.x;
-              d.ty = bd.y;
-              steer(bd, d.tx, d.ty, h, { arrive: 0.4 });
-              stepBody(bd, h);
-              continue;
+        // Refleks: top yakından geçecekse ayağını uzat (yalnız yakın çevre; topun gideceği yere koşmaz)
+        if (flying) {
+          d.scan -= h;
+          if (d.scan <= 0) {
+            d.scan = 0.06;
+            const pathAhead = predict(S.pb, { T: 0.45, h: 1 / 120, env: ENV });
+            let best = null;
+            for (const q of pathAhead) {
+              if (q.z > 2.2) continue;
+              const dd = Math.hypot(q.x - bd.x, q.y - bd.y);
+              if (dd < 1.7 && (!best || dd < best.d)) best = { x: q.x, y: q.y, d: dd };
             }
-            const ip = interceptBall(bd, S.pb, { reaction: Math.max(0, 0.14 - S.flightT), reach: 0.6, maxZ: 2.45, T: 3, env: ENV, noSpin: !reads });
-            const p = ip || restPoint(S.pb, { env: ENV });
-            d.tx = p.x;
-            d.ty = p.y;
+            if (best && !d.lunge) d.lunge = { ax: bd.x, ay: bd.y, t: 0 };
+            if (best && d.lunge) {
+              const ox = best.x - d.lunge.ax;
+              const oy = best.y - d.lunge.ay;
+              const ol = Math.hypot(ox, oy) || 1;
+              const lim = Math.min(ol, 1.1);
+              d.lunge.tx = d.lunge.ax + (ox / ol) * lim;
+              d.lunge.ty = d.lunge.ay + (oy / ol) * lim;
+            }
           }
-          steer(bd, d.tx, d.ty, h, { arrive: 0.4 });
+        }
+        if (S.phase === 'after') steer(bd, bd.x, bd.y, h);
+        else if (d.lunge && d.lunge.tx != null && flying) {
+          d.lunge.t += h;
+          steer(bd, d.lunge.tx, d.lunge.ty, h, { arrive: 0.2 });
+          if (d.lunge.t > 0.7) d.lunge = null;
+        } else if (d.mode === 'press') steer(bd, meX, meY - 0.55, h, { arrive: 0.3 });
+        else if (d.mode === 'mark' && L.mates[d.mark]) {
+          // adamını takip eder: kaleye dönük tarafında (üstünde) 1.2 m
+          const m = L.mates[d.mark].body;
+          steer(bd, m.x + (d.hx / ppm - m.x) * 0.15, m.y - 1.2, h, { speed: bd.maxSpeed * 0.9, arrive: 0.4 });
         } else {
-          steer(bd, d.hx / ppm + Math.sin(d.ph * 0.25) * 0.45, d.hy / ppm + Math.cos(d.ph * 0.2) * 0.35, h, { speed: 1.6 });
+          if (d.lunge && !flying) d.lunge = null;
+          steer(bd, d.hx / ppm + Math.sin(d.ph * 0.25) * 0.45, d.hy / ppm + Math.cos(d.ph * 0.2) * 0.35, h, { speed: 1.8 });
         }
         stepBody(bd, h);
       }
-      // çarpışmalar (rakip ↔ arkadaş, rakip ↔ rakip)
       for (let i = 0; i < L.defs.length; i++) {
         for (let j = i + 1; j < L.defs.length; j++) collideBodies(L.defs[i].body, L.defs[j].body);
         for (const m of L.mates) collideBodies(L.defs[i].body, m.body);
       }
     }
 
-    /** Topun oyunculara değmesi (metre). Rakip: ayak ≈1 m, göğüs ≈0.6 m, zıplayarak kafa ≈0.45 m (2.45 m'ye kadar). */
+    /** Top temasları (metre). Rakip: ayak ≈1 m, göğüs ≈0.6 m, kafa ≈0.45 m (2.45 m'ye kadar). */
     function ballContacts() {
       const pb = S.pb;
       for (const d of L.defs) {
@@ -374,14 +402,12 @@ export function playDrawPass(host, opts) {
         const ft = firstTouch(pb, m.body, sk.control);
         if (ft.clean || S.heavy) {
           S.received = i;
-          S.touchQ = ft.quality;
           S.ball.x = m.body.x * L.ppm;
-          S.ball.y = m.body.y * L.ppm - 12 * L.k;
+          S.ball.y = m.body.y * L.ppm - 4 * L.k;
           S.ball.h = 0;
           end('success');
           return true;
         }
-        // AĞIR İLK DOKUNUŞ: top sekip kaçar; arkadaş peşinden koşar, rakip kapabilir
         S.heavy = true;
         pb.vx = ft.bounce.vx;
         pb.vy = ft.bounce.vy;
@@ -398,25 +424,20 @@ export function playDrawPass(host, opts) {
       return false;
     }
 
-    function syncPx() {
-      for (const o of L.mates) { o.x = o.body.x * L.ppm; o.y = o.body.y * L.ppm; }
-      for (const o of L.defs) { o.x = o.body.x * L.ppm; o.y = o.body.y * L.ppm; }
-    }
-
     const stage = createStage(host, {
       tempo: opts.tempo ?? 1,
       update(dt) {
         if (!L || L.W !== stage.W || L.H !== stage.H) layout(stage.W, stage.H);
-        // zaman ölçeği: girişte yumuşak, çıkışta anında
         S.ts += (S.tsTarget - S.ts) * (1 - Math.exp(-12 * dt));
         if (Math.abs(S.ts - S.tsTarget) < 0.004) S.ts = S.tsTarget;
-        const g = dt * S.ts; // oyun zamanı
+        const g = dt * S.ts;
         S.t += g;
         S.hint = Math.max(0, S.hint - dt);
+        if (S.kickT > 0) S.kickT -= dt;
         particles.update(dt);
         big.update(dt);
-        for (const m of L.mates) m.ph += g;
-        for (const d of L.defs) d.ph += g * 6;
+        for (const m of L.mates) { m.ph += g; m.st.ph += bodySpeed(m.body) * g * TS * 1.1; }
+        for (const d of L.defs) { d.ph += g * 6; d.st.ph += bodySpeed(d.body) * g * TS * 1.1; }
 
         const b = S.ball;
         fixed.run(g * TS, (h) => {
@@ -440,30 +461,36 @@ export function playDrawPass(host, opts) {
           }
           return true;
         });
-        syncPx();
+        for (const o of [...L.mates, ...L.defs]) { o.x = o.body.x * L.ppm; o.y = o.body.y * L.ppm; }
 
         if (S.phase === 'idle' || S.phase === 'draw' || S.phase === 'aim') {
           b.x = L.me.x;
           b.y = L.me.y - 14 * L.k;
-          if (S.phase === 'idle' && S.t > IDLE_PRESS && !S.pressure) startPressure();
-          if (S.phase === 'draw') rebuild();
-          if (S.pressure) {
-            let near = Infinity;
-            for (const d of L.defs) near = Math.min(near, dist(d.x, d.y, L.me.x, L.me.y));
-            S.pressLevel = clamp(1 - (near - L.stealR) / Math.max(1, S.pressStartD - L.stealR), 0, 1);
-            if (near < L.stealR) {
-              const thief = L.defs.reduce((a, d) => (dist(d.x, d.y, L.me.x, L.me.y) < dist(a.x, a.y, L.me.x, L.me.y) ? d : a));
-              b.x = thief.x;
-              b.y = thief.y - 10 * L.k;
-              end('stolen');
+          if (tryout) {
+            // seçme: koşucu ekrandan çıkarsa geç kalınmıştır
+            const m = L.mates[0];
+            if ((m.lane.dir > 0 && m.x > L.W + 30 * L.k) || (m.lane.dir < 0 && m.x < -30 * L.k)) end('timeout');
+          } else {
+            if (S.phase === 'idle' && S.t > IDLE_PRESS && !S.pressure) startPressure();
+            if (S.pressure) {
+              let near = Infinity;
+              for (const d of L.defs) near = Math.min(near, dist(d.x, d.y, L.me.x, L.me.y));
+              S.pressLevel = clamp(1 - (near - L.stealR) / Math.max(1, S.pressStartD - L.stealR), 0, 1);
+              if (near < L.stealR) {
+                const thief = L.defs.reduce((a, d) => (dist(d.x, d.y, L.me.x, L.me.y) < dist(a.x, a.y, L.me.x, L.me.y) ? d : a));
+                b.x = thief.x;
+                b.y = thief.y - 10 * L.k;
+                end('stolen');
+              }
             }
           }
+          if (S.phase === 'draw') rebuild();
         } else if (S.phase === 'flight') {
           const pb = S.pb;
           b.x = pb.x * L.ppm;
           b.y = pb.y * L.ppm;
           b.h = clamp(pb.z / 3, 0, 1.5);
-          b.rot = pb.rot * 3 + S.t * b.spin * 0.1;
+          b.rot += (groundSpeed(pb) / 6) * dt * 6;
           S.trail.push({ x: b.x, y: b.y, h: b.h });
           if (S.trail.length > 26) S.trail.shift();
         } else if (S.phase === 'after') {
@@ -474,11 +501,10 @@ export function playDrawPass(host, opts) {
 
       render(ctx, W, H, t) {
         if (!L) return;
-        drawPitchTop(ctx, W, H, { box: final ? 'top' : 'none', circle: !final });
+        drawPitchTop(ctx, W, H, { box: final || tryout ? 'top' : 'none', circle: !final && !tryout });
         const k = L.k;
-
-        // ham çizim (soluk) + Bezier önizleme
-        if ((S.phase === 'draw' || S.phase === 'flight' || S.phase === 'roll') && S.pts.length > 1) {
+        // ham çizim + Bezier önizleme
+        if ((S.phase === 'draw' || S.phase === 'flight') && S.pts.length > 1) {
           if (S.phase === 'draw') {
             ctx.strokeStyle = 'rgba(255,255,255,.18)';
             ctx.lineWidth = 2;
@@ -489,7 +515,7 @@ export function playDrawPass(host, opts) {
             ctx.setLineDash([]);
           }
           const col = S.target < 0 ? '255,255,255' : S.contested ? '255,158,38' : '108,255,120';
-          const alpha = S.phase === 'draw' ? 0.95 : 0.35;
+          const alpha = S.phase === 'draw' ? 0.95 : 0.3;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
           ctx.strokeStyle = `rgba(${col},${alpha * 0.35})`;
@@ -500,7 +526,6 @@ export function playDrawPass(host, opts) {
           ctx.strokeStyle = `rgba(${col},${alpha})`;
           ctx.lineWidth = 4 * k;
           ctx.stroke();
-          // uçta ok
           if (S.phase === 'draw' && path.valid) {
             const e = path.p3;
             const tg = path.tangentAt(path.length);
@@ -514,54 +539,55 @@ export function playDrawPass(host, opts) {
             ctx.fill();
           }
         }
-
-        const s = 17 * k;
-        const drawDefs = () => {
-          for (const d of L.defs) {
-            const sp = bodySpeed(d.body);
-            const face = sp > 1.2 ? d.body.facing : Math.atan2(S.ball.x - d.x, -(S.ball.y - d.y));
-            const pressing = d.mode === 'press' || d.mode === 'landing';
-            drawTopPlayer(ctx, d.x, d.y, s, { colors: oppKit }, { facing: face, phase: d.ph * (0.25 + sp / 6), skin: '#9a6440', ring: pressing ? '#ff9e26' : '#ff5d6c' });
-          }
-        };
-        // Top kapıldıysa rakip, pasörün ÜSTÜNDE çizilir (kapan oyuncu görünsün)
-        const stolen = S.outcome === 'stolen';
-        if (!stolen) drawDefs();
+        // seçme: koşu yolu
+        if (tryout && S.phase !== 'after') {
+          const m = L.mates[0];
+          ctx.setLineDash([4, 8]);
+          ctx.strokeStyle = 'rgba(255,255,255,.18)';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(0, m.hy);
+          ctx.lineTo(W, m.hy);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+        // oyuncular: y sırasına göre (arkadaki önce)
+        const drawables = [];
+        L.defs.forEach((d) => drawables.push({ y: d.y, fn: () => drawMovingPlayer(ctx, d.x, d.y, L.ph, d.look, d.body.vx, d.body.vy, d.st, { face: 'down', ring: d.mode === 'press' ? '#ff9e26' : 'rgba(255,93,108,.7)', frame: d.lunge && d.lunge.tx != null && S.phase === 'flight' ? 'lunge' : undefined }) }));
         L.mates.forEach((m, i) => {
           const targeted = i === S.target && (S.phase === 'draw' || S.phase === 'flight');
-          if (targeted) {
-            ctx.strokeStyle = `rgba(255,230,80,${0.6 + 0.3 * Math.sin(t * 9)})`;
-            ctx.lineWidth = 3 * k;
-            ctx.beginPath();
-            ctx.ellipse(m.x, m.y + s * 0.2, s * 1.5, s * 0.9, 0, 0, Math.PI * 2);
-            ctx.stroke();
-          }
-          const sp = bodySpeed(m.body);
-          drawTopPlayer(ctx, m.x, m.y, s, { colors: myKit }, { number: m.num, facing: sp > 1.2 ? m.body.facing : 0, phase: m.ph * 3 * (0.3 + sp / 5), skin: m.skin, ring: '#e0f2fe' });
+          drawables.push({ y: m.y, fn: () => {
+            if (targeted) {
+              ctx.strokeStyle = `rgba(255,230,80,${0.6 + 0.3 * Math.sin(t * 9)})`;
+              ctx.lineWidth = 3 * k;
+              ctx.beginPath();
+              ctx.ellipse(m.x, m.y, 20 * k, 9 * k, 0, 0, Math.PI * 2);
+              ctx.stroke();
+            }
+            drawMovingPlayer(ctx, m.x, m.y, L.ph, m.look, m.body.vx, m.body.vy, m.st, { face: 'down', ring: 'rgba(224,242,254,.55)' });
+          } });
         });
-        drawTopPlayer(ctx, L.me.x, L.me.y, s * 1.1, { colors: myKit }, { number: opts.number ?? 8, highlight: true, phase: t * 2, skin: opts.skin || '#d9a57b' });
-        if (stolen) drawDefs();
+        const kicking = S.kickT > 0;
+        drawables.push({ y: L.me.y, fn: () => drawPixelPlayer(ctx, L.me.x, L.me.y, L.ph * 1.05, meLook, { dir: 'up', frame: kicking ? 'kick' : S.phase === 'draw' ? 'idle' : `run${Math.floor(t * 2) % 2 ? 1 : 3}`, marker: '#c6ff3d' }) });
+        drawables.sort((a, b) => a.y - b.y).forEach((d) => d.fn());
 
-        // top izi (falsonun kıvrımı görünsün)
+        // top izi + top
         if (S.trail.length > 2 && S.phase === 'flight') {
           ctx.lineCap = 'round';
           for (let i = 1; i < S.trail.length; i++) {
             const p0 = S.trail[i - 1];
             const p1 = S.trail[i];
-            ctx.strokeStyle = `rgba(255,255,255,${(i / S.trail.length) * 0.45})`;
-            ctx.lineWidth = (2 + (i / S.trail.length) * 4) * k;
+            ctx.strokeStyle = `rgba(255,255,255,${(i / S.trail.length) * 0.4})`;
+            ctx.lineWidth = (2 + (i / S.trail.length) * 3) * k;
             ctx.beginPath();
             ctx.moveTo(p0.x, p0.y - p0.h * 18 * k);
             ctx.lineTo(p1.x, p1.y - p1.h * 18 * k);
             ctx.stroke();
           }
         }
-        // top: yükseklik = büyüme + gölge kayması
         const b = S.ball;
-        if (b.h > 0.02) drawShadow(ctx, b.x + b.h * 10 * k, b.y + b.h * 14 * k, L.rBall * 0.9, L.rBall * 0.5, 0.3);
-        drawBall(ctx, b.x, b.y - b.h * 18 * k, L.rBall * (1 + 0.35 * b.h), b.rot);
+        drawPixelBall(ctx, b.x, b.y, 13 * k * (1 + 0.3 * b.h), b.rot, { lift: b.h * 18 * k });
 
-        // başlangıç: topa dokun işareti
         if (S.phase === 'idle' || S.phase === 'aim') {
           const pulse = 1 + 0.12 * Math.sin(t * 6);
           ctx.strokeStyle = 'rgba(198,255,61,.75)';
@@ -570,8 +596,6 @@ export function playDrawPass(host, opts) {
           ctx.arc(b.x, b.y, 20 * k * pulse, 0, Math.PI * 2);
           ctx.stroke();
         }
-
-        // ağır çekim vinyeti
         if (S.ts < 0.95) {
           const a = clamp((1 - S.ts) * 0.55, 0, 0.5);
           const gr = ctx.createRadialGradient(W / 2, H * 0.55, Math.min(W, H) * 0.3, W / 2, H * 0.55, Math.max(W, H) * 0.75);
@@ -584,26 +608,24 @@ export function playDrawPass(host, opts) {
           ctx.fillStyle = `rgba(198,255,61,${a * 1.6})`;
           ctx.fillText('AĞIR ÇEKİM', 12, 22);
         }
-
-        // baskı çubuğu / bekleme sayacı
-        if (S.phase === 'idle' && !S.pressure) drawTimer(ctx, W, H - 16, S.t / IDLE_PRESS);
-        else if (S.pressure && (S.phase === 'draw' || S.phase === 'aim' || S.phase === 'idle')) {
-          // rakip baskısı: dolan çubuk (dolunca top kapılır)
-          ctx.fillStyle = 'rgba(0,0,0,.45)';
-          roundRect(ctx, 16, H - 16, W - 32, 8, 4);
-          ctx.fill();
-          ctx.fillStyle = S.pressLevel > 0.7 ? '#ff5d6c' : '#ff9e26';
-          roundRect(ctx, 16, H - 16, Math.max(8, (W - 32) * S.pressLevel), 8, 4);
-          ctx.fill();
+        if (!tryout) {
+          if (S.phase === 'idle' && !S.pressure) drawTimer(ctx, W, H - 16, S.t / IDLE_PRESS);
+          else if (S.pressure && (S.phase === 'draw' || S.phase === 'aim' || S.phase === 'idle')) {
+            ctx.fillStyle = 'rgba(0,0,0,.45)';
+            roundRect(ctx, 16, H - 16, W - 32, 8, 4);
+            ctx.fill();
+            ctx.fillStyle = S.pressLevel > 0.7 ? '#ff5d6c' : '#ff9e26';
+            roundRect(ctx, 16, H - 16, Math.max(8, (W - 32) * S.pressLevel), 8, 4);
+            ctx.fill();
+          }
         }
-
         ctx.font = '800 14px system-ui, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillStyle = 'rgba(255,255,255,.92)';
         const hint = S.hint > 0
           ? 'Çizgiye topun üstünden başla'
           : S.phase === 'idle' || S.phase === 'aim'
-            ? 'Topa dokun, arkadaşına doğru çiz'
+            ? (tryout ? 'Topa dokun, arkadaşının KOŞU YOLUNUN ÖNÜNE çiz' : 'Topa dokun, arkadaşına doğru çiz')
             : S.phase === 'draw'
               ? (S.target < 0 ? 'Çizgiyi bir arkadaşında bitir' : S.contested ? 'Rakip yolda! Etrafından kavisle dolaş' : 'Bırak: pas gitsin')
               : '';
@@ -633,4 +655,21 @@ export function playDrawPass(host, opts) {
       },
     });
   });
+}
+
+/**
+ * Seçme istasyonu: aynı pas sistemiyle art arda denemeler. Her denemenin sonucu onAttempt'e gider;
+ * istasyon bitene kadar sürer (ısınma denemesi puan almaz).
+ * @param {{onAttempt:(success:boolean)=>{stationOver:boolean,warmup:boolean}, isWarmup:()=>boolean, myKit:object, me?:object, number?:number, skill?:number}} opts
+ */
+export async function playPassStation(host, opts) {
+  let rep = 0;
+  for (;;) {
+    const warm = opts.isWarmup();
+    const level = warm ? 0 : Math.min(1, rep / 4);
+    const r = await playDrawPass(host, { skill: opts.skill ?? 0.45, context: 'tryout', level, warm, myKit: opts.myKit, me: opts.me, number: opts.number ?? 8, seed: rep });
+    if (!warm) rep++;
+    const st = opts.onAttempt(!!r.success);
+    if (st?.stationOver) return;
+  }
 }

@@ -4,6 +4,7 @@ import { applyAiEvent, MOMENT_INTRO, MOMENT_TITLE, resolveMoment } from '../../c
 import { effectiveSkill } from '../../core/player.js';
 import { clubRating } from '../../core/league.js';
 import { runMiniGame } from '../../games/index.js';
+import { playerLook } from '../../core/cosmetics.js';
 import { buzz, sfx } from '../../audio.js';
 import { crestSVG, icon } from '../art.js';
 import { confetti, el, esc, sleep } from '../dom.js';
@@ -122,6 +123,7 @@ export function matchScreen(app, { match }) {
           text: MOMENT_INTRO[type][m.context],
           minute: m.minute,
           myKit: my,
+          me: playerLook(s, { club: my }),
           oppKit: opp,
           keeper: Math.min(0.95, clubRating(s.world, match.oppId) / 90),
           number: s.player.number,

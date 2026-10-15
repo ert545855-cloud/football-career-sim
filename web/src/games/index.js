@@ -3,15 +3,15 @@ import { el, esc, root, sleep } from '../ui/dom.js';
 import { icon } from '../ui/art.js';
 import { sfx, unlock } from '../audio.js';
 import { playShot } from './shot.js';
-import { playPass } from './pass.js';
 import { playDrawPass } from './drawPass.js';
 import { loadSettings } from '../core/storage.js';
-import { playTackle } from './tackle.js';
-import { playSprint } from './sprint.js';
+import { playIntercept } from './intercept.js';
+import { playDribble } from './dribble.js';
+import { playShuttle } from './shuttle.js';
 import { playUnityMoment, unityBuildAvailable } from './unity3d.js';
 
 /**
- * @param {{type:'shot'|'pass'|'tackle'|'sprint'|'endurance', skill:number, context?:string, title:string, text:string,
+ * @param {{type:'shot'|'pass'|'tackle'|'dribble'|'shuttle', skill:number, context?:string, title:string, text:string, me?:object,
  *   minute?:number, myKit:object, oppKit?:object, keeper?:number, number?:number, name?:string, skin?:string, auto?:boolean,
  *   big?:{title:string, nerves:number, tempo:number, cool:boolean}|null}} o
  */
@@ -65,18 +65,21 @@ export async function runMiniGame(o) {
     const success = Math.random() < 0.3 + o.skill * 0.5;
     result = { success, accuracy: success ? Math.random() : 0, outcome: success ? 'goal' : 'save' };
   } else {
-    const common = { skill: o.skill, context: o.context, myKit: o.myKit, oppKit: o.oppKit, number: o.number, skin: o.skin, tempo: big ? big.tempo : 1, nerves: big ? big.nerves : 0 };
+    const common = { skill: o.skill, context: o.context, myKit: o.myKit, oppKit: o.oppKit, me: o.me, number: o.number, tempo: big ? big.tempo : 1, nerves: big ? big.nerves : 0 };
     // 3B mod (Ayarlar): pas ve şut anları Unity WebGL derlemesinde oynanır; yüklenemezse 2B oyuna düşer
     if ((o.type === 'pass' || o.type === 'shot') && loadSettings().unity3d && (await unityBuildAvailable())) {
       result = await playIn3D(host, o, big).catch(() => null);
     }
     if (!result) switch (o.type) {
       case 'shot': result = await playShot(host, { ...common, keeper: o.keeper }); break;
-      // Varsayılan: çizerek kavisli pas. Ayarlardan 'Kolay pas' seçilirse eski dokunarak pas.
-      case 'pass': result = await (loadSettings().easyPass ? playPass(host, common) : playDrawPass(host, common)); break;
-      case 'tackle': result = await playTackle(host, common); break;
-      case 'sprint': result = await playSprint(host, { ...common, mode: 'sprint', name: o.name }); break;
-      case 'endurance': result = await playSprint(host, { ...common, mode: 'endurance', name: o.name }); break;
+      // Tek pas sistemi: çizerek kavisli pas (seçmelerde de aynı)
+      case 'pass': result = await playDrawPass(host, common); break;
+      // Defans: pas arası (maçta ve antrenmanda aynı)
+      case 'tackle': result = await playIntercept(host, common); break;
+      // Hız: Adamı Geç (seçmelerdeki çalım istasyonu ile aynı oyun)
+      case 'dribble': case 'sprint': result = await playDribble(host, { ...common, rows: 8 }); break;
+      // Dayanıklılık: mekik koşusu (bip testi)
+      case 'shuttle': case 'endurance': result = await playShuttle(host, common); break;
       default: result = { success: false, accuracy: 0, outcome: 'none' };
     }
   }

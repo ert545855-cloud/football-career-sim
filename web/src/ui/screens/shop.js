@@ -4,6 +4,7 @@ import { icon, itemArt } from '../art.js';
 import { esc, toast } from '../dom.js';
 import { sprite } from '../../assets/sprites.js';
 import { sfx } from '../../audio.js';
+import { mountWardrobe, wardrobeHTML } from '../wardrobe.js';
 
 const FX_LABEL = { morale: 'Moral', energy: 'Enerji', fans: 'Taraftar', fame: 'Ün', train: 'Antrenman' };
 
@@ -16,7 +17,7 @@ function fxChips(item) {
 
 export function shopScreen(app) {
   const s = app.state;
-  const view = (app.shopView ||= { cat: 'vehicle' });
+  const view = (app.shopView ||= { cat: 'style' });
   const fin = weeklyFinance(s);
   const items = SHOP_ITEMS.filter((i) => i.cat === view.cat);
 
@@ -55,9 +56,10 @@ export function shopScreen(app) {
       <div class="scroller" style="margin:14px 0 12px">
         ${SHOP_CATEGORIES.map((c) => `<button class="opt ${view.cat === c.id ? 'on' : ''}" data-cat="${c.id}">${c.name}</button>`).join('')}
       </div>
-      <p class="muted small" style="margin:0 0 10px">${view.cat === 'vehicle' || view.cat === 'home' ? 'Bu kategoride sadece en iyi eşyanın etkisi geçerli.' : 'Bu kategorideki etkiler birbirine eklenir.'}</p>
-      <div class="shop-grid">${cards}</div>`,
+      ${view.cat === 'style' ? wardrobeHTML(app) : `<p class="muted small" style="margin:0 0 10px">${view.cat === 'vehicle' || view.cat === 'home' ? 'Bu kategoride sadece en iyi eşyanın etkisi geçerli.' : 'Bu kategorideki etkiler birbirine eklenir.'}</p>
+      <div class="shop-grid">${cards}</div>`}`,
     mount(el) {
+      if (view.cat === 'style') mountWardrobe(app, el);
       el.addEventListener('click', (e) => {
         const t = e.target.closest('button');
         if (!t) return;

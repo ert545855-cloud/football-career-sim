@@ -35,8 +35,8 @@ export const MOMENT_INTRO = {
     final: 'Son bölgede top sende! Gol pası için çiz: rakiplerin etrafından kavisli bir pas.',
   },
   tackle: {
-    threat: 'Kontra atak! Rakip forvet hızla kalene geliyor. Top ayağından açılınca (halka yeşil) dokun ya da kayarak gir.',
-    duel: 'Rakip kanat oyuncusu üzerine geliyor! Sürükleyerek karşıla; topa uzanmak için dokun, kaymak için hızlı kaydır.',
+    threat: 'Kontra atak! Üç rakip paslaşarak kalene geliyor. Top sahibinin bakışını oku, koridoru kapat, pası kes!',
+    duel: 'Rakipler orta sahada paslaşıyor. Bakış çizgisini izle; sürükleyerek koridoru kapat, top yanından geçerken dokun.',
   },
 };
 
@@ -246,13 +246,14 @@ export function resolveMoment(match, moment, result, playerName) {
       t.won++;
       t.rating += moment.context === 'threat' ? 0.55 : 0.45;
       const how = {
-        slide: `${playerName} kayarak müthiş bir müdahale yaptı, tehlike geçti!`,
-        poke: `${playerName} zamanlamasını iyi ayarladı, araya uzanıp topu kaptı!`,
-        block: `${playerName} pozisyonunu iyi aldı, rakibin topu ona çarpıp kaldı.`,
-        out: `${playerName} rakibini çizgiye sıkıştırdı, top taca çıktı.`,
+        lunge: `${playerName} pası okudu, ayağını uzatıp araya girdi! Tehlike geçti.`,
+        intercept: `${playerName} koridoru kapattı, pas ayağına geldi.`,
+        tackle: `${playerName} top sahibine yapıştı ve topu kaptı!`,
+        loose: `${playerName} baskıyla rakibin pasını boşa çıkardı.`,
         time: `${playerName} rakibini oyaladı, takım savunmaya döndü.`,
+        slide: `${playerName} kayarak müthiş bir müdahale yaptı, tehlike geçti!`,
       }[result.method];
-      lines.push({ minute: m, kind: 'tackle', text: how || `${playerName} kayarak müthiş bir müdahale yaptı, tehlike geçti!` });
+      lines.push({ minute: m, kind: 'tackle', text: how || `${playerName} araya girip topu kaptı!` });
     } else if (result.outcome === 'foul') {
       // Faul: kart riski + tehlikeli bölgede serbest vuruş
       t.lost++;
@@ -268,7 +269,7 @@ export function resolveMoment(match, moment, result, playerName) {
       t.rating -= 0.45;
       if (moment.context === 'threat' && chance(0.42)) {
         match.score.opp += 1;
-        lines.push({ minute: m, kind: 'goal-opp', text: `${playerName} rakibini durduramadı ve top ağlarda. ${scoreLine(match)}` });
+        lines.push({ minute: m, kind: 'goal-opp', text: result.method === 'through' ? `${playerName} ara pasını kesemedi, rakip forvet golü buldu. ${scoreLine(match)}` : `${playerName} rakibini durduramadı ve top ağlarda. ${scoreLine(match)}` });
       } else {
         lines.push({ minute: m, kind: 'chance', text: `${playerName} geçildi ama kaleci gole izin vermedi.` });
       }

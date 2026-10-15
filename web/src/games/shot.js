@@ -1,7 +1,9 @@
 // ŞUT — oyuncunun arkasından kaleye bakış. Kaydır: yön + güç. Kaleci tepki verir.
-import { createStage, Particles, BigText, drawBall, drawShadow, makeCrowd, drawCrowd, drawTimer, ease, clamp, lerp, gaussian, roundRect } from './engine.js';
+import { createStage, Particles, BigText, drawShadow, makeCrowd, drawCrowd, drawTimer, ease, clamp, lerp, gaussian, roundRect } from './engine.js';
 import { sfx, buzz } from '../audio.js';
 import { FAN_SPRITES, FLAG_SPRITES, drawSprite, spriteSize } from '../assets/sprites.js';
+import { drawPixelPlayer, drawPixelBall } from './pixel/sprites.js';
+import { keeperLook, npcLook } from './pixel/looks.js';
 
 const persp = (p) => 1 - Math.pow(1 - clamp(p, 0, 1), 1.5);
 
@@ -22,6 +24,8 @@ export function playShot(host, opts) {
     const myKit = opts.myKit?.colors || ['#2563eb', '#fff'];
     const oppKit = opts.oppKit?.colors || ['#b91c1c', '#fff'];
     const keeperColor = opts.keeperColor || '#22d3ee';
+    const keeperPx = keeperLook(keeperColor, 9);
+    const defPx = npcLook(opts.oppKit || { colors: oppKit }, 41, 4);
     const ballOffset = type === 'penalty' ? 0 : (Math.random() - 0.5) * 0.3;
     const defOffset = (Math.random() - 0.5) * 0.7;
     const penaltySide = [-0.68, 0, 0.68][Math.floor(Math.random() * 3)];
@@ -177,13 +181,13 @@ export function playShot(host, opts) {
       const b = S.ball;
       const o = S.outcome;
       if (o === 'goal' && target && !S.targetHit) {
-        S.net = { x: b.x, y: b.y, t: 0 };
+        netHit(b.x, b.y, 1);
         big.show('ISKA!', '#ff5d6c', 64);
         sfx('miss');
         buzz('miss');
         S.after = { vx: (b.x - L.cx) * 0.1, vy: -20, shrink: 0.996 };
       } else if (o === 'goal' && target) {
-        S.net = { x: b.x, y: b.y, t: 0 };
+        netHit(b.x, b.y, 1);
         S.excite = 0.6;
         big.show('HEDEF!', '#c6ff3d', 70);
         particles.burst(b.x, b.y, { n: 36, colors: ['#c6ff3d', '#ffcf3d', '#fff'], speed: 340, gravity: 500, life: 1.2, size: 5 });
@@ -192,7 +196,7 @@ export function playShot(host, opts) {
         buzz('goal');
         S.after = { vx: (b.x - L.cx) * 0.1, vy: -20, shrink: 0.996 };
       } else if (o === 'goal') {
-        S.net = { x: b.x, y: b.y, t: 0 };
+        netHit(b.x, b.y, 1);
         S.excite = 1;
         big.show('GOOOL!', '#c6ff3d', 76);
         particles.burst(b.x, b.y, { n: 40, colors: ['#c6ff3d', '#ffcf3d', '#fff', myKit[0]], speed: 380, gravity: 500, life: 1.4, size: 5 });
@@ -284,8 +288,12 @@ export function playShot(host, opts) {
             if (a.vy !== undefined && S.outcome !== 'goal' && S.outcome !== 'over' && S.outcome !== 'wide') a.vy += 600 * dt;
             if (a.shrink) b.r *= Math.pow(a.shrink, dt * 60);
             if (a.grow) b.r *= Math.pow(a.grow, dt * 60);
-            if (S.outcome === 'goal') {
-              // ağlara gömülür
+            if (S.outcome === 'goal' && net.hit) {
+              // ağlara gömülür ve fileyle birlikte sallanır
+              const kk = nIdx(net.hit.i, net.hit.j);
+              b.x = net.hit.x + net.d[kk] * 0.95;
+              b.y = net.hit.y + net.d[kk + 1] * 0.95 - b.r * 0.2;
+            } else if (S.outcome === 'goal') {
               const backBottom = backY(L.gl);
               b.y = Math.min(b.y, backBottom - b.r);
               a.vx *= 0.9;
@@ -293,7 +301,7 @@ export function playShot(host, opts) {
           }
           S.rot += dt * 6;
           if (L.def) L.def.jump *= 0.95;
-          if (S.net) S.net.t += dt;
+          netStep(dt);
           if (S.afterT > 1.7) finish();
         }
         if (S.drag) S.hintA = Math.max(0, S.hintA - dt * 3);
@@ -509,7 +517,7 @@ export function playShot(host, opts) {
       if (S.phase !== 'after' || S.outcome === 'save' || S.outcome === 'post' || S.outcome === 'block') {
         drawShadow(ctx, b.x + (b.alt || 0) * 0.05, shadowY + b.r * 0.6, b.r * clamp(1.1 - (b.alt || 0) / (L.gh * 3), 0.3, 1.1), b.r * 0.35, 0.35);
       }
-      drawBall(ctx, b.x, b.y, b.r, S.rot);
+      drawPixelBall(ctx, b.x, b.y, b.r * 2.1, S.rot, { shadow: false });
     }
 
     function drawPosts(ctx) {
@@ -526,12 +534,78 @@ export function playShot(host, opts) {
       ctx.shadowBlur = 0;
     }
 
-    function netOffset(x, y, t) {
-      if (!S.net) return 0;
-      const d = Math.hypot(x - S.net.x, y - S.net.y);
-      const a = Math.max(0, 1 - d / (L.gw * 0.4));
-      return a * a * 10 * Math.sin(S.net.t * 22) * Math.exp(-S.net.t * 2.5);
+    // ── FİLE: yay-kütle ağı. Gol olunca top çarptığı yerde file geriye şişer, dalga yayılır, sallanıp durulur ──
+    const NC = 16;
+    const NR = 8;
+    const net = { d: new Float32Array((NC + 1) * (NR + 1) * 2), v: new Float32Array((NC + 1) * (NR + 1) * 2), t: 0, active: 0 };
+    const nIdx = (i, j) => (j * (NC + 1) + i) * 2;
+    function netRest(i, j) {
+      const x0 = gx(-1);
+      const x1 = gx(1);
+      const top = gy(1);
+      return { x: lerp(backX(x0), backX(x1), i / NC), y: lerp(backY(top), backY(L.gl), j / NR) };
     }
+    /** Topun çarptığı noktaya darbe: düğümler geriye (yukarı-içe) ve dışa itilir. */
+    function netHit(x, y, power = 1) {
+      net.active = 2.6;
+      // topun gömüleceği düğüm
+      let best = null;
+      for (let j = 1; j < NR; j++) for (let i = 1; i < NC; i++) {
+        const r = netRest(i, j);
+        const d = Math.hypot(r.x - x, r.y - y);
+        if (!best || d < best.d) best = { i, j, d, x: r.x, y: r.y };
+      }
+      net.hit = best;
+      for (let j = 0; j <= NR; j++) {
+        for (let i = 0; i <= NC; i++) {
+          const r = netRest(i, j);
+          const dx = r.x - x;
+          const dy = r.y - y;
+          const d = Math.hypot(dx, dy);
+          const R = L.gw * 0.32;
+          const f = Math.max(0, 1 - d / R);
+          if (!f) continue;
+          const k = nIdx(i, j);
+          const push = f * f * 520 * power;
+          // geriye şişme: perspektifte arka = biraz yukarı ve kalenin ortasına doğru; çevrede dalga
+          const cx = L.cx - r.x;
+          net.v[k] += (dx / (d || 1)) * push * 0.45 + cx * f * 0.6 * power;
+          net.v[k + 1] += -push * 0.45 + (dy / (d || 1)) * push * 0.3;
+        }
+      }
+    }
+    function netStep(dt) {
+      if (net.active <= 0) return;
+      net.active -= dt;
+      const h = Math.min(dt, 1 / 30);
+      const KS = 90; // yerine dönme yayı
+      const KN = 140; // komşu bağı
+      const DAMP = 3.2;
+      for (let j = 0; j <= NR; j++) {
+        for (let i = 0; i <= NC; i++) {
+          const k = nIdx(i, j);
+          const edge = i === 0 || i === NC || j === 0 || j === NR;
+          if (edge) {
+            net.d[k] *= 0.5;
+            net.d[k + 1] *= 0.5;
+            continue;
+          }
+          for (let c = 0; c < 2; c++) {
+            const lap = net.d[nIdx(i - 1, j) + c] + net.d[nIdx(i + 1, j) + c] + net.d[nIdx(i, j - 1) + c] + net.d[nIdx(i, j + 1) + c] - 4 * net.d[k + c];
+            const a = -KS * net.d[k + c] + KN * lap - DAMP * net.v[k + c];
+            net.v[k + c] += a * h;
+          }
+        }
+      }
+      for (let n = 0; n < net.d.length; n++) net.d[n] += net.v[n] * h;
+    }
+    const nP = (i, j, t) => {
+      const r = netRest(i, j);
+      const k = nIdx(i, j);
+      // hafif rüzgâr dalgası
+      const w = Math.sin(t * 1.7 + i * 0.6 + j * 0.4) * 0.4;
+      return { x: r.x + net.d[k], y: r.y + net.d[k + 1] + w };
+    };
 
     function drawNet(ctx, t) {
       const x0 = gx(-1);
@@ -546,42 +620,40 @@ export function playShot(host, opts) {
       ctx.moveTo(x0, L.gl); ctx.lineTo(bx0, bbot); ctx.lineTo(bx0, btop); ctx.lineTo(bx1, btop); ctx.lineTo(bx1, bbot); ctx.lineTo(x1, L.gl); ctx.lineTo(x1, top); ctx.lineTo(x0, top);
       ctx.closePath();
       ctx.fill();
-      ctx.strokeStyle = 'rgba(255,255,255,.32)';
+      ctx.strokeStyle = 'rgba(255,255,255,.36)';
       ctx.lineWidth = 1;
-      const cols = 16;
-      for (let i = 0; i <= cols; i++) {
-        const x = lerp(bx0, bx1, i / cols);
+      // arka ağ (şişen kısım)
+      for (let i = 0; i <= NC; i++) {
         ctx.beginPath();
-        for (let j = 0; j <= 8; j++) {
-          const y = lerp(btop, bbot, j / 8);
-          const o = netOffset(x, y, t);
-          if (j === 0) ctx.moveTo(x, y - o); else ctx.lineTo(x, y - o);
+        for (let j = 0; j <= NR; j++) {
+          const p = nP(i, j, t);
+          if (j === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
         }
         ctx.stroke();
       }
-      const rows = 6;
-      for (let j = 0; j <= rows; j++) {
-        const y = lerp(btop, bbot, j / rows);
+      for (let j = 0; j <= NR; j++) {
         ctx.beginPath();
-        for (let i = 0; i <= 16; i++) {
-          const x = lerp(bx0, bx1, i / 16);
-          const o = netOffset(x, y, t);
-          if (i === 0) ctx.moveTo(x, y - o); else ctx.lineTo(x, y - o);
+        for (let i = 0; i <= NC; i++) {
+          const p = nP(i, j, t);
+          if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
         }
         ctx.stroke();
       }
-      // yan ve üst paneller
-      for (let j = 0; j <= rows; j++) {
-        const f = j / rows;
+      // yan ve üst paneller: kale çerçevesinden arka ağın kenar düğümlerine
+      for (let j = 0; j <= NR; j++) {
+        const f = j / NR;
+        const pl = nP(0, j, t);
+        const pr = nP(NC, j, t);
         ctx.beginPath();
-        ctx.moveTo(x0, lerp(top, L.gl, f)); ctx.lineTo(bx0, lerp(btop, bbot, f));
-        ctx.moveTo(x1, lerp(top, L.gl, f)); ctx.lineTo(bx1, lerp(btop, bbot, f));
+        ctx.moveTo(x0, lerp(top, L.gl, f)); ctx.lineTo(pl.x, pl.y);
+        ctx.moveTo(x1, lerp(top, L.gl, f)); ctx.lineTo(pr.x, pr.y);
         ctx.stroke();
       }
-      for (let i = 0; i <= cols; i++) {
+      for (let i = 0; i <= NC; i++) {
+        const p = nP(i, 0, t);
         ctx.beginPath();
-        ctx.moveTo(lerp(x0, x1, i / cols), top);
-        ctx.lineTo(lerp(bx0, bx1, i / cols), btop);
+        ctx.moveTo(lerp(x0, x1, i / NC), top);
+        ctx.lineTo(p.x, p.y);
         ctx.stroke();
       }
     }
@@ -615,91 +687,17 @@ export function playShot(host, opts) {
 
     function drawKeeper(ctx) {
       const k = S.k;
-      const kh = L.gh * 0.9;
+      const kh = L.gh * 0.95;
       const x = gx(k.u);
-      ctx.save();
       drawShadow(ctx, x, L.gl + 3, kh * 0.3, kh * 0.06, 0.4);
-      ctx.translate(x, L.gl - k.lift);
-      ctx.rotate(k.angle);
-      const w = kh * 0.34;
-      // bacaklar
-      ctx.fillStyle = '#111827';
-      ctx.fillRect(-w * 0.42, -kh * 0.42, w * 0.32, kh * 0.42);
-      ctx.fillRect(w * 0.1, -kh * 0.42, w * 0.32, kh * 0.42);
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(-w * 0.5, -kh * 0.52, w, kh * 0.14);
-      // gövde
-      ctx.fillStyle = keeperColor;
-      roundRect(ctx, -w / 2, -kh * 0.84, w, kh * 0.36, w * 0.2);
-      ctx.fill();
-      ctx.fillStyle = 'rgba(0,0,0,.18)';
-      ctx.fillRect(-w / 2, -kh * 0.62, w, kh * 0.05);
-      // kollar (hazır pozisyonu: yukarı/yana açık)
-      const armUp = S.phase === 'aim' ? 0.55 + Math.sin(k.idle * 4) * 0.05 : 1.2;
-      ctx.strokeStyle = keeperColor;
-      ctx.lineCap = 'round';
-      ctx.lineWidth = w * 0.24;
-      ctx.beginPath();
-      ctx.moveTo(-w * 0.45, -kh * 0.78);
-      ctx.lineTo(-w * 0.45 - Math.cos(armUp) * kh * 0.3, -kh * 0.78 - Math.sin(armUp) * kh * 0.3);
-      ctx.moveTo(w * 0.45, -kh * 0.78);
-      ctx.lineTo(w * 0.45 + Math.cos(armUp) * kh * 0.3, -kh * 0.78 - Math.sin(armUp) * kh * 0.3);
-      ctx.stroke();
-      ctx.fillStyle = '#f8fafc';
-      for (const sgn of [-1, 1]) {
-        ctx.beginPath();
-        ctx.arc(sgn * (w * 0.45 + Math.cos(armUp) * kh * 0.3), -kh * 0.78 - Math.sin(armUp) * kh * 0.3, w * 0.17, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      // kafa
-      ctx.fillStyle = '#c98e62';
-      ctx.beginPath();
-      ctx.arc(0, -kh * 0.93, w * 0.26, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#1f1309';
-      ctx.beginPath();
-      ctx.arc(0, -kh * 0.96, w * 0.26, Math.PI, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
+      drawPixelPlayer(ctx, x, L.gl + 2, kh, keeperPx, { dir: 'down', frame: 'ready', rot: k.angle, lift: k.lift, shadow: false });
     }
 
     function drawDefender(ctx) {
       const d = L.def;
       const h = d.h;
-      const w = h * 0.36;
       const lift = Math.sin(Math.min(1, d.jump) * Math.PI * 0.5) * h * 0.25 * d.jump;
-      drawShadow(ctx, d.x, d.y + 2, w * 0.7, w * 0.16, 0.35);
-      ctx.save();
-      ctx.translate(d.x, d.y - lift);
-      ctx.fillStyle = '#0b0f0d';
-      ctx.fillRect(-w * 0.38, -h * 0.4, w * 0.3, h * 0.4);
-      ctx.fillRect(w * 0.08, -h * 0.4, w * 0.3, h * 0.4);
-      ctx.fillStyle = oppKit[1];
-      ctx.fillRect(-w * 0.48, -h * 0.52, w * 0.96, h * 0.15);
-      ctx.fillStyle = oppKit[0];
-      roundRect(ctx, -w / 2, -h * 0.86, w, h * 0.38, w * 0.2);
-      ctx.fill();
-      ctx.fillStyle = oppKit[1];
-      ctx.font = `900 ${w * 0.45}px system-ui, sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.fillText('4', 0, -h * 0.6);
-      ctx.strokeStyle = oppKit[0];
-      ctx.lineWidth = w * 0.2;
-      ctx.lineCap = 'round';
-      const arm = 0.25 + d.jump * 0.9;
-      ctx.beginPath();
-      ctx.moveTo(-w * 0.42, -h * 0.8); ctx.lineTo(-w * 0.42 - Math.cos(arm) * h * 0.2, -h * 0.8 + Math.sin(-arm) * h * 0.2);
-      ctx.moveTo(w * 0.42, -h * 0.8); ctx.lineTo(w * 0.42 + Math.cos(arm) * h * 0.2, -h * 0.8 + Math.sin(-arm) * h * 0.2);
-      ctx.stroke();
-      ctx.fillStyle = '#9a6440';
-      ctx.beginPath();
-      ctx.arc(0, -h * 0.94, w * 0.24, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#1f1309';
-      ctx.beginPath();
-      ctx.arc(0, -h * 0.95, w * 0.25, Math.PI * 1.05, Math.PI * 1.95);
-      ctx.fill();
-      ctx.restore();
+      drawPixelPlayer(ctx, d.x, d.y + 2, h, defPx, { dir: 'down', frame: d.jump > 0.15 ? 'ready' : 'idle', lift });
     }
   });
 }

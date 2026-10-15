@@ -26,7 +26,6 @@ export function settingsScreen(app) {
         ${toggle('sound', 'Ses efektleri', 'sound', 'Vuruş, düdük, tribün sesleri')}
         ${toggle('vibrate', 'Titreşim', 'vibrate', hapticSupport() === 'none' ? 'Bu cihaz/tarayıcı titreşimi desteklemiyor.' : hapticSupport() === 'ios' ? 'Golü, pası, kurtarışı hisset (iPhone: dokunsal tıklar)' : 'Golü, pası, kurtarışı ve müdahaleyi elinde hisset')}
         ${st.vibrate ? `<div class="li"><span class="ic"></span><div class="grow"><b>Titreşim gücü</b><div class="seg" style="margin-top:8px">${[['soft', 'Hafif'], ['normal', 'Normal'], ['strong', 'Güçlü']].map(([k, l]) => `<button class="${(st.haptic || 'normal') === k ? 'on' : ''}" data-haptic-level="${k}">${l}</button>`).join('')}</div><div class="muted small" style="margin-top:6px">Seçince gol titreşimini dener.</div></div></div>` : ''}
-        ${toggle('easyPass', 'Kolay pas', 'target', 'Pas anlarında çizmek yerine arkadaşa dokun')}
         <div data-unity-toggle hidden>${toggle('unity3d', '3B mod (Unity)', 'ball', 'Maçtaki pas ve şut anları 3B sahnede oynanır (ilk açılışta indirme yapar)')}</div>
       </div>
 
