@@ -2,6 +2,7 @@ import { ballSVG, icon } from '../art.js';
 import { hasSave } from '../../core/storage.js';
 import { sprite } from '../../assets/sprites.js';
 import { checkCloudOnStart } from '../cloudView.js';
+import { playIntro } from '../intro.js';
 
 export function titleScreen(app) {
   const canContinue = hasSave() && app.state;
@@ -48,6 +49,8 @@ export function titleScreen(app) {
             const ok = await app.confirm('Yeni kariyer', 'Mevcut kariyerin silinecek. Emin misin?', 'Evet, baştan başla');
             if (!ok) return;
           }
+          // Giriş hikâyesi (atlanabilir), sonra isim ekranı
+          await playIntro(el.closest('.app') || document.getElementById('app'));
           app.go('create');
         }
         if (act === 'settings') app.go('settings');

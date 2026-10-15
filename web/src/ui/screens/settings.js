@@ -5,6 +5,9 @@ import { icon } from '../art.js';
 import { toast } from '../dom.js';
 import { cloudSectionPlaceholder, mountCloudSection } from '../cloudView.js';
 import { unityBuildAvailable } from '../../games/unity3d.js';
+import { configureMusic, nowPlaying, onNowPlaying } from '../../music/player.js';
+
+const npText = () => { const n = nowPlaying(); return n ? `♪ Şu an çalıyor: <b>${n.title}</b> · ${n.mood}` : '♪ Müzik ilk dokunuşta başlar.'; };
 
 export function settingsScreen(app) {
   const st = app.settings;
@@ -24,9 +27,12 @@ export function settingsScreen(app) {
       </div>
       <div class="card list">
         ${toggle('sound', 'Ses efektleri', 'sound', 'Vuruş, düdük, tribün sesleri')}
+        ${toggle('music', 'Müzik', 'music', 'Oyuna özel bestelenmiş hareketli pop parçalar')}
+        ${st.music !== false ? `<div class="li"><span class="ic"></span><div class="grow"><b>Müzik sesi</b><div class="seg" style="margin-top:8px">${[[0.25, 'Kısık'], [0.5, 'Orta'], [0.85, 'Yüksek']].map(([k, l]) => `<button class="${Math.abs((st.musicVol ?? 0.5) - k) < 0.05 ? 'on' : ''}" data-mvol="${k}">${l}</button>`).join('')}</div><div class="muted small" style="margin-top:6px" data-np>${npText()}</div></div></div>` : ''}
         ${toggle('vibrate', 'Titreşim', 'vibrate', hapticSupport() === 'none' ? 'Bu cihaz/tarayıcı titreşimi desteklemiyor.' : hapticSupport() === 'ios' ? 'Golü, pası, kurtarışı hisset (iPhone: dokunsal tıklar)' : 'Golü, pası, kurtarışı ve müdahaleyi elinde hisset')}
         ${st.vibrate ? `<div class="li"><span class="ic"></span><div class="grow"><b>Titreşim gücü</b><div class="seg" style="margin-top:8px">${[['soft', 'Hafif'], ['normal', 'Normal'], ['strong', 'Güçlü']].map(([k, l]) => `<button class="${(st.haptic || 'normal') === k ? 'on' : ''}" data-haptic-level="${k}">${l}</button>`).join('')}</div><div class="muted small" style="margin-top:6px">Seçince gol titreşimini dener.</div></div></div>` : ''}
         <div class="li"><span class="ic" style="color:#bfdbfe">❄️</span><div class="grow"><b>Kış teması</b><div class="muted small">Otomatik: giriş ekranında ve takvimde Aralık–Şubat haftalarında kar yağar.</div><div class="seg" style="margin-top:8px">${[['auto', 'Otomatik'], ['on', 'Hep açık'], ['off', 'Kapalı']].map(([k, l]) => `<button class="${(st.winter || 'auto') === k ? 'on' : ''}" data-winter="${k}">${l}</button>`).join('')}</div></div></div>
+        <div class="li"><span class="ic" style="color:var(--accent)">${icon('play')}</span><div class="grow"><b>Giriş hikâyesi</b><div class="muted small">Babandan gizli seçmelere gittiğin o sabah.</div></div><button class="btn sm ghost" data-act="story">İzle</button></div>
         <div data-unity-toggle hidden>${toggle('unity3d', '3B mod (Unity)', 'ball', 'Maçtaki pas ve şut anları 3B sahnede oynanır (ilk açılışta indirme yapar)')}</div>
       </div>
 
@@ -48,6 +54,8 @@ export function settingsScreen(app) {
       <p class="muted small center" style="margin-top:18px">Krampon v1.0 · Kulüpler ve isimler kurgusaldır.</p>`,
     mount(el) {
       mountCloudSection(app, el);
+      const np = el.querySelector('[data-np]');
+      if (np) { const off = onNowPlaying(() => { if (!np.isConnected) return off(); np.innerHTML = npText(); }); }
       // 3B mod yalnızca sunucuda Unity derlemesi varsa görünür
       unityBuildAvailable().then((ok) => {
         const row = el.querySelector('[data-unity-toggle]');
@@ -57,6 +65,13 @@ export function settingsScreen(app) {
         const t = e.target.closest('button');
         if (!t || t.dataset.cloudAct) return;
         app.click();
+        if (t.dataset.mvol) {
+          st.musicVol = Number(t.dataset.mvol);
+          saveSettings(st);
+          configureMusic(st);
+          app.go('settings');
+          return;
+        }
         if (t.dataset.winter) {
           st.winter = t.dataset.winter;
           saveSettings(st);
@@ -75,9 +90,16 @@ export function settingsScreen(app) {
           st[t.dataset.toggle] = !st[t.dataset.toggle];
           saveSettings(st);
           configureAudio(st);
+          configureMusic(st);
           if (t.dataset.toggle === 'sound' && st.sound) sfx('coin');
           if (t.dataset.toggle === 'vibrate' && st.vibrate) buzz('pass');
           app.go('settings');
+        } else if (t.dataset.act === 'story') {
+          const { playIntro } = await import('../intro.js');
+          await playIntro(document.getElementById('app'));
+          app.go('settings');
+          const { playMusic } = await import('../../music/player.js');
+          playMusic(app.state ? 'career' : 'title');
         } else if (t.dataset.act === 'back') {
           app.back();
         } else if (t.dataset.act === 'export') {

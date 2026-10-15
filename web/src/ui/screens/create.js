@@ -16,7 +16,7 @@ export function createScreen(app) {
         <div class="grow"><div class="muted small">Yeni kariyer</div><h1 class="h-title">Kimsin?</h1></div>
       </div>
       <div class="create-hero">${sprite('tunnel_players', { h: 96, w: 180 })}</div>
-      <p class="muted" style="margin:0 0 14px;line-height:1.5">17 yaşındasın. Bugün <b style="color:var(--text)">Seçmeler Kampı</b>'nda scoutların önüne çıkacaksın. Kamptaki performansın, sana hangi kulüplerin teklif yapacağını belirleyecek.</p>
+      <p class="muted" style="margin:0 0 14px;line-height:1.5">17 yaşındasın ve babandan gizli buradasın. Bugün <b style="color:var(--text)">Seçmeler Kampı</b>'nda scoutların önüne çıkacaksın. Kamptaki performansın, sana hangi kulüplerin teklif yapacağını belirleyecek.</p>
       <label class="small muted" for="nm">Adın ve soyadın</label>
       <div class="row" style="margin:6px 0 14px">
         <input id="nm" class="field grow" maxlength="20" autocomplete="off" placeholder="Örn. Arda Yılmaz" value="${esc(d.name)}">

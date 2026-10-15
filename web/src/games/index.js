@@ -10,6 +10,7 @@ import { playDribble } from './dribble.js';
 import { playShuttle } from './shuttle.js';
 import { playUnityMoment, unityBuildAvailable } from './unity3d.js';
 import { setBallVariant } from './pixel/sprites.js';
+import { duckMusic } from '../music/player.js';
 import { windArrow } from '../core/weather.js';
 
 /**
@@ -57,6 +58,7 @@ export async function runMiniGame(o) {
       </div>
     </div>`);
   root().appendChild(layer);
+  duckMusic(true);
   await new Promise((res) => {
     if (o.auto) return res();
     layer.querySelector('[data-go]').addEventListener('click', () => {
@@ -96,6 +98,7 @@ export async function runMiniGame(o) {
     }
   }
   setBallVariant('white');
+  duckMusic(false);
   layer.style.transition = 'opacity .25s';
   layer.style.opacity = '0';
   await sleep(250);

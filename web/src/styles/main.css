@@ -627,3 +627,11 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.01em; }
   background: linear-gradient(180deg, #eef5ff, #c9d9f0); box-shadow: 0 -6px 30px rgba(220, 235, 255, 0.35); opacity: .9; }
 .app.winter .title-screen .word { text-shadow: 0 -3px 0 #f4f8ff, 0 0 18px rgba(200, 225, 255, 0.45); }
 .app.winter .title-actions { position: relative; z-index: 2; }
+
+/* ── Giriş hikâyesi ── */
+.intro-layer { position: absolute; inset: 0; z-index: 96; background: #05070c; animation: fade .4s ease; touch-action: none; user-select: none; -webkit-user-select: none; }
+.intro-layer canvas { position: absolute; inset: 0; image-rendering: pixelated; }
+.intro-layer.out { opacity: 0; transition: opacity .45s; }
+.intro-skip { position: absolute; top: calc(var(--safe-top) + 12px); right: 12px; z-index: 2; appearance: none; border: 1px solid rgba(255,255,255,.25); background: rgba(5,7,12,.55); color: #f4ecd8; font-weight: 800; font-size: 13px; padding: 7px 12px; border-radius: 999px; cursor: pointer; }
+.intro-tap { position: absolute; left: 0; right: 0; bottom: calc(var(--safe-bottom) + 34px); text-align: center; color: rgba(244,236,216,.45); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; pointer-events: none; animation: tapPulse 1.6s ease-in-out infinite; }
+@keyframes tapPulse { 0%, 100% { opacity: .35; } 50% { opacity: .9; } }

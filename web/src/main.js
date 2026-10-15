@@ -2,6 +2,7 @@ import './styles/main.css';
 import './styles/features.css';
 import { createApp } from './ui/app.js';
 import { configureAudio, unlock } from './audio.js';
+import { configureMusic } from './music/player.js';
 import * as chirp from './core/chirp/index.js';
 import * as mentor from './core/mentor/index.js';
 import { runMiniGame } from './games/index.js';
@@ -13,6 +14,7 @@ loadSprites();
 const root = document.getElementById('app');
 const app = createApp(root);
 configureAudio(app.settings);
+configureMusic(app.settings);
 
 // iOS: ses ilk dokunuşta açılır
 document.addEventListener('pointerdown', unlock, { passive: true });

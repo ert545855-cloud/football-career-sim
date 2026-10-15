@@ -14,6 +14,12 @@ export function configureAudio({ sound, vibrate, haptic: level }) {
   configureHaptics({ vibrate, haptic: level });
 }
 
+const unlockHooks = [];
+/** Ses bağlamı açılınca çağrılır (müzik bekleyen parçayı başlatır). */
+export function onUnlock(fn) { unlockHooks.push(fn); }
+/** Paylaşılan AudioContext (henüz açılmadıysa null). */
+export const audioCtx = () => ctx;
+
 export function unlock() {
   if (!ctx) {
     const AC = window.AudioContext || window.webkitAudioContext;
@@ -24,6 +30,7 @@ export function unlock() {
     master.connect(ctx.destination);
   }
   if (ctx.state === 'suspended') ctx.resume();
+  for (const fn of unlockHooks) { try { fn(ctx); } catch { /* yoksay */ } }
 }
 
 function noiseBuffer(seconds) {
