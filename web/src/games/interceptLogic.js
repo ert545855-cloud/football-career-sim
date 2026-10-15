@@ -4,7 +4,7 @@
 // doğru koridora koşup pası kes. Dokun: ayağını uzat (menzil kısa süre artar). Top sahibine yapışırsan
 // aceleye getirir; dibindeyken uzanırsan topu da alabilirsin. Uzak durursan top sahibi topu sürüp kaleye girer.
 // Yetenek: hızın, menzilin; rakiplerin bakış süresi ve çalım/aldatma (sahte bakış) oranı.
-import { createBall, kick, stepBall, groundSpeed, createBody, steer, stepBody, bodySpeed, interceptBall, solveKick, collideBodies, ENV } from './physics.js';
+import { createBall, kick, stepBall, groundSpeed, createBody, steer, stepBody, bodySpeed, interceptBall, solveKick, collideBodies, ENV, applyGrip } from './physics.js';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -28,7 +28,7 @@ export function interceptSkill(skill = 0.3) {
 /**
  * @param {{context?:'duel'|'threat', skill?:number, rnd?:()=>number, Wm?:number, Hm?:number}} o
  */
-export function createDefense({ context = 'duel', skill = 0.3, rnd = Math.random, Wm = 30, Hm = 54 } = {}) {
+export function createDefense({ context = 'duel', skill = 0.3, rnd = Math.random, Wm = 30, Hm = 54, env = ENV, fatigue = 0 } = {}) {
   const sk = interceptSkill(skill);
   const threat = context === 'threat';
   const att = [
@@ -36,16 +36,18 @@ export function createDefense({ context = 'duel', skill = 0.3, rnd = Math.random
     { x: Wm * lerp(0.12, 0.25, rnd()), y: Hm * lerp(0.32, 0.4, rnd()) },
     { x: Wm * lerp(0.75, 0.88, rnd()), y: Hm * lerp(0.3, 0.4, rnd()) },
   ].map((p, i) => ({
-    body: createBody(p.x, p.y, { maxSpeed: threat ? 7.6 : 7, accel: 6.5, mass: 74 }),
+    body: applyGrip(createBody(p.x, p.y, { maxSpeed: threat ? 7.6 : 7, accel: 6.5, mass: 74 }), env),
     hx: p.x,
     hy: p.y,
     id: i,
     look: null,
   }));
-  const me = createBody(Wm / 2, Hm * 0.5, { maxSpeed: sk.defSpeed, accel: sk.defAccel, turn: 16, mass: 80 });
+  // Maç içi yorgunluk: savunmacı (sen) yavaşlar; kaygan zemin herkesi etkiler
+  const tired = 1 - Math.max(0, Math.min(0.65, fatigue)) * 0.22;
+  const me = applyGrip(createBody(Wm / 2, Hm * 0.5, { maxSpeed: sk.defSpeed * tired, accel: sk.defAccel * tired, turn: 16, mass: 80 }), env);
   const ball = createBall(att[0].body.x, att[0].body.y + 0.6);
   const D = {
-    Wm, Hm, sk, rnd, context, threat, att, me, ball,
+    Wm, Hm, sk, rnd, context, threat, att, me, ball, env,
     carrier: 0,
     t: 0,
     passes: 0,
@@ -154,7 +156,7 @@ function makePass(D, rushed = false) {
   D.ball.x = c.x + (ax / al) * shield;
   D.ball.y = c.y + 0.5 * (shield ? 0 : 1) + (ay / al) * shield;
   D.ball.z = 0;
-  const sol = solveKick({ x: D.ball.x, y: D.ball.y }, spot, { arrive: lk.through ? 6 : 7, maxSpeed: D.sk.passSpeed + (lk.through ? 3 : 0), env: ENV });
+  const sol = solveKick({ x: D.ball.x, y: D.ball.y }, spot, { arrive: lk.through ? 6 : 7, maxSpeed: D.sk.passSpeed + (lk.through ? 3 : 0), env: D.env });
   kick(D.ball, sol);
   D.pass = { to, t: 0, through: lk.through, spot, immune: shield ? 0.12 : 0 };
   D.phase = 'pass';
@@ -169,7 +171,7 @@ function attackersStep(D, h) {
     a.hy = Math.min(a.hy + adv, D.boxY - 2);
     if (D.phase === 'pass' && i === D.pass.to) {
       // alıcı topa koşar
-      const ip = interceptBall(b, D.ball, { reaction: 0, reach: 0.6, maxZ: 1.5, T: 3, h: 1 / 30, env: ENV });
+      const ip = interceptBall(b, D.ball, { reaction: 0, reach: 0.6, maxZ: 1.5, T: 3, h: 1 / 30, env: D.env });
       const tgt = ip || { x: D.ball.x, y: D.ball.y };
       steer(b, tgt.x, tgt.y, h, { arrive: 0.3 });
     } else if (D.look?.through && i === D.look.real) {
@@ -196,7 +198,7 @@ function attackersStep(D, h) {
 /** Bir fizik adımı. */
 export function defenseStep(D, h) {
   if (D.result) {
-    stepBall(D.ball, h, ENV);
+    stepBall(D.ball, h, D.env);
     return;
   }
   D.t += h;
@@ -222,7 +224,7 @@ export function defenseStep(D, h) {
     if (D.look.t >= D.look.dur || (close && D.look.t > 0.15)) makePass(D, close);
   } else if (D.phase === 'pass') {
     D.pass.t += h;
-    stepBall(D.ball, h, ENV);
+    stepBall(D.ball, h, D.env);
     const reach = D.lunge > 0 ? D.sk.lungeReach : D.sk.reach;
     const db = hyp(D.ball.x - D.me.x, D.ball.y - D.me.y);
     if (db <= reach && D.pass.t >= D.pass.immune) {

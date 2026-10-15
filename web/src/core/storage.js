@@ -130,7 +130,7 @@ export function importSave(code) {
 }
 
 export function loadSettings() {
-  const defaults = { sound: true, vibrate: true, haptic: 'normal', speed: 1, unity3d: false };
+  const defaults = { sound: true, vibrate: true, haptic: 'normal', speed: 1, unity3d: false, winter: 'auto', music: true, musicVol: 0.5 };
   try {
     return { ...defaults, ...(JSON.parse(storage()?.getItem(SETTINGS_KEY) || '{}')) };
   } catch {

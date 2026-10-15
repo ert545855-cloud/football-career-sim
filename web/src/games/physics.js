@@ -16,17 +16,32 @@ export const ENV = {
   spinDecayAir: 0.3,
   spinDecayGround: 0.9,
   groundMagnus: 0.65, // yerde giden topta falsonun etkisi (hava ile kıyasla)
+  grip: 1, // oyuncu tutunması (ivme/dönüş çarpanı): ıslak/karlı zeminde düşer
   wind: { x: 0, y: 0 },
 };
 
 export const SURFACES = {
   dry: {},
   wet: { roll: 0.55, rollDamp: 0.1, bounce: 0.42, skid: 0.93 }, // yağmur: top kayar, alçak seker
-  heavy: { roll: 1.6, rollDamp: 0.26, bounce: 0.4, skid: 0.72 }, // çamur/ağır zemin
+  heavy: { roll: 1.6, rollDamp: 0.26, bounce: 0.4, skid: 0.72, grip: 0.86 }, // çamur/ağır zemin
+  snow: { roll: 1.9, rollDamp: 0.3, bounce: 0.3, skid: 0.68, grip: 0.8 }, // kar: top çabuk durur, alçak seker, kaygan
 };
+SURFACES.wet.grip = 0.9;
 
+/** Hava durumundan fizik ortamı: yüzey + rüzgâr. weather: core/weather.js nesnesi (yoksa kuru, rüzgârsız). */
 export function envFor(surface = 'dry', wind = null) {
+  if (surface && typeof surface === 'object') return envFor(surface.surface, surface.wind);
   return { ...ENV, ...(SURFACES[surface] || {}), wind: wind || ENV.wind };
+}
+
+/** Zemin tutunması: oyuncunun ivmesi ve azami hızı kaygan zeminde düşer. */
+export function applyGrip(body, env) {
+  const g = env?.grip ?? 1;
+  if (g >= 1) return body;
+  body.accel *= g;
+  body.maxSpeed *= 0.5 + g * 0.5;
+  if (body.turn) body.turn *= g;
+  return body;
 }
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));

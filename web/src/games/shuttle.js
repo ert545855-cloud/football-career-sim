@@ -6,6 +6,7 @@ import { drawSprite, FAN_SPRITES } from '../assets/sprites.js';
 import { drawPixelPlayer } from './pixel/sprites.js';
 import { lookFromAvatar } from './pixel/looks.js';
 import { sfx, buzz } from '../audio.js';
+import { weatherFx } from './weatherFx.js';
 import { SHUTTLE_M, SHUTTLES_PER_LEVEL, createShuttle, deadlineOf, levelOf, levelLabel, pressTurn, setHold, shuttleParams, shuttleResult, shuttleStep } from './shuttleLogic.js';
 
 export function playShuttle(host, opts = {}) {
@@ -17,6 +18,7 @@ export function playShuttle(host, opts = {}) {
     const meLook = opts.me || lookFromAvatar({}, myClub, { number: String(opts.number ?? 8) });
     const particles = new Particles();
     const big = new BigText();
+    const wfx = weatherFx(opts.weather);
     const S = { phase: 'count', t: 0, count: 3, ph: 0, done: false, afterT: 0, fans: null, beepFlash: 0, lastBeep: -1 };
     const stopAt = (P.targetLevel + 1) * SHUTTLES_PER_LEVEL;
     if (opts.expose) Object.assign(opts.expose, { R, P, S });
@@ -270,6 +272,7 @@ export function playShuttle(host, opts = {}) {
           ctx.fillText(String(c), 0, 0);
           ctx.restore();
         }
+        wfx.sky(ctx, W, H, t);
         particles.render(ctx);
         big.render(ctx, W, H);
       },

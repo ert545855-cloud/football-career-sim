@@ -429,12 +429,14 @@ export function buildPlayer(look, dir = 'down', frame = 'idle') {
   return { w: PW, h: PH, px: g.px };
 }
 
-/** Piksel top (9×9), iki dönüş karesi. */
-export function buildBall(frame = 0) {
+/** Piksel top (9×9), iki dönüş karesi. variant 'orange': karlı maçların turuncu topu. */
+export function buildBall(frame = 0, variant = 'white') {
   const M = frame % 2 === 0
     ? ['..OOOOO..', '.OKWWWKO.', 'OKKWWWKKO', 'OWWWKWWWO', 'OWWKKKWSO', 'OWWWKWWSO', 'OKKWWWKKO', '.OKWWSKO.', '..OOOOO..']
     : ['..OOOOO..', '.OWWKWWO.', 'OWWKKKWWO', 'OKWWKWWKO', 'OKKWWWKKO', 'OKWWWWWKO', 'OWWWKWWSO', '.OWKKKSO.', '..OOOOO..'];
-  const C = { O: OUTLINE, W: '#f4f4f0', K: '#22262b', S: '#b9bfc4' };
+  const C = variant === 'orange'
+    ? { O: OUTLINE, W: '#ff8a1f', K: '#1e293b', S: '#d9650b' }
+    : { O: OUTLINE, W: '#f4f4f0', K: '#22262b', S: '#b9bfc4' };
   const px = [];
   for (const row of M) for (const ch of row) px.push(C[ch] || null);
   return { w: 9, h: 9, px };

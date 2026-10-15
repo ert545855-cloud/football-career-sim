@@ -26,6 +26,7 @@ export function settingsScreen(app) {
         ${toggle('sound', 'Ses efektleri', 'sound', 'Vuruş, düdük, tribün sesleri')}
         ${toggle('vibrate', 'Titreşim', 'vibrate', hapticSupport() === 'none' ? 'Bu cihaz/tarayıcı titreşimi desteklemiyor.' : hapticSupport() === 'ios' ? 'Golü, pası, kurtarışı hisset (iPhone: dokunsal tıklar)' : 'Golü, pası, kurtarışı ve müdahaleyi elinde hisset')}
         ${st.vibrate ? `<div class="li"><span class="ic"></span><div class="grow"><b>Titreşim gücü</b><div class="seg" style="margin-top:8px">${[['soft', 'Hafif'], ['normal', 'Normal'], ['strong', 'Güçlü']].map(([k, l]) => `<button class="${(st.haptic || 'normal') === k ? 'on' : ''}" data-haptic-level="${k}">${l}</button>`).join('')}</div><div class="muted small" style="margin-top:6px">Seçince gol titreşimini dener.</div></div></div>` : ''}
+        <div class="li"><span class="ic" style="color:#bfdbfe">❄️</span><div class="grow"><b>Kış teması</b><div class="muted small">Otomatik: giriş ekranında ve takvimde Aralık–Şubat haftalarında kar yağar.</div><div class="seg" style="margin-top:8px">${[['auto', 'Otomatik'], ['on', 'Hep açık'], ['off', 'Kapalı']].map(([k, l]) => `<button class="${(st.winter || 'auto') === k ? 'on' : ''}" data-winter="${k}">${l}</button>`).join('')}</div></div></div>
         <div data-unity-toggle hidden>${toggle('unity3d', '3B mod (Unity)', 'ball', 'Maçtaki pas ve şut anları 3B sahnede oynanır (ilk açılışta indirme yapar)')}</div>
       </div>
 
@@ -56,6 +57,12 @@ export function settingsScreen(app) {
         const t = e.target.closest('button');
         if (!t || t.dataset.cloudAct) return;
         app.click();
+        if (t.dataset.winter) {
+          st.winter = t.dataset.winter;
+          saveSettings(st);
+          app.go('settings');
+          return;
+        }
         if (t.dataset.hapticLevel) {
           st.haptic = t.dataset.hapticLevel;
           saveSettings(st);

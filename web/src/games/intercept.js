@@ -2,7 +2,8 @@
 //   Sürükle: koşu yolunu kapat (savunmacın parmağının biraz üstünde durur) · Dokun: ayağını uzat.
 //   Top sahibinin bakış çizgisi pasın nereye gideceğini ele verir; bazen sahte bakar!
 import { createStage, Particles, BigText, drawPitchTop, roundRect, clamp } from './engine.js';
-import { FixedStep, bodySpeed } from './physics.js';
+import { FixedStep, bodySpeed, envFor } from './physics.js';
+import { weatherFx } from './weatherFx.js';
 import { createDefense, defenseStep, defMoveTo, defLunge } from './interceptLogic.js';
 import { drawPixelPlayer, drawMovingPlayer, drawPixelBall } from './pixel/sprites.js';
 import { npcLook, keeperLook, lookFromAvatar } from './pixel/looks.js';
@@ -23,6 +24,8 @@ export function playIntercept(host, opts = {}) {
     const particles = new Particles();
     const big = new BigText();
     const fixed = new FixedStep(1 / 120, 30);
+    const env = envFor(opts.weather);
+    const wfx = weatherFx(opts.weather);
     let D = null;
     let ppm = 13;
     let k = 1;
@@ -42,7 +45,7 @@ export function playIntercept(host, opts = {}) {
     }
     function layout(W, H) {
       fit(W, H);
-      D = createDefense({ context, skill, Wm: WM, Hm: HM });
+      D = createDefense({ context, skill, Wm: WM, Hm: HM, env, fatigue: opts.fatigue || 0 });
       D.att.forEach((a, i) => { a.look = npcLook(oppClub, 500 + i * 17, [9, 7, 11][i]); });
       S.sts = D.att.map(() => ({ ph: Math.random() * 4, last: 'down' }));
       if (opts.expose) Object.assign(opts.expose, { D, get ppm() { return ppm; }, get ox() { return ox; }, get oy() { return oy; } });
@@ -117,6 +120,7 @@ export function playIntercept(host, opts = {}) {
         ctx.save();
         ctx.translate(ox, 0);
         drawPitchTop(ctx, WW, H, { box: 'bottom' });
+        wfx.ground(ctx, WW, H);
         ctx.translate(0, oy);
         const P = (o) => ({ x: o.x * ppm, y: o.y * ppm });
         const ph = 44 * k;
@@ -208,6 +212,7 @@ export function playIntercept(host, opts = {}) {
           ctx.fillStyle = 'rgba(198,255,61,.95)';
           ctx.fillText('Dokun: top yanından geçerken ayağını uzat', W / 2, H * 0.8 + 18);
         }
+        wfx.sky(ctx, W, H, t);
         particles.render(ctx);
         big.render(ctx, W, H);
       },

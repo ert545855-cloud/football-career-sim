@@ -7,6 +7,7 @@ import { drawSprite, spritePattern } from '../assets/sprites.js';
 import { drawPixelPlayer, drawPixelBall } from './pixel/sprites.js';
 import { npcLook, lookFromAvatar } from './pixel/looks.js';
 import { sfx, buzz } from '../audio.js';
+import { weatherFx } from './weatherFx.js';
 
 /** Parkur üretimi (saf): sıra tipleri ve boşluklar. Testlerde de kullanılır. */
 export function buildCourse({ rows = 8, warmup = true, men = true, rnd = Math.random, k = 1, W = 390 } = {}) {
@@ -44,6 +45,7 @@ export function playDribble(host, opts = {}) {
     const meLook = opts.me || lookFromAvatar({}, myClub, { number: String(opts.number ?? 8) });
     const particles = new Particles();
     const big = new BigText();
+    const wfx = weatherFx(opts.weather);
     let L = null;
     const S = { t: 0, y: 0, x: 0, vx: 0, targetX: null, speed: 0, stumble: 0, rows: [], over: false, endT: 0, done: false, ph: 0, clean: 0, scored: 0, topV: 0 };
     const nRows = opts.rows || 8;
@@ -197,6 +199,7 @@ export function playDribble(host, opts = {}) {
         ctx.restore();
         ctx.fillStyle = 'rgba(6, 46, 22, 0.42)';
         ctx.fillRect(0, 0, W, H);
+        wfx.tint(ctx, W, H);
         const band = 70 * k;
         for (let y = -band + ((S.y % (band * 2)) - band); y < H; y += band * 2) {
           ctx.fillStyle = 'rgba(0,0,0,.1)';
@@ -285,6 +288,7 @@ export function playDribble(host, opts = {}) {
           ctx.fillStyle = 'rgba(198,255,61,.95)';
           ctx.fillText('Rakip gelince bir yana yüklen, öbür yana kır!', W / 2, H - 44);
         }
+        wfx.sky(ctx, W, H, t);
         particles.render(ctx);
         big.render(ctx, W, H);
       },

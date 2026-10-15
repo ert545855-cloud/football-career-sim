@@ -11,6 +11,8 @@ import { clearDraft, clearSave, loadDraft, loadGame, loadSettings, saveDraft, sa
 import { runMiniGame } from '../games/index.js';
 import { DIFFICULTY, DIFF_IDS, ensureTraining, fatigueFactor } from '../core/training.js';
 import { playerLook } from '../core/cosmetics.js';
+import { isWinterWeek, snowyCountry, weekWeather } from '../core/weather.js';
+import { setSnow } from './snow.js';
 import { lookFromAvatar } from '../games/pixel/looks.js';
 import { buzz, sfx } from '../audio.js';
 import { crestSVG, icon, playerAvatar } from './art.js';
@@ -144,7 +146,22 @@ export function createApp(rootEl) {
         this.current = name;
       }
       def.mount?.(screenEl, screenEl);
+      this.applyWinter(name, params);
       setTimeout(() => this.flushAchievements(), 350);
+    },
+
+    /** Kış teması: giriş ekranları ve takvimde kış ayları (Aralık–Şubat) karlı; ayarlardan hep açık / kapalı. */
+    applyWinter(name = this.current, params = {}) {
+      const mode = this.settings.winter || 'auto';
+      let on = false;
+      if (name === 'match') on = mode !== 'off' && params.match?.weather?.id === 'snow';
+      else if (mode === 'on') on = true;
+      else if (mode === 'auto') {
+        if (name === 'title' || name === 'create') on = true;
+        else on = !!this.state && !this.state.career?.retired && isWinterWeek(this.state.calendar?.week) && snowyCountry(CLUB_BY_ID[this.state.career.clubId]?.country);
+      }
+      setSnow(on);
+      rootEl.classList.toggle('winter', on);
     },
 
     back() {
@@ -387,6 +404,7 @@ export function createApp(rootEl) {
         number: s.player.number,
         name: s.player.name.split(' ')[0].toUpperCase(),
         auto: this.autoplay,
+        weather: weekWeather(s),
       });
       const res = finishTraining(s, stat, result, diff);
       this.save();

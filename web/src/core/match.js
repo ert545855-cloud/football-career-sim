@@ -3,6 +3,7 @@ import { clamp, chance, pick, poisson, rand, randInt, round1, weightedPick } fro
 import { clubRating, fixtureFor, goalLambda, leagueOf, leaguePrestige } from './league.js';
 import { addProgress, changeEnergy, changeFame, changeMorale, changeRel, form, ovr } from './player.js';
 import { bigMatchSetup } from './mentor/index.js';
+import { fatigueAt, weatherFor } from './weather.js';
 
 /** İlk 11 kararı: OVR + hoca ilişkisi + form + moral, rakip oyuncuya karşı. */
 export function selection(state) {
@@ -77,11 +78,20 @@ export function planMatch(state) {
     if (chance(p)) subMinute = randInt(55, 74);
   }
 
-  const onShare = role === 'starter' ? 1 : subMinute ? (90 - subMinute) / 90 : 0;
+  // Hava ve zemin: ev sahibinin şehrinde, takvimdeki aya göre
+  const weather = weatherFor({ season: calendar.season, week, homeId });
+  // Maç içi yorgunluk: ilk 11'de başlayıp kondisyonu çok düşerse hoca oyundan alır
+  let subOff = null;
+  if (role === 'starter') {
+    const f75 = fatigueAt({ minute: 75, energy: player.energy, stamina: player.stats.stamina, weather });
+    if (f75 > 0.36 && chance(clamp((f75 - 0.36) * 2.6, 0, 0.8))) subOff = randInt(64, 80);
+  }
+
+  const onShare = role === 'starter' ? (subOff ? subOff / 90 : 1) : subMinute ? (90 - subMinute) / 90 : 0;
   const myR = clubRating(world, myId) + (role === 'starter' ? clamp((ovr(player) - sel.competitor) * 0.15, -3, 4) : 0);
   const oppR = clubRating(world, oppId);
-  let lMy = goalLambda(myR, oppR, isHome) * (1 - 0.24 * onShare);
-  let lOpp = goalLambda(oppR, myR, !isHome);
+  let lMy = goalLambda(myR, oppR, isHome) * (1 - 0.24 * onShare) * weather.goals;
+  let lOpp = goalLambda(oppR, myR, !isHome) * weather.goals;
   if (player.position === 'DF') lOpp *= 1 - 0.14 * onShare;
   if (player.position === 'MF') lOpp *= 1 - 0.06 * onShare;
 
@@ -108,7 +118,7 @@ export function planMatch(state) {
     count = randInt(1, 2);
     from = subMinute + 3;
   }
-  const moments = spreadMinutes(count, from, 88).map((m) => makeMoment(player.position, m));
+  const moments = spreadMinutes(count, from, subOff ? subOff - 2 : 88).map((m) => makeMoment(player.position, m));
 
   return {
     id: `${calendar.season}-${week}`,
@@ -124,6 +134,9 @@ export function planMatch(state) {
     role,
     reason: sel.reason,
     subMinute,
+    subOff,
+    weather,
+    energy0: player.energy,
     stoppage: randInt(1, 5),
     /** Derbi / final / zirve / kader maçı: heyecan, etkin yetenek çarpanı ve mini oyun temposu */
     big: bigMatchSetup(state, { myId, oppId, week }),
@@ -176,6 +189,12 @@ export function applyAiEvent(match, ev) {
     return { minute: ev.minute, kind: ev.side === 'my' ? 'goal-my' : 'goal-opp', text: `GOL! ${fill(pick(T.goal), { team, opp })} ${scoreLine(match)}` };
   }
   return { minute: ev.minute, kind: ev.kind, text: fill(pick(T[ev.kind] || T.chance), { team, opp }) };
+}
+
+/** Anın oynandığı dakikadaki yorgunluk (0..0.65) */
+export function momentFatigue(state, match, minute) {
+  if (!match) return 0;
+  return fatigueAt({ minute, energy: match.energy0 ?? state.player.energy, stamina: state.player.stats.stamina, weather: match.weather, from: match.role === 'starter' ? 0 : match.subMinute || 0 });
 }
 
 /**
@@ -337,8 +356,8 @@ export function finalizeMatch(state, match) {
 
   // Enerji: dayanıklılık yüksekse maç daha az yorar
   if (played) {
-    const base = match.role === 'starter' ? 25 : 12;
-    changeEnergy(player, -base * (1.2 - player.stats.stamina / 250));
+    const base = match.role === 'starter' ? 25 * (match.subOff ? Math.max(0.7, match.subOff / 90) : 1) : 12;
+    changeEnergy(player, -base * (1.2 - player.stats.stamina / 250) * (match.weather?.fatigue || 1));
   }
 
   // Maç içi gelişim

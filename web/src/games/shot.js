@@ -4,6 +4,7 @@ import { sfx, buzz } from '../audio.js';
 import { FAN_SPRITES, FLAG_SPRITES, drawSprite, spriteSize } from '../assets/sprites.js';
 import { drawPixelPlayer, drawPixelBall } from './pixel/sprites.js';
 import { keeperLook, npcLook } from './pixel/looks.js';
+import { weatherFx } from './weatherFx.js';
 
 const persp = (p) => 1 - Math.pow(1 - clamp(p, 0, 1), 1.5);
 
@@ -32,6 +33,12 @@ export function playShot(host, opts) {
 
     const particles = new Particles();
     const big = new BigText();
+    // Hava: rüzgâr şutu yana iter, ıslak top kalecinin elinden kayabilir, karda top yavaşlar
+    const weather = opts.weather || null;
+    const windX = weather?.wind?.x || 0;
+    const wArea = { y0: 0 };
+    const wfx = weatherFx(weather, wArea);
+    const fatigue = clamp(opts.fatigue ?? 0, 0, 0.65);
     let L = null;
     let crowd = null;
     let fans = [];
@@ -50,6 +57,7 @@ export function playShot(host, opts) {
       const by = type === 'edge' ? H * 0.87 : type === 'penalty' ? H * 0.7 : H * 0.78;
       const r0 = W * (type === 'edge' ? 0.05 : type === 'penalty' ? 0.04 : 0.045);
       L = { W, H, hy, gl, gw, gh, cx: W / 2, by, bx: W / 2 + ballOffset * W, r0, r1: gw * 0.034, boxY: H * 0.83 };
+      wArea.y0 = Math.round(hy);
       crowd = makeCrowd(W, 0, hy - 14, [myKit[0], myKit[1], oppKit[0], '#e2e8f0', '#94a3b8', '#fde68a']);
       // Ön sıra piksel taraftarlar (atlas) — gol olunca zıplarlar
       const fanH = Math.max(22, Math.min(34, hy * 0.27));
@@ -86,7 +94,12 @@ export function playShot(host, opts) {
     // Büyük maç heyecanı: nişangah titrer. Salınım oyun zamanıyla (tempo) ilerler,
     // bu yüzden Soğukkanlı mentorla nişangah daha yavaş ve daha az sallanır.
     const nerves = clamp(opts.nerves ?? 0, 0, 1);
-    const sway = () => (nerves > 0 ? { u: Math.sin(S.t * 2.6) * nerves * 0.34 + Math.sin(S.t * 6.1) * nerves * 0.06, v: Math.sin(S.t * 3.3 + 1.2) * nerves * 0.2 } : { u: 0, v: 0 });
+    // Yorgunluk: yavaş, geniş bir salınım (nefes nefese)
+    const sway = () => {
+      const o = nerves > 0 ? { u: Math.sin(S.t * 2.6) * nerves * 0.34 + Math.sin(S.t * 6.1) * nerves * 0.06, v: Math.sin(S.t * 3.3 + 1.2) * nerves * 0.2 } : { u: 0, v: 0 };
+      if (fatigue > 0.05) { o.u += Math.sin(S.t * 1.4 + 0.5) * fatigue * 0.3; o.v += Math.sin(S.t * 1.9) * fatigue * 0.16; }
+      return o;
+    };
 
     function aimFromDrag(d) {
       const dx = d.x - d.x0;
@@ -101,9 +114,11 @@ export function playShot(host, opts) {
     }
 
     function shoot(aim) {
-      const u = aim.u + gaussian() * sigma;
+      const T = lerp(1.0, 0.42, clamp(aim.power / 1.1, 0, 1)) * (weather?.surface === 'snow' ? 1.08 : weather?.surface === 'heavy' ? 1.05 : 1);
+      // Rüzgâr: uçuş süresi ve yükseklikle artan yan sapma
+      const drift = windX * 0.016 * T * (0.6 + Math.min(1, aim.v));
+      const u = aim.u + gaussian() * sigma + drift;
       const v = Math.max(0, aim.v + gaussian() * sigma * 0.8);
-      const T = lerp(1.0, 0.42, clamp(aim.power / 1.1, 0, 1));
       const absU = Math.abs(u);
       const ballU = L.r1 / (L.gw / 2);
       let outcome;
@@ -141,7 +156,7 @@ export function playShot(host, opts) {
         }
         const move = clamp(guess - k.u, -vk * available, vk * available);
         k.to = clamp(k.u + move, -1.05, 1.05);
-        let reach = 0.3 + 0.12 * kq;
+        let reach = (0.3 + 0.12 * kq) * (weather?.surface === 'wet' ? 0.93 : weather?.surface === 'snow' ? 0.95 : 1);
         if (v > 0.75 && absU > 0.55) reach *= 0.7;
         if (v < 0.25 && absU > 0.6) reach *= 0.85;
         outcome = Math.abs(u - k.to) <= reach ? 'save' : 'goal';
@@ -391,6 +406,7 @@ export function playShot(host, opts) {
         // Köşe bayrakları (kale çizgisinin uçlarında, uzakta olduğu için küçük)
         drawSprite(ctx, 'corner_flag', 10, L.gl + 2, { h: L.gh * 0.62, anchor: 'bottom' });
         drawSprite(ctx, 'corner_flag', W - 10, L.gl + 2, { h: L.gh * 0.62, anchor: 'bottom', flip: true });
+        wfx.ground(ctx, W, H);
 
         const ballBehind = S.outcome === 'goal' && S.phase === 'after';
         drawNet(ctx, t);
@@ -477,6 +493,7 @@ export function playShot(host, opts) {
           }
           if (timeLimit) drawTimer(ctx, W, H - 14, S.t / timeLimit);
         }
+        wfx.sky(ctx, W, H, t);
         particles.render(ctx);
         big.render(ctx, W, H);
       },

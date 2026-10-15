@@ -11,7 +11,8 @@
 import { createStage, Particles, BigText, drawPitchTop, drawTimer, roundRect, clamp, lerp, dist } from './engine.js';
 import { CurvePath } from './curvePath.js';
 import { passSkill, kickFromPath } from './drawPassLogic.js';
-import { FixedStep, createBall, kick, stepBall, createBody, steer, stepBody, bodySpeed, interceptBall, restPoint, collideBodies, firstTouch, groundSpeed, predict, ENV } from './physics.js';
+import { FixedStep, createBall, kick, stepBall, createBody, steer, stepBody, bodySpeed, interceptBall, restPoint, collideBodies, firstTouch, groundSpeed, predict, envFor, applyGrip } from './physics.js';
+import { weatherFx } from './weatherFx.js';
 import { drawPixelPlayer, drawMovingPlayer, drawPixelBall } from './pixel/sprites.js';
 import { npcLook, lookFromAvatar } from './pixel/looks.js';
 import { sfx, buzz } from '../audio.js';
@@ -35,6 +36,9 @@ export function playDrawPass(host, opts) {
     const IDLE_PRESS = 4.5; // hiç çizmeden bu kadar beklenirse baskı başlar (oyun saniyesi)
     const TS = 1.9; // fizik saniyesi / oyun saniyesi
     const fixed = new FixedStep(1 / 120, 30);
+    // Hava ve zemin: ıslak/karlı/çamurlu zemin topu ve oyuncuları etkiler, rüzgâr havadaki topu iter
+    const ENV = envFor(opts.weather);
+    const wfx = weatherFx(opts.weather);
 
     let L = null;
     const S = {
@@ -50,7 +54,7 @@ export function playDrawPass(host, opts) {
       const ppm = W / 34; // ekran ≈ 34 m genişlik
       const me = { x: W / 2, y: H * 0.84 };
       const j = () => (Math.random() - 0.5) * W * 0.08;
-      const body = (x, y, o) => createBody(x / ppm, y / ppm, o);
+      const body = (x, y, o) => applyGrip(createBody(x / ppm, y / ppm, o), ENV);
       let mates;
       let defs;
       if (tryout) {
@@ -526,6 +530,7 @@ export function playDrawPass(host, opts) {
       render(ctx, W, H, t) {
         if (!L) return;
         drawPitchTop(ctx, W, H, { box: final || tryout ? 'top' : 'none', circle: !final && !tryout });
+        wfx.ground(ctx, W, H);
         const k = L.k;
         // ham çizim + Bezier önizleme
         if ((S.phase === 'draw' || S.phase === 'flight') && S.pts.length > 1) {
@@ -653,6 +658,7 @@ export function playDrawPass(host, opts) {
             : S.phase === 'draw'
               ? (S.target < 0 ? 'Çizgiyi bir arkadaşında bitir' : S.contested ? 'Rakip yolda! Etrafından kavisle dolaş' : 'Bırak: pas gitsin')
               : '';
+        wfx.sky(ctx, W, H, t);
         if (hint) ctx.fillText(hint, W / 2, H - 30);
         particles.render(ctx);
         big.render(ctx, W, H);

@@ -9,6 +9,7 @@ import { RELATIONS } from '../../core/chirp/index.js';
 import { shareCard, shareFlow } from '../chirpView.js';
 import { bigMatchChip, hubMentorCard, meetingFlow, requestsSheet, selectionSheet } from '../mentorView.js';
 import { actionArt } from '../spriteMap.js';
+import { monthName, weatherFor } from '../../core/weather.js';
 
 
 export function hubScreen(app) {
@@ -20,6 +21,7 @@ export function hubScreen(app) {
   const home = CLUB_BY_ID[h];
   const away = CLUB_BY_ID[a];
   const isHome = h === career.clubId;
+  const wx = fx ? weatherFor({ season: calendar.season, week: calendar.week, homeId: h }) : null;
   const slots = Array.from({ length: 4 }, (_, i) => `<i class="${i < calendar.slots ? 'on' : ''}"></i>`).join('');
 
   const actionTiles = ACTIONS.map((act) => {
@@ -70,7 +72,7 @@ export function hubScreen(app) {
         ${meter('Form', 'chart', (ov.form - 3) * 14.3, 100, ratingColor(ov.form), ov.form.toFixed(1).replace('.', ','))}
       </div>
 
-      <div class="h-sec">Sıradaki maç <span>Sezon ${calendar.season} · Hafta ${calendar.week}/${SEASON_WEEKS}</span></div>
+      <div class="h-sec">Sıradaki maç <span>${monthName(calendar.week)} · Hafta ${calendar.week}/${SEASON_WEEKS}</span></div>
       <div class="card glow">
         <div class="fixture">
           <div class="team">${crestSVG(home)}<span>${esc(home.name)}</span></div>
@@ -81,6 +83,7 @@ export function hubScreen(app) {
           <span>${esc(leagueLabel(ov.league.id))} · ${calendar.week === 1 ? 'Sezon başlıyor' : `${ov.position}. sıradasınız`}</span>
           <span>Kulüp gücü ${ov.clubRating}</span>
         </div>
+        ${wx ? `<div class="row small muted wx-fore" title="${esc(wx.note)}"><span>${wx.emoji}</span><span>Hava tahmini: <b>${esc(wx.name)}</b> · ${wx.temp}°C${wx.windKmh >= 12 ? ` · rüzgâr ${wx.windKmh} km/sa` : ''}</span></div>` : ''}
         ${bigMatchChip(s) ? `<div class="chips" style="margin-top:10px;justify-content:center">${bigMatchChip(s)}</div>` : ''}
       </div>
 

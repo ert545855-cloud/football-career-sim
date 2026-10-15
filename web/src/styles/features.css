@@ -539,3 +539,24 @@
 .rk-up { color: var(--good); font-weight: 800; }
 .rk-down { color: var(--bad); font-weight: 800; }
 .rk-mine { padding: 4px 12px; border-color: rgba(198,255,61,.4); }
+
+/* ── Hava durumu ve kondisyon ── */
+.wx-strip { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 8px 12px; border-radius: 12px; background: rgba(255,255,255,.05); border: 1px solid var(--line); font-size: 12.5px; color: var(--muted); }
+.wx-strip b { color: var(--text); font-size: 13px; }
+.wx-strip .wx-e { font-size: 17px; }
+.wx-strip.wx-snow { background: linear-gradient(90deg, rgba(220,235,255,.14), rgba(255,255,255,.04)); border-color: rgba(220,235,255,.3); }
+.wx-strip.wx-rain, .wx-strip.wx-storm { background: linear-gradient(90deg, rgba(96,165,250,.14), rgba(255,255,255,.03)); border-color: rgba(96,165,250,.28); }
+.wx-strip.wx-hot { background: linear-gradient(90deg, rgba(251,146,60,.16), rgba(255,255,255,.03)); border-color: rgba(251,146,60,.3); }
+.wx-strip.wx-mud { background: linear-gradient(90deg, rgba(146,98,52,.2), rgba(255,255,255,.03)); border-color: rgba(146,98,52,.35); }
+.cond { display: inline-flex; align-items: center; gap: 5px; color: var(--text); font-weight: 800; }
+.cond i { display: block; width: 54px; height: 6px; border-radius: 4px; background: rgba(255,255,255,.1); overflow: hidden; }
+.cond i b { display: block; height: 100%; border-radius: 4px; background: var(--good); transition: width .4s, background .4s; }
+.cond em { font-style: normal; font-size: 11.5px; min-width: 32px; text-align: right; }
+.wx-note { display: flex; gap: 10px; align-items: flex-start; text-align: left; padding: 9px 12px; margin: 0 0 10px; border-radius: 12px; background: rgba(96,165,250,.1); border: 1px solid rgba(96,165,250,.26); }
+.wx-note > span { font-size: 20px; line-height: 1; }
+.wx-note b { display: block; color: var(--text); font-size: 13.5px; }
+.wx-note div span { display: block; font-size: 12.5px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+.wx-note.fat { background: rgba(245,158,11,.1); border-color: rgba(245,158,11,.3); }
+.game-hud .wx-chip, .game-hud .fat-chip { white-space: nowrap; }
+.wx-chip-hub { gap: 4px; }
+.wx-fore { gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); justify-content: center; } .wx-fore b { color: var(--text); }

@@ -1,6 +1,7 @@
 // MAÇ EKRANI — canlı anlatım, skor tabelası, oyuncunun anlarında mini oyun.
 import { CLUB_BY_ID, GAME_WEIGHTS } from '../../core/data.js';
-import { applyAiEvent, MOMENT_INTRO, MOMENT_TITLE, resolveMoment } from '../../core/match.js';
+import { applyAiEvent, MOMENT_INTRO, MOMENT_TITLE, momentFatigue, resolveMoment } from '../../core/match.js';
+import { conditionPct, windArrow } from '../../core/weather.js';
 import { effectiveSkill } from '../../core/player.js';
 import { clubRating } from '../../core/league.js';
 import { runMiniGame } from '../../games/index.js';
@@ -10,6 +11,24 @@ import { crestSVG, icon } from '../art.js';
 import { confetti, el, esc, sleep } from '../dom.js';
 import { sprite } from '../../assets/sprites.js';
 import { FEED_SPRITES } from '../spriteMap.js';
+
+const pickLine = (a) => a[Math.floor(Math.random() * a.length)];
+const WX_KICKOFF = {
+  rain: (w) => `Yağmur altında oynanıyor (${w.temp}°C). Zemin ıslak, top hızlı kayıyor.`,
+  storm: (w) => `Sağanak yağış ve sert rüzgâr (${w.windKmh} km/sa)! Uzun toplar sürüklenecek.`,
+  snow: (w) => `Lapa lapa kar yağıyor, ${w.temp}°C. Hakem turuncu topu oyuna soktu.`,
+  mud: () => 'Saha çamur deryası. Top yerde yavaşlıyor, ayaklar ağır.',
+  hot: (w) => `Termometre ${w.temp}°C'yi gösteriyor. Bu sıcakta kondisyon belirleyici olacak.`,
+  windy: (w) => `Stadyumda sert rüzgâr var (${w.windKmh} km/sa). Havadan toplar zor kontrol edilecek.`,
+};
+const WX_MID = {
+  rain: ['Yağmur şiddetini artırdı, oyuncular kaymamak için dikkatli.', 'Islak zeminde top hızlı akıyor; uzun pas riskli.'],
+  storm: ['Şimşek çaktı, tribünlerden uğultu yükseldi!', 'Rüzgâr ortaları yolundan saptırıyor.'],
+  snow: ['Görevliler çizgileri temizlemek için sahaya girdi.', 'Kar kalınlaştı, top zor yuvarlanıyor.'],
+  mud: ['Bir oyuncu çamurda kaydı, forması kahverengiye döndü.', 'Ağır zeminde pas trafiği yavaşladı.'],
+  hot: ['Hakem su molası verdi. Oyuncular gölgeye koştu.', 'Sıcak bacakları ağırlaştırdı, tempo düştü.'],
+  windy: ['Rüzgâr kale vuruşunu geri itti!', 'Uzun top rüzgârla taca gitti.'],
+};
 
 export function matchScreen(app, { match }) {
   const s = app.state;
@@ -24,6 +43,9 @@ export function matchScreen(app, { match }) {
   match.events.forEach((ev) => timeline.push({ minute: ev.minute, order: 2, ev }));
   match.moments.forEach((m) => timeline.push({ minute: m.minute, order: 3, m }));
   if (match.subMinute) timeline.push({ minute: match.subMinute, order: 1, kind: 'sub' });
+  if (match.subOff) timeline.push({ minute: match.subOff, order: 5, kind: 'subOff' });
+  const w = match.weather;
+  if (w && w.id !== 'clear' && w.id !== 'cloudy') timeline.push({ minute: 20 + Math.floor(Math.random() * 45), order: 1, kind: 'wx' });
   timeline.push({ minute: 45, order: 4, kind: 'ht' });
   timeline.push({ minute: 90 + match.stoppage, order: 9, kind: 'ft' });
   timeline.sort((a, b) => a.minute - b.minute || a.order - b.order);
@@ -42,6 +64,7 @@ export function matchScreen(app, { match }) {
         <span class="chip ${match.role === 'starter' ? 'accent' : 'warn'}" data-role>${icon('user')} ${roleText}</span>
         <span class="chip">${match.moments.length ? `${match.moments.length} kritik an` : 'Kritik an yok'}</span>
       </div>
+      ${w ? `<div class="wx-strip wx-${w.id}"><span class="wx-e">${w.emoji}</span><b>${esc(w.name)}</b><span>${w.temp}°C</span>${w.windKmh >= 12 ? `<span>${windArrow(w.wind)} ${w.windKmh} km/sa</span>` : ''}<span class="grow"></span>${match.role !== 'out' ? `<span class="cond" data-cond title="Kondisyon">${icon('bolt', 'ico xs')} <i><b style="width:100%"></b></i><em>%100</em></span>` : ''}</div>` : ''}
       ${match.big ? `<div class="big-banner ${match.big.cool ? 'cool' : ''}">${icon(match.big.kind === 'derby' ? 'fire' : match.big.kind === 'final' ? 'trophy' : 'star', 'ico sm')}<b>${esc(match.big.title)}</b><span>Heyecan %${Math.round(match.big.nerves * 100)}${match.big.cool ? ' · Soğukkanlı' : ''}</span></div>` : ''}
       <div class="mom-bar"><i data-mom></i></div>
       <div class="feed" data-feed></div>
@@ -64,6 +87,17 @@ export function matchScreen(app, { match }) {
       let finished = false;
       let skipTo = null;
       let momentum = 50;
+      let offPitch = false;
+      const condEl = el0.querySelector('[data-cond]');
+      const updateCond = () => {
+        if (!condEl) return;
+        const on = match.role === 'starter' || (match.subMinute && minute >= match.subMinute);
+        const f = on && !offPitch ? momentFatigue(s, match, Math.min(90, minute)) : momentFatigue(s, match, Math.min(90, match.subOff || minute));
+        const pct = match.role === 'bench' && !on ? 100 : conditionPct(f);
+        condEl.querySelector('b').style.width = `${pct}%`;
+        condEl.querySelector('b').style.background = pct < 60 ? 'var(--bad)' : pct < 78 ? '#f59e0b' : 'var(--good)';
+        condEl.querySelector('em').textContent = `%${pct}`;
+      };
       let last = performance.now();
       let raf = 0;
 
@@ -103,6 +137,7 @@ export function matchScreen(app, { match }) {
 
       line(0, `Hakemin düdüğüyle maç başladı! ${home.name} - ${away.name}.`, 'whistle');
       if (match.big) line(0, `${match.big.title}! Tribünler ayakta, atmosfer elektrik yüklü.`, 'big');
+      if (w && w.id !== 'clear' && w.id !== 'cloudy') line(0, WX_KICKOFF[w.id]?.(w) || `Hava: ${w.name.toLowerCase()}, ${w.temp}°C.`, '');
       sfx('whistle');
       if (match.role !== 'starter') {
         line(0, match.role === 'out' ? (match.reason === 'suspended' ? `${shortName} PFDK cezası nedeniyle bu maçta yok.` : `${shortName} sakatlığı nedeniyle bu maçta yok.`) : `${shortName} maça yedek kulübesinde başlıyor.`, '');
@@ -113,7 +148,9 @@ export function matchScreen(app, { match }) {
         const type = m.type;
         const weights = GAME_WEIGHTS[type];
         // Büyük maç heyecanı etkin yeteneği düşürür (Soğukkanlı mentor %20 azaltır)
-        const skill = effectiveSkill(s.player, weights) * (match.big?.skillMult ?? 1);
+        // Maç içi yorgunluk: dakika ilerledikçe etkin yetenek düşer
+        const fatigue = momentFatigue(s, match, m.minute);
+        const skill = effectiveSkill(s.player, weights) * (match.big?.skillMult ?? 1) * (1 - fatigue * 0.3);
         await sleep(350);
         const result = await runMiniGame({
           type,
@@ -130,6 +167,8 @@ export function matchScreen(app, { match }) {
           name: shortName.toUpperCase(),
           auto: app.autoplay,
           big: match.big,
+          weather: match.weather,
+          fatigue,
         });
         const lines = resolveMoment(match, m, result, shortName);
         lines.forEach((ln) => push({ ...ln, kind: ln.kind === 'goal-me' ? 'goal-me' : ln.kind }));
@@ -141,6 +180,15 @@ export function matchScreen(app, { match }) {
       async function process(item) {
         if (item.kind === 'kickoff') return;
         if (item.kind === 'ht') { line(45, `İlk yarı sona erdi. ${scoreText()}`, 'whistle'); sfx('shortWhistle'); return; }
+        if (item.kind === 'wx') { line(item.minute, pickLine(WX_MID[w.id] || ['Hava şartları oyunu zorluyor.']), ''); return; }
+        if (item.kind === 'subOff') {
+          offPitch = true;
+          line(item.minute, `${shortName} kramp girdi, bacakları ağırlaştı. Hoca onu oyundan aldı; tribünler ayakta alkışlıyor.`, 'sub');
+          roleEl.innerHTML = `${icon('user')} Oyundan çıktın (${item.minute}')`;
+          roleEl.className = 'chip warn';
+          sfx('shortWhistle');
+          return;
+        }
         if (item.kind === 'sub') {
           line(item.minute, `Oyuncu değişikliği: ${shortName} oyuna giriyor!`, 'sub');
           roleEl.innerHTML = `${icon('user')} Oyundasın (${item.minute}')`;
@@ -174,6 +222,7 @@ export function matchScreen(app, { match }) {
           minute += dt * 4.2 * speed;
           if (skipTo !== null) minute = Math.max(minute, skipTo);
           minEl.textContent = `${Math.min(90 + match.stoppage, Math.floor(minute))}'`;
+          updateCond();
           if (Math.random() < 0.1) setMom();
           while (idx < timeline.length && timeline[idx].minute <= minute && !busy && !finished) {
             const item = timeline[idx++];

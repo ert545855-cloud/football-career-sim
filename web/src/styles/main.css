@@ -348,7 +348,7 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.01em; }
 /* ── Maç ekranı ── */
 .scoreboard { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 6px; padding: 14px 10px; border-radius: 20px; background: linear-gradient(180deg, rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.2)); border: 1px solid var(--line); }
 .scoreboard .t { display: flex; flex-direction: column; align-items: center; gap: 6px; font-weight: 800; font-size: 12.5px; text-align: center; }
-.scoreboard .sc { font-size: 40px; font-weight: 900; letter-spacing: 0.04em; font-variant-numeric: tabular-nums; text-align: center; line-height: 1; }
+.scoreboard .sc { font-size: 40px; font-weight: 900; letter-spacing: 0.04em; font-variant-numeric: tabular-nums; text-align: center; line-height: 1; white-space: nowrap; }
 .scoreboard .min { display: inline-block; margin-top: 6px; padding: 3px 9px; border-radius: 8px; background: var(--accent); color: var(--accent-ink); font-weight: 900; font-size: 13px; }
 .score-pop { animation: scorePop 0.6s cubic-bezier(0.2, 1.6, 0.3, 1); }
 @keyframes scorePop { 0% { transform: scale(1); } 40% { transform: scale(1.45); color: var(--accent); } 100% { transform: scale(1); } }
@@ -614,3 +614,16 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.01em; }
 .tabbar.n7 .tab svg { width: 21px; height: 21px; }
 .tabbar.n7 .tab span { font-size: 9.5px; letter-spacing: -0.1px; white-space: nowrap; }
 .tab .dot.soc { background: #f59e0b; right: calc(50% - 16px); animation: popIn 0.3s; }
+
+/* ── Kış teması ── */
+.snow-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 19; pointer-events: none; opacity: 0; transition: opacity .8s; }
+.snow-canvas.on { opacity: 1; }
+.app.winter { background-image: linear-gradient(180deg, rgba(170, 200, 255, 0.07), transparent 45%); }
+.app.winter .card.glow { border-color: rgba(214, 230, 255, 0.35); box-shadow: 0 0 0 1px rgba(214, 230, 255, 0.08), 0 -2px 0 rgba(255, 255, 255, 0.5) inset; }
+.app.winter .card.glow::before { content: ''; position: absolute; left: 6px; right: 6px; top: -6px; height: 10px; pointer-events: none; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 10' preserveAspectRatio='none'%3E%3Cpath d='M0 10 L0 6 Q6 1 14 5 Q22 9 30 4 Q38 0 48 5 Q56 8 64 3 Q74 0 84 5 Q92 9 100 4 Q110 0 120 6 L120 10 Z' fill='%23f2f7ff'/%3E%3C/svg%3E") center / 100% 100% no-repeat; filter: drop-shadow(0 1px 0 rgba(150,180,220,.5)); }
+.app.winter .card.glow { position: relative; }
+.app.winter .tabbar { border-top-color: rgba(230, 240, 255, 0.5); }
+.app.winter .title-screen::after { content: ''; position: absolute; left: -10%; right: -10%; bottom: -34px; height: 58px; z-index: 0; pointer-events: none; border-radius: 50% 50% 0 0 / 60% 60% 0 0;
+  background: linear-gradient(180deg, #eef5ff, #c9d9f0); box-shadow: 0 -6px 30px rgba(220, 235, 255, 0.35); opacity: .9; }
+.app.winter .title-screen .word { text-shadow: 0 -3px 0 #f4f8ff, 0 0 18px rgba(200, 225, 255, 0.45); }
+.app.winter .title-actions { position: relative; z-index: 2; }
