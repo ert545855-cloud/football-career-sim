@@ -8,6 +8,7 @@ import { loadSettings } from '../core/storage.js';
 import { playIntercept } from './intercept.js';
 import { playDribble } from './dribble.js';
 import { playShuttle } from './shuttle.js';
+import { playHeader } from './header.js';
 import { playUnityMoment, unityBuildAvailable } from './unity3d.js';
 import { setBallVariant } from './pixel/sprites.js';
 import { duckMusic } from '../music/player.js';
@@ -81,11 +82,12 @@ export async function runMiniGame(o) {
     // Karlı maçta turuncu top
     setBallVariant(w?.surface === 'snow' ? 'orange' : 'white');
     // 3B mod (Ayarlar): pas ve şut anları Unity WebGL derlemesinde oynanır; yüklenemezse 2B oyuna düşer
-    if ((o.type === 'pass' || o.type === 'shot') && loadSettings().unity3d && (await unityBuildAvailable())) {
+    if ((o.type === 'pass' || (o.type === 'shot' && o.context !== 'corner' && o.context !== 'freekick')) && loadSettings().unity3d && (await unityBuildAvailable())) {
       result = await playIn3D(host, o, big).catch(() => null);
     }
     if (!result) switch (o.type) {
-      case 'shot': result = await playShot(host, { ...common, keeper: o.keeper }); break;
+      // Korner: kafa düellosu; diğer şutlar (ceza sahası, uzaktan, serbest vuruş, penaltı) şut oyununda
+      case 'shot': result = o.context === 'corner' ? await playHeader(host, { ...common, keeper: o.keeper }) : await playShot(host, { ...common, keeper: o.keeper }); break;
       // Tek pas sistemi: çizerek kavisli pas (seçmelerde de aynı)
       case 'pass': result = await playDrawPass(host, common); break;
       // Defans: pas arası (maçta ve antrenmanda aynı)

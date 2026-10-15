@@ -401,7 +401,8 @@ export function createApp(rootEl) {
       const result = await runMiniGame({
         type: setup.game,
         skill: setup.skill,
-        context: setup.game === 'shot' ? 'box' : setup.game === 'pass' ? 'buildup' : 'duel',
+        // Şut antrenmanında bazen serbest vuruş çalışması (baraj + falso)
+        context: setup.game === 'shot' ? (Math.random() < 0.3 ? 'freekick' : 'box') : setup.game === 'pass' ? 'buildup' : 'duel',
         title: `${setup.title} · ${DIFFICULTY[diff].name}`,
         text: setup.hint,
         myKit: club,

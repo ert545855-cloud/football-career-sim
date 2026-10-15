@@ -20,14 +20,17 @@ export function playShot(host, opts) {
     const target = opts.target || null;
     const skill = clamp(opts.skill ?? 0.3, 0.02, 1);
     const kq = clamp(opts.keeper ?? 0.5, 0, 1);
-    const sigma = lerp(0.3, 0.05, skill) * (type === 'edge' ? 1.25 : type === 'penalty' ? 0.7 : 1);
-    const timeLimit = opts.timeLimit ?? (type === 'penalty' ? 0 : 6);
+    const fk = type === 'freekick';
+    const sigma = lerp(0.3, 0.05, skill) * (type === 'edge' ? 1.25 : type === 'penalty' ? 0.7 : fk ? 1.1 : 1);
+    const timeLimit = opts.timeLimit ?? (type === 'penalty' || fk ? 0 : 6);
     const myKit = opts.myKit?.colors || ['#2563eb', '#fff'];
     const oppKit = opts.oppKit?.colors || ['#b91c1c', '#fff'];
     const keeperColor = opts.keeperColor || '#22d3ee';
     const keeperPx = keeperLook(keeperColor, 9);
     const defPx = npcLook(opts.oppKit || { colors: oppKit }, 41, 4);
-    const ballOffset = type === 'penalty' ? 0 : (Math.random() - 0.5) * 0.3;
+    const ballOffset = type === 'penalty' ? 0 : fk ? (Math.random() < 0.5 ? -1 : 1) * lerp(0.08, 0.2, Math.random()) : (Math.random() - 0.5) * 0.3;
+    /** Dönen top (kaleci çeldi, top ceza sahasında kaldı) şansı: ıslak zeminde daha yüksek */
+    const reboundP = type === 'penalty' || opts.target ? 0 : 0.42 + (opts.weather?.surface === 'wet' ? 0.15 : 0);
     const defOffset = (Math.random() - 0.5) * 0.7;
     const penaltySide = [-0.68, 0, 0.68][Math.floor(Math.random() * 3)];
 
@@ -54,8 +57,8 @@ export function playShot(host, opts) {
       const gl = H * 0.37;
       const gw = Math.min(W * 0.68, 340);
       const gh = gw * 0.34;
-      const by = type === 'edge' ? H * 0.87 : type === 'penalty' ? H * 0.7 : H * 0.78;
-      const r0 = W * (type === 'edge' ? 0.05 : type === 'penalty' ? 0.04 : 0.045);
+      const by = type === 'edge' ? H * 0.87 : type === 'penalty' ? H * 0.7 : fk ? H * 0.9 : H * 0.78;
+      const r0 = W * (type === 'edge' ? 0.05 : type === 'penalty' ? 0.04 : fk ? 0.05 : 0.045);
       L = { W, H, hy, gl, gw, gh, cx: W / 2, by, bx: W / 2 + ballOffset * W, r0, r1: gw * 0.034, boxY: H * 0.83 };
       wArea.y0 = Math.round(hy);
       crowd = makeCrowd(W, 0, hy - 14, [myKit[0], myKit[1], oppKit[0], '#e2e8f0', '#94a3b8', '#fde68a']);
@@ -73,6 +76,18 @@ export function playShot(host, opts) {
         ph: Math.random() * 6.28,
       }));
       S.ball = { x: L.bx, y: L.by, r: L.r0, alt: 0 };
+      if (fk) {
+        // BARAJ: topla kale arasında, yakın direği kapatan 4 kişilik duvar
+        const fd = 0.36;
+        const pp = persp(fd);
+        const h = lerp(H * 0.16, gh, pp);
+        const near = ballOffset > 0 ? 1 : -1; // top sağdaysa sağ direk yakın
+        const cx0 = lerp(L.bx, gx(near * 0.42), pp);
+        const n = 4;
+        const wpx = h * 0.36;
+        L.wall = { fd, h, jump: 0, xs: Array.from({ length: n }, (_, i) => cx0 + (i - (n - 1) / 2) * wpx), w: wpx, look: Array.from({ length: n }, (_, i) => npcLook(opts.oppKit || { colors: oppKit }, 50 + i, 2 + i)) };
+        S.kOff = -near * 0.28; // kaleci açık tarafa yakın durur
+      }
       if (type === 'edge') {
         const fd = 0.42;
         const pp = persp(fd);
@@ -101,6 +116,20 @@ export function playShot(host, opts) {
       return o;
     };
 
+    /** Kaydırma yolunun eğriliği → falso (−1 sola … +1 sağa kıvrılır) */
+    function curlFromDrag(d) {
+      const pts = d.pts || [];
+      if (pts.length < 4) return 0;
+      const ax = d.x0; const ay = d.y0; const bx = d.x; const by = d.y;
+      const len = Math.hypot(bx - ax, by - ay) || 1;
+      let best = 0;
+      for (const q of pts) {
+        const dev = ((bx - ax) * (q.y - ay) - (by - ay) * (q.x - ax)) / len; // işaretli dik uzaklık
+        if (Math.abs(dev) > Math.abs(best)) best = dev;
+      }
+      return clamp(best / (len * 0.28), -1, 1);
+    }
+
     function aimFromDrag(d) {
       const dx = d.x - d.x0;
       const dy = d.y - d.y0;
@@ -110,21 +139,42 @@ export function playShot(host, opts) {
       const u = (xg - L.cx) / (L.gw / 2) + sw.u;
       const power = clamp(Math.hypot(dx, dy) / (L.H * 0.38), 0.05, 1.45);
       const v = clamp((power - 0.2) / 0.85 + sw.v, 0, 1.7);
-      return { u, v, power };
+      return { u, v, power, curl: fk || S.rebound ? curlFromDrag(d) : 0 };
+    }
+
+    /** Top barajın hizasında duvara çarpar mı? (önizleme ve şut aynı hesabı kullanır) */
+    function wallBlocks(u, v, curl) {
+      const w = L.wall;
+      if (!w) return false;
+      const pp = persp(w.fd);
+      const xAt = lerp(L.bx, gx(u), pp) + curl * 0.55 * (L.gw / 2) * Math.sin(Math.PI * w.fd);
+      const altAt = v * L.gh * pp + Math.sin(Math.PI * w.fd) * L.gh * (0.35 + 0.9 * clamp(v, 0, 1.2));
+      const wallTop = w.h * 1.04;
+      const inWall = w.xs.some((x) => Math.abs(xAt - x) < w.w / 2 + L.r0 * 0.5);
+      return inWall && altAt < wallTop;
     }
 
     function shoot(aim) {
-      const T = lerp(1.0, 0.42, clamp(aim.power / 1.1, 0, 1)) * (weather?.surface === 'snow' ? 1.08 : weather?.surface === 'heavy' ? 1.05 : 1);
+      // PANENKA: penaltıda kısa ve yavaş, ortaya doğru kaydırma → yumuşak aşırtma
+      const panenka = type === 'penalty' && aim.power < 0.4 && Math.abs(aim.u) < 0.35;
+      S.panenka = panenka;
+      let T = lerp(1.0, 0.42, clamp(aim.power / 1.1, 0, 1)) * (weather?.surface === 'snow' ? 1.08 : weather?.surface === 'heavy' ? 1.05 : 1);
+      if (fk) T *= 1.25;
+      if (panenka) T = 1.25;
       // Rüzgâr: uçuş süresi ve yükseklikle artan yan sapma
       const drift = windX * 0.016 * T * (0.6 + Math.min(1, aim.v));
-      const u = aim.u + gaussian() * sigma + drift;
-      const v = Math.max(0, aim.v + gaussian() * sigma * 0.8);
+      const curl = aim.curl || 0;
+      let u = aim.u + gaussian() * sigma * (1 + Math.abs(curl) * 0.25) + drift + curl * 0.1;
+      let v = Math.max(0, aim.v + gaussian() * sigma * 0.8);
+      if (panenka) { u = aim.u * 0.3 + gaussian() * 0.05; v = 0.5 + Math.random() * 0.15; }
       const absU = Math.abs(u);
       const ballU = L.r1 / (L.gw / 2);
       let outcome;
 
       // Ön savunmacı bloğu (ceza sahası dışı)
       let blocked = false;
+      // Baraj: top barajın hizasındayken yeterince yüksekte değilse ya da kıvrılıp dolanmadıysa çarpar
+      if (wallBlocks(u, v, curl)) blocked = true;
       if (L.def) {
         const pp = persp(L.def.fd);
         const bxAt = lerp(L.bx, gx(u), pp);
@@ -144,8 +194,9 @@ export function playShot(host, opts) {
         S.targetHit = Math.hypot((u - target.u) / target.r, (v - target.v) / (target.r * 1.15)) <= 1;
         k.to = k.u;
       } else {
-        const rd = lerp(0.32, 0.18, kq) + skill * 0.06;
-        const vk = lerp(1.7, 2.7, kq);
+        // Baraj görüşü kapatır (geç tepki); dönen topta kaleci yerde (yavaş, kısa uzanma)
+        const rd = lerp(0.32, 0.18, kq) + skill * 0.06 + (fk ? 0.14 : 0) + (S.rebound ? 0.28 : 0);
+        const vk = lerp(1.7, 2.7, kq) * (S.rebound ? 0.55 : 1);
         let guess = u + gaussian() * lerp(0.35, 0.12, kq);
         const wrongP = lerp(0.32, 0.1, kq) * (type === 'penalty' ? 1.6 : 1);
         if (Math.random() < wrongP) guess = -guess * 0.7;
@@ -156,10 +207,17 @@ export function playShot(host, opts) {
         }
         const move = clamp(guess - k.u, -vk * available, vk * available);
         k.to = clamp(k.u + move, -1.05, 1.05);
-        let reach = (0.3 + 0.12 * kq) * (weather?.surface === 'wet' ? 0.93 : weather?.surface === 'snow' ? 0.95 : 1);
+        let reach = (0.3 + 0.12 * kq) * (weather?.surface === 'wet' ? 0.93 : weather?.surface === 'snow' ? 0.95 : 1) * (S.rebound ? 0.75 : 1);
+        if (Math.abs(curl) > 0.35) reach *= 0.9; // falsolu top kaleciyi yanıltır
+        if (fk) reach *= 0.88; // baraj görüşü kapattı
         if (v > 0.75 && absU > 0.55) reach *= 0.7;
         if (v < 0.25 && absU > 0.6) reach *= 0.85;
         outcome = Math.abs(u - k.to) <= reach ? 'save' : 'goal';
+        if (panenka) {
+          // Kaleci bir köşeye atlarsa top ortadan süzülür; yerinde kalırsa kucağına
+          outcome = penaltySide === 0 || v > 1 ? 'save' : 'goal';
+          k.to = penaltySide;
+        }
         k.reactAt = rd;
         k.diveV = v;
       }
@@ -169,7 +227,7 @@ export function playShot(host, opts) {
         k.reactAt = 0.25;
         k.diveV = Math.min(v, 0.9);
       }
-      S.shot = { u, v, T, power: aim.power, t: 0, xg: gx(clamp(u, -1.6, 1.6)) };
+      S.shot = { u, v, T, power: aim.power, t: 0, xg: gx(clamp(u, -1.6, 1.6)), curl, arc: fk ? 0.35 + 0.9 * clamp(v, 0, 1.2) : panenka ? 0.55 : 0.25 * aim.power };
       S.outcome = outcome;
       S.phase = 'flight';
       sfx('kick');
@@ -186,7 +244,7 @@ export function playShot(host, opts) {
       const accuracy = success ? clamp(0.35 + Math.abs(sh.u) * 0.5 + (sh.v > 0.6 ? 0.15 : 0), 0, 1) : 0;
       setTimeout(() => {
         stage.stop();
-        resolve({ success, accuracy, outcome: o });
+        resolve({ success, accuracy, outcome: o, panenka: !!S.panenka && success, panenkaTry: !!S.panenka, rebound: !!S.rebound, freekick: fk, curl: S.shot?.curl || 0 });
       }, 50);
     }
 
@@ -213,17 +271,19 @@ export function playShot(host, opts) {
       } else if (o === 'goal') {
         netHit(b.x, b.y, 1);
         S.excite = 1;
-        big.show('GOOOL!', '#c6ff3d', 76);
+        big.show(S.panenka ? 'PANENKA!' : S.rebound ? 'DÖNEN TOPTA GOL!' : fk && Math.abs(S.shot.curl) > 0.3 ? 'FALSOLU GOL!' : 'GOOOL!', '#c6ff3d', S.rebound ? 58 : 76);
         particles.burst(b.x, b.y, { n: 40, colors: ['#c6ff3d', '#ffcf3d', '#fff', myKit[0]], speed: 380, gravity: 500, life: 1.4, size: 5 });
         stage.shake(14);
         sfx('goal');
         buzz('goal');
         S.after = { vx: (b.x - L.cx) * 0.1, vy: -20, shrink: 0.996 };
       } else if (o === 'save') {
-        big.show('KURTARDI!', '#38bdf8', 60);
+        big.show(S.panenka ? 'YERİNDE KALDI!' : 'KURTARDI!', '#38bdf8', 60);
         sfx('save');
         buzz('save');
-        const caught = S.shot.v < 0.55 && Math.abs(S.shot.u - S.k.to) < 0.12;
+        const caught = S.panenka || (S.shot.v < 0.55 && Math.abs(S.shot.u - S.k.to) < 0.12);
+        // Çelinen top ceza sahasında kalabilir: ikinci şans (bir kez)
+        S.reboundNext = !caught && !S.rebound && Math.random() < reboundP;
         S.after = caught ? { caught: true } : { vx: (b.x < gx(S.k.u) ? -1 : 1) * 260, vy: 160, grow: 1.01 };
         particles.burst(b.x, b.y, { n: 14, colors: ['#fff', keeperColor], speed: 200, life: 0.6 });
       } else if (o === 'post') {
@@ -233,7 +293,8 @@ export function playShot(host, opts) {
         stage.shake(8);
         S.after = { vx: (b.x < L.cx ? 1 : -1) * 120, vy: 300, grow: 1.012 };
       } else if (o === 'block') {
-        big.show('BLOK!', '#ff5d6c', 60);
+        big.show(L.wall ? 'BARAJ!' : 'BLOK!', '#ff5d6c', 60);
+        if (L.wall) L.wall.jump = 1;
         sfx('tackle');
         buzz('bump');
         S.after = { vx: (Math.random() - 0.5) * 400, vy: 260, grow: 1.01 };
@@ -246,6 +307,32 @@ export function playShot(host, opts) {
       }
     }
 
+    /** Dönen top: kaleci yerde, top ceza sahasında; 1,8 sn içinde ikinci şut */
+    function startRebound() {
+      S.rebound = true;
+      S.reboundNext = false;
+      S.phase = 'aim';
+      S.t = 0;
+      S.reboundT = 1.8;
+      S.outcome = null;
+      S.drag = null;
+      S.after = null;
+      S.excite = 0.2;
+      S.hintA = 1;
+      S.kOff = 0;
+      S.k.u = clamp(S.k.to, -1, 1);
+      S.k.lift = 0;
+      L.wall = null;
+      L.def = null;
+      L.bx = L.cx + (Math.random() - 0.5) * L.gw * 1.1;
+      L.by = lerp(L.gl, L.by, 0.55);
+      L.r0 *= 0.85;
+      S.ball = { x: L.bx, y: L.by, r: L.r0, alt: 0, gy: L.by };
+      big.show('DÖNEN TOP!', '#ffcf3d', 52);
+      sfx('swish');
+      buzz('bump');
+    }
+
     const stage = createStage(host, {
       tempo: opts.tempo ?? 1,
       update(dt) {
@@ -255,8 +342,22 @@ export function playShot(host, opts) {
         big.update(dt);
         S.excite *= 0.995;
         S.k.idle += dt;
-        if (S.phase === 'aim') {
-          S.k.u = Math.sin(S.k.idle * 1.3) * 0.1;
+        if (S.phase === 'aim' && S.rebound) {
+          // Kaleci yerden kalkmaya çalışıyor; süre dolarsa savunma uzaklaştırır
+          S.k.angle *= Math.pow(0.4, dt);
+          S.k.u += (0 - S.k.u) * Math.min(1, dt * 0.5);
+          if (S.t > S.reboundT) {
+            S.outcome = 'save';
+            S.cleared = true;
+            S.shot = { u: 0, v: 0, T: 0, power: 0, t: 0, xg: L.cx, curl: 0, arc: 0 };
+            big.show('UZAKLAŞTIRDILAR!', '#ff5d6c', 50);
+            sfx('tackle');
+            S.phase = 'after';
+            S.afterT = 0;
+            S.after = { vx: (Math.random() < 0.5 ? -1 : 1) * 420, vy: 260, grow: 1.01 };
+          }
+        } else if (S.phase === 'aim') {
+          S.k.u = Math.sin(S.k.idle * 1.3) * 0.1 + (S.kOff || 0);
           if (timeLimit && S.t > timeLimit) {
             S.outcome = 'timeout';
             S.shot = { u: 0, v: 0, T: 0, power: 0, t: 0, xg: L.cx };
@@ -271,9 +372,9 @@ export function playShot(host, opts) {
           const p = clamp(sh.t / sh.T, 0, 1);
           const pp = persp(p);
           const b = S.ball;
-          b.x = lerp(L.bx, sh.xg, pp);
+          b.x = lerp(L.bx, sh.xg, pp) + (sh.curl || 0) * 0.55 * (L.gw / 2) * Math.sin(Math.PI * p);
           b.gy = lerp(L.by, L.gl, pp);
-          b.alt = sh.v * L.gh * pp + Math.sin(Math.PI * p) * L.gh * 0.25 * sh.power;
+          b.alt = sh.v * L.gh * pp + Math.sin(Math.PI * p) * L.gh * (sh.arc ?? 0.25 * sh.power);
           b.y = b.gy - b.alt;
           b.r = lerp(L.r0, L.r1, pp);
           S.rot += dt * 14;
@@ -288,7 +389,9 @@ export function playShot(host, opts) {
             k.lift = (k.diveV ?? 0) * L.gh * 0.55 * Math.sin(Math.PI * Math.min(1, kp * 0.9)) * Math.abs(diveAmt);
           }
           if (L.def && p > L.def.fd - 0.15 && p < L.def.fd + 0.1) L.def.jump = Math.max(L.def.jump, 0.6);
-          if (S.outcome === 'block' && p >= L.def.fd) startAfter();
+          if (L.wall && p > 0.02 && p < L.wall.fd + 0.12) L.wall.jump = Math.max(L.wall.jump, 0.85);
+          const blockAt = L.wall ? L.wall.fd : L.def?.fd;
+          if (S.outcome === 'block' && p >= blockAt) startAfter();
           else if (p >= 1) startAfter();
         } else if (S.phase === 'after') {
           S.afterT += dt;
@@ -316,8 +419,10 @@ export function playShot(host, opts) {
           }
           S.rot += dt * 6;
           if (L.def) L.def.jump *= 0.95;
+          if (L.wall) L.wall.jump *= 0.93;
           netStep(dt);
-          if (S.afterT > 1.7) finish();
+          if (S.reboundNext && S.afterT > 0.75) startRebound();
+          else if (S.afterT > 1.7) finish();
         }
         if (S.drag) S.hintA = Math.max(0, S.hintA - dt * 3);
       },
@@ -415,6 +520,7 @@ export function playShot(host, opts) {
         if (target) drawTargets(ctx, t);
         else drawKeeper(ctx);
         if (L.def) drawDefender(ctx);
+        if (L.wall) drawWall(ctx);
         if (!ballBehind) drawBallAll(ctx);
 
         // ── Nişan önizleme ──
@@ -423,13 +529,14 @@ export function playShot(host, opts) {
           if (aim) {
             const tx = gx(clamp(aim.u, -1.8, 1.8));
             const ty = gy(Math.min(aim.v, 1.6));
-            const ok = Math.abs(aim.u) < 1 && aim.v <= 1;
+            const ok = Math.abs(aim.u) < 1 && aim.v <= 1 && !wallBlocks(aim.u, aim.v, aim.curl || 0);
             ctx.setLineDash([6, 8]);
             ctx.strokeStyle = ok ? 'rgba(198,255,61,.85)' : 'rgba(255,93,108,.85)';
             ctx.lineWidth = 3;
             ctx.beginPath();
             ctx.moveTo(L.bx, L.by);
-            ctx.quadraticCurveTo((L.bx + tx) / 2, Math.min(L.by, ty) - L.gh * 0.4 * aim.power, tx, ty);
+            const bend = (aim.curl || 0) * 0.55 * L.gw;
+            ctx.quadraticCurveTo((L.bx + tx) / 2 + bend, Math.min(L.by, ty) - L.gh * (fk ? 0.9 + 0.9 * clamp(aim.v, 0, 1.2) : 0.4 * aim.power), tx, ty);
             ctx.stroke();
             ctx.setLineDash([]);
             ctx.beginPath();
@@ -488,10 +595,11 @@ export function playShot(host, opts) {
             ctx.font = '800 15px system-ui, sans-serif';
             ctx.textAlign = 'center';
             ctx.fillStyle = '#fff';
-            ctx.fillText('Kaleye doğru kaydır', L.cx, Math.min(H - 24, L.by + L.r0 * 2.6));
+            ctx.fillText(S.rebound ? 'ÇABUK! Dönen topa vur' : fk ? 'Barajın üstünden aşırt ya da kavisli kaydır' : type === 'penalty' ? 'Kaydır · kısa ve yavaş = Panenka' : 'Kaleye doğru kaydır', L.cx, Math.min(H - 24, L.by + L.r0 * 2.6));
             ctx.globalAlpha = 1;
           }
-          if (timeLimit) drawTimer(ctx, W, H - 14, S.t / timeLimit);
+          if (S.rebound) drawTimer(ctx, W, H - 14, S.t / S.reboundT, '#ffcf3d');
+          else if (timeLimit) drawTimer(ctx, W, H - 14, S.t / timeLimit);
         }
         wfx.sky(ctx, W, H, t);
         particles.render(ctx);
@@ -502,10 +610,11 @@ export function playShot(host, opts) {
         if (!L || S.phase !== 'aim') return;
         if (kind === 'down') {
           if (p.y < L.gl) return;
-          S.drag = { x0: p.x, y0: p.y, x: p.x, y: p.y };
+          S.drag = { x0: p.x, y0: p.y, x: p.x, y: p.y, pts: [] };
         } else if (kind === 'move' && S.drag) {
           S.drag.x = p.x;
           S.drag.y = p.y;
+          if (S.drag.pts.length < 80) S.drag.pts.push({ x: p.x, y: p.y });
           // Güç dolarken her kademede hafif tık: şutun gerildiğini hisset
           const a = aimFromDrag(S.drag);
           const lv = a ? Math.floor(Math.min(a.power, 1.44) / 0.36) : 0;
@@ -708,6 +817,18 @@ export function playShot(host, opts) {
       const x = gx(k.u);
       drawShadow(ctx, x, L.gl + 3, kh * 0.3, kh * 0.06, 0.4);
       drawPixelPlayer(ctx, x, L.gl + 2, kh, keeperPx, { dir: 'down', frame: 'ready', rot: k.angle, lift: k.lift, shadow: false });
+    }
+
+    if (opts.expose) {
+      Object.assign(opts.expose, { S, startRebound: () => startRebound() });
+      Object.defineProperty(opts.expose, 'L', { get: () => L, configurable: true });
+    }
+
+    function drawWall(ctx) {
+      const w = L.wall;
+      const y = lerp(L.by, L.gl, persp(w.fd));
+      const lift = Math.sin(Math.min(1, w.jump) * Math.PI * 0.5) * w.h * 0.22 * w.jump;
+      w.xs.forEach((x, i) => drawPixelPlayer(ctx, x, y + 2, w.h, w.look[i], { dir: 'down', frame: w.jump > 0.15 ? 'ready' : 'idle', lift: lift * (0.85 + (i % 2) * 0.15) }));
     }
 
     function drawDefender(ctx) {

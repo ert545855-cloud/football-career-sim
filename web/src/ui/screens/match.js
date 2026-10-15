@@ -1,6 +1,6 @@
 // MAÇ EKRANI — canlı anlatım, skor tabelası, oyuncunun anlarında mini oyun.
 import { CLUB_BY_ID, GAME_WEIGHTS } from '../../core/data.js';
-import { applyAiEvent, MOMENT_INTRO, MOMENT_TITLE, momentFatigue, resolveMoment } from '../../core/match.js';
+import { applyAiEvent, MOMENT_INTRO, momentFatigue, momentTitle, resolveMoment } from '../../core/match.js';
 import { conditionPct, windArrow } from '../../core/weather.js';
 import { effectiveSkill } from '../../core/player.js';
 import { clubRating } from '../../core/league.js';
@@ -159,7 +159,7 @@ export function matchScreen(app, { match }) {
           type,
           skill,
           context: m.context,
-          title: MOMENT_TITLE[type],
+          title: momentTitle(m),
           text: MOMENT_INTRO[type][m.context],
           minute: m.minute,
           myKit: my,

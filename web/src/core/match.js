@@ -29,7 +29,9 @@ export const MOMENT_INTRO = {
   shot: {
     box: 'Ceza sahasında top ayağında! Kaleye doğru kaydırarak şut çek.',
     edge: 'Ceza sahası dışından fırsat! Önünde bir savunmacı var, iyi nişan al.',
-    penalty: 'PENALTI! Topun başına sen geçtin. Kaleciyi avla.',
+    penalty: 'PENALTI! Topun başına sen geçtin. Kaleciyi avla. Cesursan kısa ve yavaş kaydır: Panenka!',
+    freekick: 'Ceza sahası önünde serbest vuruş! Barajın üstünden aşırt ya da parmağını kıvırarak falsolu vur.',
+    corner: 'Korner! Topun ineceği noktaya koş, markajdan kurtul; halka kapanınca dokun ve kafayı vur.',
   },
   pass: {
     buildup: 'Orta sahada top sende. Topa dokun, arkadaşına doğru çiz: zaman yavaşlar. Rakip yoldaysa kavisle dolaş.',
@@ -42,6 +44,9 @@ export const MOMENT_INTRO = {
 };
 
 export const MOMENT_TITLE = { shot: 'Şut Fırsatı', pass: 'Pas Anı', tackle: 'Savunma Anı' };
+const CONTEXT_TITLE = { penalty: 'Penaltı', freekick: 'Serbest Vuruş', corner: 'Korner · Kafa Düellosu' };
+/** Anın başlığı (duran toplarda özel) */
+export const momentTitle = (m) => CONTEXT_TITLE[m.context] || MOMENT_TITLE[m.type];
 
 function spreadMinutes(count, from, to) {
   const out = [];
@@ -56,7 +61,15 @@ function spreadMinutes(count, from, to) {
 function makeMoment(position, minute) {
   const type = weightedPick(Object.entries(POSITIONS[position].moments));
   let context;
-  if (type === 'shot') context = weightedPick([['box', 0.55], ['edge', 0.35], ['penalty', position === 'FW' ? 0.1 : 0.04]]);
+  if (type === 'shot') {
+    // Duran toplar: serbest vuruş (orta saha ustası), korner kafası (forvet ve stoper), penaltı
+    const w = {
+      FW: [['box', 0.42], ['edge', 0.24], ['freekick', 0.1], ['corner', 0.14], ['penalty', 0.1]],
+      MF: [['box', 0.3], ['edge', 0.36], ['freekick', 0.24], ['corner', 0.06], ['penalty', 0.04]],
+      DF: [['box', 0.16], ['edge', 0.12], ['freekick', 0.06], ['corner', 0.62], ['penalty', 0.04]],
+    }[position] || [['box', 0.55], ['edge', 0.35], ['penalty', 0.1]];
+    context = weightedPick(w);
+  }
   else if (type === 'pass') context = weightedPick([['buildup', 0.45], ['final', 0.55]]);
   else context = weightedPick([['threat', 0.6], ['duel', 0.4]]);
   return { minute, type, context, done: false, outcome: null };
@@ -234,14 +247,27 @@ export function resolveMoment(match, moment, result, playerName) {
       t.goals += 1;
       t.won++;
       t.rating += t.goals === 1 ? 1.0 : 0.8;
-      lines.push({ minute: m, kind: 'goal-me', text: `GOOOL! ${playerName} ${moment.context === 'penalty' ? 'penaltıyı gole çevirdi' : 'filelere gönderdi'}! ${scoreLine(match)}` });
+      const how = result.panenka ? 'Panenka vuruşuyla kaleciyi avladı, top ağlarda süzüldü'
+        : moment.context === 'penalty' ? 'penaltıyı gole çevirdi'
+          : moment.context === 'corner' ? 'kornerden gelen topa yükseldi ve kafayla filelere gönderdi'
+            : moment.context === 'freekick' ? (Math.abs(result.curl || 0) > 0.3 ? 'serbest vuruşu barajın yanından kıvırarak ağlara gönderdi' : 'serbest vuruşu barajın üstünden aşırttı, top doksana') 
+              : result.rebound ? 'kalecinin çeldiği topu boş kaleye gönderdi' : 'filelere gönderdi';
+      if (result.panenka) t.rating += 0.3;
+      if (moment.context === 'freekick') t.rating += 0.25;
+      lines.push({ minute: m, kind: 'goal-me', text: `GOOOL! ${playerName} ${how}! ${scoreLine(match)}` });
     } else {
       t.lost++;
       const o = result.outcome;
       const pen = moment.context === 'penalty';
-      if (o === 'save') { t.rating += pen ? -0.6 : -0.1; lines.push({ minute: m, kind: 'save', text: `${playerName} vurdu, kaleci kurtardı!` }); }
+      if (o === 'save') {
+        t.rating += pen ? (result.panenkaTry ? -0.9 : -0.6) : -0.1;
+        const txt = result.panenkaTry ? `${playerName} Panenka denedi ama kaleci yerinde kaldı ve topu kucakladı! Tribünler şokta.` : '';
+        lines.push({ minute: m, kind: 'save', text: txt || (result.rebound ? `${playerName} vurdu, kaleci çeldi; dönen topta da gol çıkmadı!` : moment.context === 'freekick' ? `${playerName} serbest vuruşu çerçeveye gönderdi, kaleci uçarak çıkardı!` : `${playerName} vurdu, kaleci kurtardı!`) });
+      } else if (o === 'claimed') { t.rating -= 0.05; lines.push({ minute: m, kind: 'save', text: `Korner kullanıldı, kaleci ${playerName}'ın önünde topu havada kontrol etti.` }); }
+      else if (o === 'cleared') { t.rating -= 0.1; lines.push({ minute: m, kind: 'chance', text: `${playerName} kafa topuna yükseldi ama savunma düelloyu kazandı.` }); }
+      else if (o === 'missed') { t.rating -= 0.15; lines.push({ minute: m, kind: 'chance', text: `Korner ${playerName}'ın üstünden geçti, zamanlama tutmadı.` }); }
       else if (o === 'post') { lines.push({ minute: m, kind: 'post', text: `${playerName} direğe nişanladı... DİREK!` }); }
-      else if (o === 'block') { t.rating -= 0.15; lines.push({ minute: m, kind: 'chance', text: `${playerName} şutunu çekti, savunma bloke etti.` }); }
+      else if (o === 'block') { t.rating -= 0.15; lines.push({ minute: m, kind: 'chance', text: moment.context === 'freekick' ? `${playerName} serbest vuruşu kullandı, top baraja takıldı.` : `${playerName} şutunu çekti, savunma bloke etti.` }); }
       else if (o === 'timeout') { t.rating -= 0.3; lines.push({ minute: m, kind: 'chance', text: `${playerName} çok bekledi, top elinden alındı.` }); }
       else { t.rating += pen ? -0.6 : -0.25; lines.push({ minute: m, kind: 'chance', text: `${playerName} vurdu ama top ${o === 'over' ? 'üstten' : 'yandan'} auta gitti.` }); }
     }
