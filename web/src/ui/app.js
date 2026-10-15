@@ -51,8 +51,9 @@ import { CUPS, STAGE_LABEL } from '../core/world/europe.js';
 import { nationalScreen } from './screens/national.js';
 import { ballonCeremony, ballonScreen } from './ballonView.js';
 import { afterCareerClick, afterCareerSection, coachScreen, punditScreen } from './screens/afterCareer.js';
-import { nationalFlow, tournamentFlow } from './nationalView.js';
-import { tournamentEligible } from '../core/national.js';
+import { campMatchFlow, nationalFlow, tournamentFlow } from './nationalView.js';
+import { campScreen } from './screens/camp.js';
+import { activeCamp, startTournamentCamp, tournamentFor } from '../core/nationalCamp.js';
 import { scheduleCloudSync } from '../cloud.js';
 import { runTryoutStation, heartsHTML } from '../games/tryoutStation.js';
 import { POSITIONS as POS } from '../core/data.js';
@@ -93,6 +94,7 @@ export function createApp(rootEl) {
     home: homeScreen,
     garage: garageScreen,
     national: nationalScreen,
+    camp: campScreen,
     ballon: ballonScreen,
     coach: coachScreen,
     pundit: punditScreen,
@@ -327,6 +329,7 @@ export function createApp(rootEl) {
     resume() {
       if (!this.state) return this.go('title');
       // Bekleyen pencereler (olay, milli çağrı…) ana ekranın üstünde açılsın
+      if (activeCamp(this.state)) return this.go('camp');
       if (this.state.calendar.phase === 'week') this.go('hub');
       this.runPending();
     },
@@ -500,6 +503,10 @@ export function createApp(rootEl) {
       this.go('match', { match: clone(match) });
     },
 
+    async finishCampMatch(match) {
+      return campMatchFlow(this, match);
+    },
+
     async finishMatch(match) {
       const s = this.state;
       const out = completeMatch(s, match);
@@ -561,10 +568,18 @@ export function createApp(rootEl) {
       const s = this.state;
       if (!s) return this.go('title');
       if (s.pending.event) await this.eventFlow();
-      if (s.pending.national) await nationalFlow(this);
+      // Milli kamp sürüyorsa (ya da yeni başladıysa) kamp ekranı devralır; kamp bitince runPending yeniden çağrılır
+      if (activeCamp(s)) return this.go('camp');
+      if (s.pending.national && (await nationalFlow(this)) === 'camp') return;
       if (s.pending.offers && s.pending.offers.kind === 'mid') await this.offersFlow();
       // Çift sezonların sonunda büyük turnuva (A takımdaysan); sezon raporundan önce oynanır
-      if (s.calendar.phase === 'seasonEnd' && (s.pending.tournament || tournamentEligible(s))) await tournamentFlow(this);
+      if (s.calendar.phase === 'seasonEnd' && s.pending.tournament) await tournamentFlow(this); // eski kayıtlar
+      if (s.calendar.phase === 'seasonEnd' && tournamentFor(s)) {
+        startTournamentCamp(s);
+        this.save();
+        toast(`${s.national.camp.tournament.name} kampı başladı!`);
+        return this.go('camp');
+      }
       if (s.calendar.phase === 'seasonEnd') {
         endSeason(s);
         this.save();

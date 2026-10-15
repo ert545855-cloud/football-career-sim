@@ -62,6 +62,36 @@ function makeMoment(position, minute) {
   return { minute, type, context, done: false, outcome: null };
 }
 
+/** Yapay maç olayları: goller (Poisson) + 5-8 renk olayı (fırsat, kurtarış, korner, kart, direk, ofsayt) */
+export function buildEvents(lMy, lOpp, myShare = 0.5) {
+  const events = [];
+  const myGoals = poisson(lMy);
+  const oppGoals = poisson(lOpp);
+  for (let i = 0; i < myGoals; i++) events.push({ minute: randInt(2, 90), side: 'my', kind: 'goal' });
+  for (let i = 0; i < oppGoals; i++) events.push({ minute: randInt(2, 90), side: 'opp', kind: 'goal' });
+  const extras = randInt(5, 8);
+  for (let i = 0; i < extras; i++) {
+    events.push({
+      minute: randInt(3, 89),
+      side: chance(myShare) ? 'my' : 'opp',
+      kind: pick(['chance', 'chance', 'save', 'corner', 'card', 'post', 'offside']),
+    });
+  }
+  return events.sort((a, b) => a.minute - b.minute);
+}
+
+/** Oyuncunun kritik anları: ilk 11'de 3-5, yedekten girince 1-2 (oyundan alınırsa o dakikaya kadar) */
+export function buildMoments(position, role, subMinute = null, subOff = null) {
+  let count = 0;
+  let from = 5;
+  if (role === 'starter') count = randInt(3, 4) + (chance(0.3) ? 1 : 0);
+  else if (subMinute) {
+    count = randInt(1, 2);
+    from = subMinute + 3;
+  }
+  return spreadMinutes(count, from, subOff ? subOff - 2 : 88).map((m) => makeMoment(position, m));
+}
+
 export function planMatch(state) {
   const { player, career, world, calendar } = state;
   const week = calendar.week;
@@ -95,30 +125,10 @@ export function planMatch(state) {
   if (player.position === 'DF') lOpp *= 1 - 0.14 * onShare;
   if (player.position === 'MF') lOpp *= 1 - 0.06 * onShare;
 
-  const events = [];
-  const myGoals = poisson(lMy);
-  const oppGoals = poisson(lOpp);
-  for (let i = 0; i < myGoals; i++) events.push({ minute: randInt(2, 90), side: 'my', kind: 'goal' });
-  for (let i = 0; i < oppGoals; i++) events.push({ minute: randInt(2, 90), side: 'opp', kind: 'goal' });
-  const extras = randInt(5, 8);
   const myShare = clamp(0.5 + (myR - oppR) / 120, 0.2, 0.8);
-  for (let i = 0; i < extras; i++) {
-    events.push({
-      minute: randInt(3, 89),
-      side: chance(myShare) ? 'my' : 'opp',
-      kind: pick(['chance', 'chance', 'save', 'corner', 'card', 'post', 'offside']),
-    });
-  }
-  events.sort((a, b) => a.minute - b.minute);
+  const events = buildEvents(lMy, lOpp, myShare);
 
-  let count = 0;
-  let from = 5;
-  if (role === 'starter') count = randInt(3, 4) + (chance(0.3) ? 1 : 0);
-  else if (subMinute) {
-    count = randInt(1, 2);
-    from = subMinute + 3;
-  }
-  const moments = spreadMinutes(count, from, subOff ? subOff - 2 : 88).map((m) => makeMoment(player.position, m));
+  const moments = buildMoments(player.position, role, subMinute, subOff);
 
   return {
     id: `${calendar.season}-${week}`,
@@ -174,16 +184,22 @@ export function teamName(id) {
   return CLUB_BY_ID[id]?.name || id;
 }
 
+/** Takım adı (milli maçlarda match.names kullanılır) */
+const sideName = (match, side) => match.names?.[side] || teamName(side === 'my' ? match.myId : match.oppId);
+const sideShort = (match, side) => match.shorts?.[side] || CLUB_BY_ID[side === 'my' ? match.myId : match.oppId]?.short || '';
+
 export function scoreLine(match) {
   const h = match.isHome ? match.score.my : match.score.opp;
   const a = match.isHome ? match.score.opp : match.score.my;
-  return `${CLUB_BY_ID[match.homeId].short} ${h}-${a} ${CLUB_BY_ID[match.awayId].short}`;
+  const hs = sideShort(match, match.isHome ? 'my' : 'opp');
+  const as = sideShort(match, match.isHome ? 'opp' : 'my');
+  return `${hs} ${h}-${a} ${as}`;
 }
 
 /** Yapay olayı işler (gol ise skoru günceller) ve anlatım satırı döner. */
 export function applyAiEvent(match, ev) {
-  const team = teamName(ev.side === 'my' ? match.myId : match.oppId);
-  const opp = teamName(ev.side === 'my' ? match.oppId : match.myId);
+  const team = sideName(match, ev.side);
+  const opp = sideName(match, ev.side === 'my' ? 'opp' : 'my');
   if (ev.kind === 'goal') {
     match.score[ev.side] += 1;
     return { minute: ev.minute, kind: ev.side === 'my' ? 'goal-my' : 'goal-opp', text: `GOL! ${fill(pick(T.goal), { team, opp })} ${scoreLine(match)}` };

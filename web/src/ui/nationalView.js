@@ -5,6 +5,7 @@ import { MOMENT_INTRO, MOMENT_TITLE } from '../core/match.js';
 import {
   HOME_NATION, NATIONAL_TEAMS, RESULT_LABEL, declineCallUp, finishTournament, nationByShort, nationalMoment, playNationalMatch, startTournament,
 } from '../core/national.js';
+import { endCamp, finishCampMatch, startCamp } from '../core/nationalCamp.js';
 import { runMiniGame } from '../games/index.js';
 import { playerLook } from '../core/cosmetics.js';
 import { buzz, sfx } from '../audio.js';
@@ -92,27 +93,59 @@ export async function nationalFlow(app) {
     await sheet({ center: true, html: `<h3 class="center">Çağrıyı reddettin</h3><p class="lead center">Kulübünde dinlenip bir sonraki maça hazırlandın ama Federasyon bundan hoşlanmadı.</p>${changeChips(r.changes)}<button class="btn primary block" style="margin-top:14px" data-close>Devam</button>` });
     return;
   }
-  const result = await playMoment(app, team.short, 30 + Math.floor(Math.random() * 50), call.opp);
-  const r = playNationalMatch(s, result);
+  // Kampa katıl: milli takımın kendi ana ekranı (2 maç, kamp hakları)
+  startCamp(s, call);
   app.save();
-  if (r.res === 'W') {
-    sfx('goal');
-    buzz([60, 40, 60, 40, 120]);
-  } else sfx(r.res === 'D' ? 'whistle' : 'miss');
+  app.go('camp');
+  return 'camp';
+}
+
+/** Kamp maçı bitti: sonuç → kampa dön ya da kamp/turnuva özeti */
+export async function campMatchFlow(app, match) {
+  const s = app.state;
+  const level = match.level;
+  const team = NATIONAL_TEAMS[level];
+  const r = finishCampMatch(s, match);
+  app.save();
+  if (!r) return app.runPending();
+  if (r.res === 'W') { sfx('levelup'); buzz([60, 40, 60, 40, 120]); } else sfx(r.res === 'D' ? 'whistle' : 'miss');
+  const head = { W: ['GALİBİYET', 'var(--good)'], D: ['BERABERLİK', 'var(--warn)'], L: ['MAĞLUBİYET', 'var(--bad)'] }[r.res];
   await sheet({
     center: true,
+    dismissable: false,
     html: `
-      <div class="center"><span class="chip">${esc(team.short)} · ${esc(call.comp)}</span></div>
+      <div class="center"><span class="chip" style="background:transparent;color:${head[1]};font-size:14px;letter-spacing:.1em">${head[0]}</span></div>
+      <div class="center" style="margin-top:4px"><span class="chip">${esc(match.comp || team.short)}</span></div>
       <div class="fixture" style="margin:12px 0">
-        <div class="team">${nationalCrest('crest', call.level)}<span>${esc(HOME_NATION.name)}</span></div>
-        <span class="score-big">${r.my}-${r.opp_goals}</span>
-        <div class="team">${nationBadge(call.opp, 56)}<span>${esc(r.opp.name)}</span></div>
+        <div class="team">${nationalCrest('crest', level)}<span>${esc(HOME_NATION.name)}</span></div>
+        <span class="score-big">${r.my}-${r.opp}</span>
+        <div class="team">${nationBadge(r.nation.short, 56)}<span>${esc(r.nation.name)}</span></div>
       </div>
-      <div class="center" style="margin:6px 0"><div class="muted small">Milli maç notun</div><div class="rating-big" style="color:${ratingColor(r.rating)}">${r.rating.toFixed(1)}</div></div>
-      <div class="chips" style="justify-content:center">${r.goals ? '<span class="chip accent">Gol!</span>' : ''}${r.assists ? '<span class="chip accent">Asist</span>' : ''}<span class="chip gold">${call.level === 'A' ? `A milli: ${s.national.caps.A}. maç` : `${team.short}: ${s.national.caps[call.level]}. maç`}</span>${r.injured ? `<span class="chip bad">${icon('bandage', 'ico xs')} Sakatlandın · ${r.injured} hf</span>` : ''}</div>
+      ${r.pens ? `<p class="center small muted" style="margin:-4px 0 8px">Penaltılar: ${r.pens[0]}-${r.pens[1]}</p>` : ''}
+      ${r.played ? `<div class="center" style="margin:6px 0"><div class="muted small">Milli maç notun</div><div class="rating-big" style="color:${ratingColor(r.rating)}">${r.rating.toFixed(1)}</div></div>` : '<p class="lead center">Bu maçta forma giymedin.</p>'}
+      <div class="chips" style="justify-content:center">${r.goals ? `<span class="chip accent">${r.goals} gol</span>` : ''}${r.assists ? `<span class="chip accent">${r.assists} asist</span>` : ''}${r.played ? `<span class="chip gold">${level === 'A' ? `A milli: ${s.national.caps.A}. maç` : `${team.short}: ${s.national.caps[level]}. maç`}</span>` : ''}${r.injured ? `<span class="chip bad">${icon('bandage', 'ico xs')} Sakatlandın · ${r.injured} hf</span>` : ''}</div>
       <div style="margin-top:10px">${changeChips(r.changes)}</div>
-      <button class="btn primary block" style="margin-top:14px" data-close>Kulübüne dön</button>`,
+      <button class="btn primary block" style="margin-top:14px" data-close>${r.next === 'over' ? 'Kampı kapat' : 'Kampa dön'}</button>`,
   });
+  if (r.next !== 'over') return app.go('camp');
+  const sum = endCamp(s);
+  app.save();
+  const T = sum.tournament;
+  const champ = sum.record?.result === 'champion';
+  if (champ) { confetti(); sfx('goal'); buzz([80, 50, 80, 50, 200]); }
+  const caps = sum.played.filter((m) => m.rating != null).length;
+  const goals = sum.played.reduce((a, m) => a + (m.goals || 0), 0);
+  await sheet({
+    center: true,
+    dismissable: false,
+    html: `<div class="center">${champ ? spriteOr('cup_gold', icon('trophy'), { size: 84 }) : nationalCrest('crest xl', level)}</div>
+      <h3 class="center">${T ? `${esc(T.name)}: ${esc(RESULT_LABEL[sum.record.result])}` : `${esc(team.name)} kampı bitti`}</h3>
+      <div class="card list" style="margin-top:10px">${sum.played.map((m) => `<div class="li"><span class="nat-res ${m.res === 'W' ? 'good' : m.res === 'D' ? 'warn' : 'bad'}"></span>${nationBadge(m.opp, 28)}<div class="grow small"><b>${esc(nationByShort(m.opp)?.name || m.opp)}</b>${m.rating ? `<div class="muted small">Notun ${m.rating.toFixed(1)}</div>` : ''}</div><b class="tnum">${scoreTxt({ my: m.my, opp: m.opp_goals, pens: m.pens })}</b></div>`).join('')}</div>
+      <p class="lead center">${champ ? 'Ay-yıldızlı formayla tarih yazdın! Adın milli takım efsaneleri arasında.' : T ? (sum.record.result === 'final' ? 'Kupaya çok yaklaştın. Bu acı, bir sonraki turnuvanın yakıtı olacak.' : 'Turnuva bitti. Milli takım deneyimi seni daha da güçlendirdi.') : 'Kulübüne dönüyorsun. Kamptaki performansın bir sonraki çağrıda hatırlanacak.'}</p>
+      <div class="chips" style="justify-content:center"><span class="chip gold">${caps} milli maç</span>${goals ? `<span class="chip accent">${goals} gol</span>` : ''}${sum.award ? `<span class="chip accent">${icon('trophy', 'ico xs')} ${esc(sum.award.title)}</span>` : ''}</div>
+      <button class="btn primary block" style="margin-top:14px" data-close>${T ? 'Sezon sonuna geç' : 'Kulübüne dön'}</button>`,
+  });
+  return app.runPending();
 }
 
 function stageHTML(st) {

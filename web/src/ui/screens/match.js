@@ -11,6 +11,7 @@ import { crestSVG, icon } from '../art.js';
 import { confetti, el, esc, sleep } from '../dom.js';
 import { sprite } from '../../assets/sprites.js';
 import { FEED_SPRITES } from '../spriteMap.js';
+import { nationalCrest } from '../nationalView.js';
 
 const pickLine = (a) => a[Math.floor(Math.random() * a.length)];
 const WX_KICKOFF = {
@@ -32,10 +33,12 @@ const WX_MID = {
 
 export function matchScreen(app, { match }) {
   const s = app.state;
-  const home = CLUB_BY_ID[match.homeId];
-  const away = CLUB_BY_ID[match.awayId];
-  const my = CLUB_BY_ID[match.myId];
-  const opp = CLUB_BY_ID[match.oppId];
+  // Milli maçlarda takımlar match.teams içinde gelir (kulüp kimliği yok)
+  const home = match.teams?.home || CLUB_BY_ID[match.homeId];
+  const away = match.teams?.away || CLUB_BY_ID[match.awayId];
+  const my = match.myKit || CLUB_BY_ID[match.myId];
+  const opp = match.oppKit || CLUB_BY_ID[match.oppId];
+  const crest = (t) => (t.national ? nationalCrest('crest', t.national) : crestSVG(t));
   const name = s.player.name;
   const shortName = name.split(' ')[0];
 
@@ -56,16 +59,16 @@ export function matchScreen(app, { match }) {
     tabs: false,
     html: `
       <div class="scoreboard">
-        <div class="t">${crestSVG(home)}<span class="ellipsis" style="max-width:110px">${esc(home.name)}</span></div>
+        <div class="t">${crest(home)}<span class="ellipsis" style="max-width:110px">${esc(home.name)}</span></div>
         <div class="center"><div class="sc" data-score>0 - 0</div><span class="min" data-min>0'</span></div>
-        <div class="t">${crestSVG(away)}<span class="ellipsis" style="max-width:110px">${esc(away.name)}</span></div>
+        <div class="t">${crest(away)}<span class="ellipsis" style="max-width:110px">${esc(away.name)}</span></div>
       </div>
       <div class="row between" style="margin-top:10px">
         <span class="chip ${match.role === 'starter' ? 'accent' : 'warn'}" data-role>${icon('user')} ${roleText}</span>
         <span class="chip">${match.moments.length ? `${match.moments.length} kritik an` : 'Kritik an yok'}</span>
       </div>
       ${w ? `<div class="wx-strip wx-${w.id}"><span class="wx-e">${w.emoji}</span><b>${esc(w.name)}</b><span>${w.temp}°C</span>${w.windKmh >= 12 ? `<span>${windArrow(w.wind)} ${w.windKmh} km/sa</span>` : ''}<span class="grow"></span>${match.role !== 'out' ? `<span class="cond" data-cond title="Kondisyon">${icon('bolt', 'ico xs')} <i><b style="width:100%"></b></i><em>%100</em></span>` : ''}</div>` : ''}
-      ${match.big ? `<div class="big-banner ${match.big.cool ? 'cool' : ''}">${icon(match.big.kind === 'derby' ? 'fire' : match.big.kind === 'final' ? 'trophy' : 'star', 'ico sm')}<b>${esc(match.big.title)}</b><span>Heyecan %${Math.round(match.big.nerves * 100)}${match.big.cool ? ' · Soğukkanlı' : ''}</span></div>` : ''}
+      ${match.big ? `<div class="big-banner ${match.big.cool ? 'cool' : ''}">${icon(match.big.kind === 'derby' ? 'fire' : match.big.kind === 'final' ? 'trophy' : match.big.kind === 'national' ? 'flag' : 'star', 'ico sm')}<b>${esc(match.big.title)}</b><span>Heyecan %${Math.round(match.big.nerves * 100)}${match.big.cool ? ' · Soğukkanlı' : ''}</span></div>` : ''}
       <div class="mom-bar"><i data-mom></i></div>
       <div class="feed" data-feed></div>
       <div style="height:90px"></div>
@@ -162,7 +165,7 @@ export function matchScreen(app, { match }) {
           myKit: my,
           me: playerLook(s, { club: my }),
           oppKit: opp,
-          keeper: Math.min(0.95, clubRating(s.world, match.oppId) / 90),
+          keeper: match.oppKeeper ?? Math.min(0.95, clubRating(s.world, match.oppId) / 90),
           number: s.player.number,
           name: shortName.toUpperCase(),
           auto: app.autoplay,
@@ -203,7 +206,8 @@ export function matchScreen(app, { match }) {
           buzz('whistle');
           cancelAnimationFrame(raf);
           await sleep(900);
-          app.finishMatch(match);
+          if (match.national) app.finishCampMatch(match);
+          else app.finishMatch(match);
           return;
         }
         if (item.ev) { push(applyAiEvent(match, item.ev)); return; }

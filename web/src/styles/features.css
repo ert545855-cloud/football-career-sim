@@ -560,3 +560,28 @@
 .game-hud .wx-chip, .game-hud .fat-chip { white-space: nowrap; }
 .wx-chip-hub { gap: 4px; }
 .wx-fore { gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); justify-content: center; } .wx-fore b { color: var(--text); }
+
+/* ── Milli kamp ekranı ── */
+.camp-top { display: flex; gap: 14px; align-items: center; padding: 6px 2px 4px; }
+.camp-top .crest.lg { width: 64px; height: 77px; filter: drop-shadow(0 6px 16px rgba(227, 10, 23, 0.35)); }
+.camp-fix { margin-top: 12px; background: linear-gradient(160deg, rgba(227, 10, 23, 0.16), rgba(255, 255, 255, 0.03) 55%); border-color: rgba(227, 10, 23, 0.35); }
+.opp-info { display: grid; gap: 7px; margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--line); }
+.form5 { display: inline-flex; gap: 3px; }
+.form5 i { width: 18px; height: 18px; border-radius: 5px; display: grid; place-items: center; font-style: normal; font-size: 10px; font-weight: 900; color: #071009; }
+.form5 i.good { background: var(--good); } .form5 i.warn { background: var(--warn); } .form5 i.bad { background: var(--bad); color: #fff; }
+.t-path { display: flex; align-items: center; gap: 4px; margin: 6px 0 2px; }
+.t-path i { flex: 1; height: 2px; background: var(--line); }
+.t-path .tp { font-size: 11px; font-weight: 800; padding: 4px 9px; border-radius: 999px; background: rgba(255,255,255,.06); color: var(--muted); }
+.t-path .tp.on { background: var(--accent); color: #0b1a05; }
+.t-path .tp.done { background: rgba(198,255,61,.18); color: var(--accent); }
+.crest.xs { width: 20px; height: 24px; }
+.group-table .li.gt { gap: 8px; padding: 8px 2px; }
+.group-table .li.gt.me { background: rgba(227,10,23,.1); border-radius: 8px; }
+.group-table .li.gt:nth-child(2) { border-bottom: 1px dashed rgba(198,255,61,.4); }
+.squad summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+.squad summary::-webkit-details-marker { display: none; }
+.li.sq { gap: 10px; padding: 7px 2px; }
+.li.sq .tnum:first-child { width: 22px; text-align: center; color: var(--muted); }
+.li.sq .pos { font-size: 10.5px; font-weight: 900; width: 26px; text-align: center; border-radius: 5px; background: rgba(255,255,255,.08); padding: 2px 0; }
+.li.sq.me { background: rgba(198,255,61,.08); border-radius: 8px; }
+.chip.xs { font-size: 9.5px; padding: 1px 5px; }
