@@ -53,6 +53,7 @@ import { ballonCeremony, ballonScreen } from './ballonView.js';
 import { afterCareerClick, afterCareerSection, coachScreen, punditScreen } from './screens/afterCareer.js';
 import { campMatchFlow, nationalFlow, tournamentFlow } from './nationalView.js';
 import { campScreen } from './screens/camp.js';
+import { coachChangeFlow, lockerFlow, lockerScreen, pressFlow } from './lockerView.js';
 import { activeCamp, startTournamentCamp, tournamentFor } from '../core/nationalCamp.js';
 import { scheduleCloudSync } from '../cloud.js';
 import { runTryoutStation, heartsHTML } from '../games/tryoutStation.js';
@@ -95,6 +96,7 @@ export function createApp(rootEl) {
     garage: garageScreen,
     national: nationalScreen,
     camp: campScreen,
+    locker: lockerScreen,
     ballon: ballonScreen,
     coach: coachScreen,
     pundit: punditScreen,
@@ -464,6 +466,8 @@ export function createApp(rootEl) {
       }
       const match = getMatch(s);
       this.save();
+      // Maç öncesi basın toplantısı (büyük maç, yeni hoca, formsuzluk…)
+      if (match.press && !match.pressDone) await pressFlow(this, match);
       const my = CLUB_BY_ID[match.myId];
       const opp = CLUB_BY_ID[match.oppId];
       const home = CLUB_BY_ID[match.homeId];
@@ -569,6 +573,8 @@ export function createApp(rootEl) {
       const s = this.state;
       if (!s) return this.go('title');
       if (s.pending.event) await this.eventFlow();
+      if (s.pending.coachChange) await coachChangeFlow(this);
+      if (s.pending.locker) await lockerFlow(this);
       // Milli kamp sürüyorsa (ya da yeni başladıysa) kamp ekranı devralır; kamp bitince runPending yeniden çağrılır
       if (activeCamp(s)) return this.go('camp');
       if (s.pending.national && (await nationalFlow(this)) === 'camp') return;

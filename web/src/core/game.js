@@ -34,6 +34,9 @@ import { CUPS, STAGE_LABEL, createEurope, europeWeek, europeWinners } from './wo
 import { DIFFICULTY, coachTip, difficultyGain, ensureTraining, fatigueFactor, recordDrill, starsFor, trainingSkill } from './training.js';
 import { cosmeticFame, ensureCosmetics } from './cosmetics.js';
 import { ensureRanking, rankingSeasonEnd } from './world/ranking.js';
+import { coachOnMatch, coachOnSeasonEnd, ensureCoach, STYLES } from './coach.js';
+import { ensureLocker, lockerOnMatch, maybeLockerEvent } from './locker.js';
+import { planPress } from './press.js';
 
 export const SAVE_VERSION = 1;
 
@@ -92,6 +95,8 @@ export function newGame(setup) {
   ensureGarage(state);
   ensureCosmetics(state);
   ensureRanking(state);
+  ensureCoach(state);
+  ensureLocker(state);
   // Forma numarası: seçilmez, kulüp boştaki genç numaralarından verir
   if (!setup.number) assignYouthNumber(state, random);
   else state.career.numberHistory.push({ season: 1, clubId: state.career.clubId, number: player.number, reason: 'Başlangıç' });
@@ -262,7 +267,12 @@ export function finishTraining(state, stat, result, diff = state.training?.diff 
 
 export function getMatch(state) {
   const id = `${state.calendar.season}-${state.calendar.week}`;
-  if (!state.pending.match || state.pending.match.id !== id) state.pending.match = planMatch(state);
+  if (!state.pending.match || state.pending.match.id !== id) {
+    ensureCoach(state);
+    state.pending.match = planMatch(state);
+    // Basın toplantısı (büyük maç, yeni hoca, formsuzluk, gol yağmuru)
+    state.pending.match.press = planPress(state, state.pending.match);
+  }
   return state.pending.match;
 }
 
@@ -288,6 +298,14 @@ export function completeMatch(state, match) {
   const chirp = chirpOnMatch(state, { summary, match });
   // Kulüp nüfuzu: oynadıkça ve iyi oynadıkça soyunma odasında sözün geçer
   summary.influence = mentorOnMatch(state, summary);
+  // Soyunma odası havası ve hocanın koltuğu
+  lockerOnMatch(state, summary);
+  const coachRes = coachOnMatch(state, summary);
+  if (coachRes?.sacked) {
+    const { old, coach } = coachRes.sacked;
+    addNews(state, `${CLUB_BY_ID[state.career.clubId].short} teknik direktörü ${old.name} görevden alındı. Yeni hoca: ${coach.name} (${STYLES[coach.style].name}, ${coach.formation}).`, 'bad');
+    state.pendingCoachPress = true;
+  }
 
   const opp = CLUB_BY_ID[match.oppId].name;
   const resTxt = { W: 'Galibiyet', D: 'Beraberlik', L: 'Mağlubiyet' }[summary.result];
@@ -348,6 +366,8 @@ function endWeek(state, ctx) {
 
   const event = pickEvent(state, ctx);
   state.pending.event = event;
+  // Soyunma odası olayı (başka olay yoksa)
+  if (!event && !state.pending.locker) maybeLockerEvent(state);
 
   let offers = null;
   // Kiralıkta / altyapıdayken devre arası transfer penceresi kapalı
@@ -435,6 +455,8 @@ export function endSeason(state) {
   // Kulüp nüfuzu: kulüpte geçen sezon ve ödüller; mentorluk sezonu kapanır
   const influenceGain = gainInfluence(state, (s.apps >= 8 ? 2 : 0.5) + awards.length * 3);
   const mentorEnd = mentorOnSeasonEnd(state);
+  const coachEnd = coachOnSeasonEnd(state);
+  if (coachEnd) addNews(state, `Sezon sonu: ${coachEnd.old.name} ile yollar ayrıldı. Yeni teknik direktör ${coachEnd.coach.name}.`, 'info');
 
   // Başlangıç yolları: kiralık dönüşü / altyapıdan A takıma yükselme (tekliflerden önce)
   const startTerms = resolveStartTerms(state);

@@ -4,6 +4,7 @@ import { chance, rand } from '../src/core/rng.js';
 import { canDoAction, chooseEvent, completeMatch, declineOffers, doAction, endSeason, finishTraining, getMatch, takeOffer, trainingSetup } from '../src/core/game.js';
 import { applyAiEvent, resolveMoment } from '../src/core/match.js';
 import { getEvent } from '../src/core/events.js';
+import { chooseLocker } from '../src/core/locker.js';
 import { buyItem } from '../src/core/economy.js';
 import { clubRating } from '../src/core/league.js';
 import { MentorManager } from '../src/core/mentor/index.js';
@@ -75,6 +76,8 @@ export function playWeek(state, humanSkill = 0.5) {
   }
   // Milli ara: her çağrıya katıl (enerji çok düşükse reddetmez; bot basit)
   if (state.pending.national) playNationalMatch(state, fakeGame(0.5, humanSkill));
+  if (state.pending.locker) chooseLocker(state, Math.floor(Math.random() * 2));
+  state.pending.coachChange = null;
   handleOffers(state);
   if (out.weekEnd.seasonOver) {
     if (tournamentEligible(state)) {

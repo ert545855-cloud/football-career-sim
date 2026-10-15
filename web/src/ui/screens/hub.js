@@ -10,6 +10,7 @@ import { shareCard, shareFlow } from '../chirpView.js';
 import { bigMatchChip, hubMentorCard, meetingFlow, requestsSheet, selectionSheet } from '../mentorView.js';
 import { actionArt } from '../spriteMap.js';
 import { monthName, weatherFor } from '../../core/weather.js';
+import { hubLockerCard } from '../lockerView.js';
 
 
 export function hubScreen(app) {
@@ -90,6 +91,7 @@ export function hubScreen(app) {
       <div class="h-sec">Bu hafta <span class="slots">${slots}</span></div>
       <div class="actions">${actionTiles}</div>
       ${hubMentorCard(s)}
+      ${hubLockerCard(s)}
       <button class="btn primary lg block ${calendar.slots === 0 ? 'pulse' : ''}" style="margin-top:12px" data-act="match">${icon('whistle')} Maç Gününe Geç</button>
 
       <div class="h-sec">İlişkiler</div>
@@ -138,6 +140,7 @@ export function hubScreen(app) {
         if (t.dataset.action) app.runAction(t.dataset.action);
         else if (t.dataset.act === 'match') app.matchDay();
         else if (t.dataset.act === 'settings') app.go('settings');
+        else if (t.dataset.act === 'locker') app.go('locker');
       });
     },
   };

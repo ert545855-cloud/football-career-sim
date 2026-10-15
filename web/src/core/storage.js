@@ -10,6 +10,8 @@ import { ensureSocial } from './social/index.js';
 import { ensureGarage } from './garage.js';
 import { ensureCosmetics } from './cosmetics.js';
 import { ensureRanking } from './world/ranking.js';
+import { ensureCoach } from './coach.js';
+import { ensureLocker } from './locker.js';
 import { addFocus, leagueIdIn, upgradeWorld, useWorld } from './league.js';
 import { ensureEurope } from './world/europe.js';
 
@@ -86,6 +88,9 @@ export function migrate(state) {
   useWorld(state.world);
   addFocus(state.world, leagueIdIn(state.world, state.career.clubId));
   ensureRanking(state);
+  ensureCoach(state);
+  ensureLocker(state);
+  state.pending.locker = state.pending.locker ?? null;
   return state;
 }
 

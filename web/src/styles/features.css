@@ -597,3 +597,22 @@
 .chain-next { position: absolute; z-index: 5; inset: 0; display: grid; place-content: center; text-align: center; gap: 6px; background: rgba(4, 10, 8, 0.55); animation: fade .2s; pointer-events: none; }
 .chain-next b { font-size: 34px; font-weight: 900; color: var(--accent); text-shadow: 0 4px 18px rgba(0,0,0,.6); }
 .chain-next span { font-size: 15px; font-weight: 800; color: #fff; padding: 0 30px; }
+
+/* ── Soyunma odası, hoca, basın ── */
+.locker-card { display: flex; align-items: center; gap: 10px; width: 100%; margin-top: 10px; text-align: left; cursor: pointer; color: inherit; font: inherit; }
+.locker-card .lk-ic { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; background: rgba(56,189,248,.14); color: #7dd3fc; flex: none; }
+.coach-card .form-svg { width: 104px; height: 104px; flex: none; border-radius: 8px; }
+.li.tm { width: 100%; background: none; border: 0; border-top: 1px solid var(--line); color: inherit; font: inherit; cursor: pointer; }
+.li.tm:first-child { border-top: 0; }
+.sq-av.sm svg { width: 40px; height: 40px; }
+.sq-av.lg svg { width: 76px; height: 76px; }
+.press-q { display: flex; gap: 10px; align-items: flex-start; margin: 12px 0 14px; padding: 12px 14px; border-radius: 14px; background: rgba(255,255,255,.05); border: 1px solid var(--line); }
+.press-q svg { width: 22px; height: 22px; flex: none; color: var(--accent); margin-top: 2px; }
+.press-q p { margin: 0; font-size: 16px; font-weight: 800; line-height: 1.4; }
+.btn.press-a { height: auto; padding: 10px 14px; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; text-align: left; white-space: normal; }
+.press-a .pa-tone { font-size: 11px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; display: inline-flex; gap: 5px; align-items: center; }
+.press-a .pa-text { font-size: 14px; font-weight: 600; line-height: 1.35; }
+.press-a.humble .pa-tone { color: #7dd3fc; } .press-a.confident .pa-tone { color: var(--accent); } .press-a.provoke .pa-tone { color: #fb7185; }
+.press-headline { margin: 12px 0; padding: 12px 14px; background: #f5efe0; color: #14110f; border-radius: 6px; text-align: center; font-family: Georgia, 'Times New Roman', serif; box-shadow: 0 6px 18px rgba(0,0,0,.35); }
+.press-headline small { display: block; font-family: system-ui, sans-serif; font-weight: 900; letter-spacing: .2em; color: #b91c1c; font-size: 10px; }
+.press-headline b { font-size: 19px; line-height: 1.25; }

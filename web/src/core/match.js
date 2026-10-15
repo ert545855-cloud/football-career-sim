@@ -4,6 +4,7 @@ import { clubRating, fixtureFor, goalLambda, leagueOf, leaguePrestige } from './
 import { addProgress, changeEnergy, changeFame, changeMorale, changeRel, form, ovr } from './player.js';
 import { bigMatchSetup } from './mentor/index.js';
 import { fatigueAt, weatherFor } from './weather.js';
+import { contextWeights, momentWeights, styleGoals } from './coach.js';
 
 /** İlk 11 kararı: OVR + hoca ilişkisi + form + moral, rakip oyuncuya karşı. */
 export function selection(state) {
@@ -12,7 +13,8 @@ export function selection(state) {
   const competitor = clubRating(world, career.clubId) - 3 + (flags.rivalOffset || 0);
   if (flags.injuredWeeks > 0) return { role: 'out', reason: 'injured', competitor, score: 0, gap: -99 };
   if (flags.suspendedWeeks > 0) return { role: 'out', reason: 'suspended', competitor, score: 0, gap: -99 };
-  let score = o + (player.rel.manager - 50) * 0.2 + (form(player) - 6.5) * 3 + (player.morale - 50) * 0.04;
+  // Hocanın sana bakışı (iyi notlar, rolüne uyum) ilk 11 kararını etkiler
+  let score = o + (player.rel.manager - 50) * 0.2 + (form(player) - 6.5) * 3 + (player.morale - 50) * 0.04 + (state.coach?.clubId === career.clubId ? (state.coach.likes || 0) * 0.35 : 0);
   let reason = null;
   if (player.energy < 30) {
     score -= 12;
@@ -62,8 +64,8 @@ function spreadMinutes(count, from, to) {
   return out.sort((a, b) => a - b);
 }
 
-function makeMoment(position, minute) {
-  const type = weightedPick(Object.entries(POSITIONS[position].moments));
+function makeMoment(position, minute, o = {}) {
+  const type = weightedPick(Object.entries(o.weights || POSITIONS[position].moments));
   let context;
   if (type === 'shot') {
     // Duran toplar: serbest vuruş (orta saha ustası), korner kafası (forvet ve stoper), penaltı
@@ -72,7 +74,7 @@ function makeMoment(position, minute) {
       MF: [['box', 0.3], ['edge', 0.36], ['freekick', 0.24], ['corner', 0.06], ['penalty', 0.04]],
       DF: [['box', 0.16], ['edge', 0.12], ['freekick', 0.06], ['corner', 0.62], ['penalty', 0.04]],
     }[position] || [['box', 0.55], ['edge', 0.35], ['penalty', 0.1]];
-    context = weightedPick(w);
+    context = weightedPick(o.ctx ? w.map(([k, v]) => [k, v * (o.ctx[k] ?? 1)]) : w);
   }
   else if (type === 'pass') context = weightedPick([['buildup', 0.45], ['final', 0.55]]);
   else if (type === 'attack') context = weightedPick([['counter', 0.6], ['build', 0.4]]);
@@ -99,7 +101,7 @@ export function buildEvents(lMy, lOpp, myShare = 0.5) {
 }
 
 /** Oyuncunun kritik anları: ilk 11'de 3-5, yedekten girince 1-2 (oyundan alınırsa o dakikaya kadar) */
-export function buildMoments(position, role, subMinute = null, subOff = null) {
+export function buildMoments(position, role, subMinute = null, subOff = null, o = {}) {
   let count = 0;
   let from = 5;
   if (role === 'starter') count = randInt(3, 4) + (chance(0.3) ? 1 : 0);
@@ -107,7 +109,7 @@ export function buildMoments(position, role, subMinute = null, subOff = null) {
     count = randInt(1, 2);
     from = subMinute + 3;
   }
-  return spreadMinutes(count, from, subOff ? subOff - 2 : 88).map((m) => makeMoment(position, m));
+  return spreadMinutes(count, from, subOff ? subOff - 2 : 88).map((m) => makeMoment(position, m, o));
 }
 
 export function planMatch(state) {
@@ -138,15 +140,18 @@ export function planMatch(state) {
   const onShare = role === 'starter' ? (subOff ? subOff / 90 : 1) : subMinute ? (90 - subMinute) / 90 : 0;
   const myR = clubRating(world, myId) + (role === 'starter' ? clamp((ovr(player) - sel.competitor) * 0.15, -3, 4) : 0);
   const oppR = clubRating(world, oppId);
-  let lMy = goalLambda(myR, oppR, isHome) * (1 - 0.24 * onShare) * weather.goals;
-  let lOpp = goalLambda(oppR, myR, !isHome) * weather.goals;
+  // Hocanın oyun anlayışı: hücumcu daha çok atar ve yer, savunmacı az
+  const sg = state.coach?.clubId === career.clubId ? styleGoals(state) : { my: 1, opp: 1 };
+  let lMy = goalLambda(myR, oppR, isHome) * (1 - 0.24 * onShare) * weather.goals * sg.my;
+  let lOpp = goalLambda(oppR, myR, !isHome) * weather.goals * sg.opp;
   if (player.position === 'DF') lOpp *= 1 - 0.14 * onShare;
   if (player.position === 'MF') lOpp *= 1 - 0.06 * onShare;
 
   const myShare = clamp(0.5 + (myR - oppR) / 120, 0.2, 0.8);
   const events = buildEvents(lMy, lOpp, myShare);
 
-  const moments = buildMoments(player.position, role, subMinute, subOff);
+  const tactic = state.coach?.clubId === career.clubId ? { weights: momentWeights(state, POSITIONS[player.position].moments), ctx: contextWeights(state) } : {};
+  const moments = buildMoments(player.position, role, subMinute, subOff, tactic);
 
   return {
     id: `${calendar.season}-${week}`,
