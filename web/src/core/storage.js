@@ -12,6 +12,8 @@ import { ensureCosmetics } from './cosmetics.js';
 import { ensureRanking } from './world/ranking.js';
 import { ensureCoach } from './coach.js';
 import { ensureLocker } from './locker.js';
+import { ensureMedical } from './injury.js';
+import { ensureCup } from './cup.js';
 import { addFocus, leagueIdIn, upgradeWorld, useWorld } from './league.js';
 import { ensureEurope } from './world/europe.js';
 
@@ -90,6 +92,8 @@ export function migrate(state) {
   ensureRanking(state);
   ensureCoach(state);
   ensureLocker(state);
+  ensureMedical(state);
+  if (state.calendar?.phase === 'week') ensureCup(state);
   state.pending.locker = state.pending.locker ?? null;
   return state;
 }

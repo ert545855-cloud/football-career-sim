@@ -5,6 +5,8 @@ import { canDoAction, chooseEvent, completeMatch, declineOffers, doAction, endSe
 import { applyAiEvent, resolveMoment } from '../src/core/match.js';
 import { getEvent } from '../src/core/events.js';
 import { chooseLocker } from '../src/core/locker.js';
+import { completeCupMatch, planCupMatch } from '../src/core/cup.js';
+import { chooseTreatment } from '../src/core/injury.js';
 import { buyItem } from '../src/core/economy.js';
 import { clubRating } from '../src/core/league.js';
 import { MentorManager } from '../src/core/mentor/index.js';
@@ -77,6 +79,23 @@ export function playWeek(state, humanSkill = 0.5) {
   // Milli ara: her çağrıya katıl (enerji çok düşükse reddetmez; bot basit)
   if (state.pending.national) playNationalMatch(state, fakeGame(0.5, humanSkill));
   if (state.pending.locker) chooseLocker(state, Math.floor(Math.random() * 2));
+  if (state.pending.injury) chooseTreatment(state, 'rest');
+  // Kupa maçı (hafta içi): kulüp maçı gibi oynanır
+  if (state.pending.cupTie && state.calendar.phase === 'week') {
+    const cm = planCupMatch(state);
+    const tl = [...cm.events.map((ev) => ({ minute: ev.minute, ev })), ...cm.moments.map((m) => ({ minute: m.minute, m }))].sort((a, b) => a.minute - b.minute);
+    for (const item of tl) {
+      if (item.ev) applyAiEvent(cm, item.ev);
+      else {
+        const w = GAME_WEIGHTS[item.m.type] || { shooting: 1 };
+        let sk = 0; let tw = 0;
+        for (const [k, v] of Object.entries(w)) { sk += state.player.stats[k] * v; tw += v; }
+        resolveMoment(cm, item.m, fakeGame(sk / tw / 100, humanSkill), state.player.name);
+      }
+    }
+    completeCupMatch(state, cm, fakeGame(0.6, humanSkill));
+    if (state.pending.injury) chooseTreatment(state, 'rest');
+  }
   state.pending.coachChange = null;
   handleOffers(state);
   if (out.weekEnd.seasonOver) {

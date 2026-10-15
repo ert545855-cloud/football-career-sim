@@ -1,3 +1,5 @@
+import { medicalCard } from '../injuryView.js';
+import { contractClauses } from '../../core/clauses.js';
 import { ITEM_BY_ID, POSITIONS, STATS, STAT_KEYS, LEAGUES } from '../../core/data.js';
 import { form, ovr, effectiveSkill } from '../../core/player.js';
 import { money, itemEffects } from '../../core/economy.js';
@@ -37,6 +39,18 @@ function radar(stats) {
     ${labels}
     <text x="110" y="206" text-anchor="middle" font-size="9.5" fill="rgba(255,255,255,.4)">Ölçek 0–${top}</text>
   </svg>`;
+}
+
+/** Sözleşme maddeleri (oyuncu ekranı) */
+function clausesHTML(s) {
+  const c = contractClauses(s);
+  if (!c) return '';
+  const rows = [];
+  if (c.goalBonus) rows.push(`Gol primi: ${money(c.goalBonus)}/gol`);
+  if (c.loyalty) rows.push(`Sadakat primi: ${money(c.loyalty)}/sezon`);
+  if (c.release) rows.push('Serbest kalma bedeli');
+  if (c.relegation) rows.push('Küme düşme maddesi');
+  return rows.length ? `<div class="chips" style="margin-top:10px">${rows.map((r) => `<span class="chip accent">${r}</span>`).join('')}</div>` : '';
 }
 
 export function playerScreen(app) {
@@ -85,6 +99,8 @@ export function playerScreen(app) {
         <p class="muted small" style="margin:0">Etkin yetenek; stat, enerji (yorgunluk) ve morale göre hesaplanır.</p>
       </div>
 
+      ${medicalCard(s)}
+
       <div class="h-sec">Kulüpteki yerin</div>
       <button class="card" data-go-mentor style="display:grid;gap:12px;width:100%;text-align:left;color:inherit;font:inherit;cursor:pointer">
         ${meter('Kulüp Nüfuzu', 'flag', p.influence ?? 0, 100, 'var(--gold)')}
@@ -97,6 +113,7 @@ export function playerScreen(app) {
         <div class="row between"><span class="muted">Haftalık maaş</span><b class="tnum" style="color:var(--gold)">${money(s.career.contract.wage)}</b></div>
         <div class="row between" style="margin-top:8px"><span class="muted">Kalan süre</span><b>${s.career.contract.yearsLeft} sezon</b></div>
         <div class="row between" style="margin-top:8px"><span class="muted">Primler</span><span class="small">Galibiyet %10 · Gol %15 · Asist %8</span></div>
+        ${clausesHTML(s)}
       </div>
 
       <div class="h-sec">Eşyalar ve etkileri</div>

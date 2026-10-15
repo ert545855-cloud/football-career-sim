@@ -140,6 +140,7 @@ export function matchScreen(app, { match }) {
 
       line(0, `Hakemin düdüğüyle maç başladı! ${home.name} - ${away.name}.`, 'whistle');
       if (match.big) line(0, `${match.big.title}! Tribünler ayakta, atmosfer elektrik yüklü.`, 'big');
+      else if (match.cup) line(0, `${match.cup.name}: tek maç, kaybeden veda ediyor!`, 'big');
       if (w && w.id !== 'clear' && w.id !== 'cloudy') line(0, WX_KICKOFF[w.id]?.(w) || `Hava: ${w.name.toLowerCase()}, ${w.temp}°C.`, '');
       sfx('whistle');
       if (match.role !== 'starter') {
@@ -207,6 +208,7 @@ export function matchScreen(app, { match }) {
           cancelAnimationFrame(raf);
           await sleep(900);
           if (match.national) app.finishCampMatch(match);
+          else if (match.cup) app.finishCupMatch(match);
           else app.finishMatch(match);
           return;
         }

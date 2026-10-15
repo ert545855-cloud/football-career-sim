@@ -616,3 +616,33 @@
 .press-headline { margin: 12px 0; padding: 12px 14px; background: #f5efe0; color: #14110f; border-radius: 6px; text-align: center; font-family: Georgia, 'Times New Roman', serif; box-shadow: 0 6px 18px rgba(0,0,0,.35); }
 .press-headline small { display: block; font-family: system-ui, sans-serif; font-weight: 900; letter-spacing: .2em; color: #b91c1c; font-size: 10px; }
 .press-headline b { font-size: 19px; line-height: 1.25; }
+
+/* ── Transfer son gün ── */
+.dl-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.dl-clock { font-size: 34px; font-weight: 900; font-variant-numeric: tabular-nums; letter-spacing: .04em; color: var(--text); font-family: ui-monospace, 'SF Mono', Menlo, monospace; }
+.dl-clock.late { color: var(--bad); animation: dlPulse .5s ease-in-out infinite alternate; }
+@keyframes dlPulse { from { opacity: 1; } to { opacity: .55; } }
+.dl-bar { height: 6px; border-radius: 4px; background: rgba(255,255,255,.08); overflow: hidden; margin-bottom: 10px; }
+.dl-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--bad), #f59e0b); }
+.dl-list { display: grid; gap: 8px; min-height: 120px; }
+.dl-offer { animation: dlIn .35s cubic-bezier(.2, 1.4, .4, 1); }
+.dl-offer.last .card { border-color: rgba(255,207,61,.7); box-shadow: 0 0 0 1px rgba(255,207,61,.4), 0 0 24px rgba(255,207,61,.2); }
+.dl-fax { font-size: 11px; font-weight: 900; letter-spacing: .08em; color: var(--gold); margin: 0 0 4px 4px; }
+@keyframes dlIn { from { transform: translateY(-16px) scale(.96); opacity: 0; } to { transform: none; opacity: 1; } }
+/* ── Sözleşme maddeleri ── */
+.btn.clause { height: auto; padding: 10px 14px; display: flex; flex-direction: column; align-items: stretch; gap: 3px; text-align: left; white-space: normal; }
+.btn.clause.on { border-color: var(--accent); background: rgba(198,255,61,.1); }
+.clause .cl-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.clause .cl-desc { font-size: 12.5px; font-weight: 600; color: var(--muted); }
+/* ── Kupa ── */
+.cup-head { display: flex; align-items: center; gap: 12px; }
+.li.cup-tie { gap: 6px; padding: 8px 2px; }
+.li.cup-tie .b { font-weight: 900; color: var(--text); }
+.li.cup-tie .right { text-align: right; }
+.li.cup-tie.me { background: rgba(198,255,61,.08); border-radius: 8px; }
+/* ── Sakatlık ── */
+.inj-ic svg { width: 46px; height: 46px; color: var(--bad); }
+.btn.treat { height: auto; padding: 10px 14px; display: flex; flex-direction: column; align-items: stretch; gap: 3px; text-align: left; white-space: normal; }
+.treat .tr-top { display: flex; justify-content: space-between; gap: 8px; }
+.treat .tr-top span { font-size: 12px; font-weight: 800; opacity: .85; }
+.treat .tr-desc { font-size: 12.5px; font-weight: 600; opacity: .8; }

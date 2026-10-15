@@ -54,6 +54,10 @@ import { afterCareerClick, afterCareerSection, coachScreen, punditScreen } from 
 import { campMatchFlow, nationalFlow, tournamentFlow } from './nationalView.js';
 import { campScreen } from './screens/camp.js';
 import { coachChangeFlow, lockerFlow, lockerScreen, pressFlow } from './lockerView.js';
+import { cupFlow, finishCupMatch } from './cupView.js';
+import { injuryFlow } from './injuryView.js';
+import { clauseOptions, negotiateClauses } from '../core/clauses.js';
+import { lastMinuteOffer } from '../core/economy.js';
 import { activeCamp, startTournamentCamp, tournamentFor } from '../core/nationalCamp.js';
 import { scheduleCloudSync } from '../cloud.js';
 import { runTryoutStation, heartsHTML } from '../games/tryoutStation.js';
@@ -457,6 +461,7 @@ export function createApp(rootEl) {
     async matchDay() {
       const s = this.state;
       if (s.calendar.phase !== 'week') return this.runPending();
+      if (s.pending.cupTie) { await cupFlow(this); return; }
       if (s.calendar.slots > 0) {
         const ok = await sheet({
           center: true,
@@ -506,6 +511,10 @@ export function createApp(rootEl) {
       });
       if (go !== 'go') return;
       this.go('match', { match: clone(match) });
+    },
+
+    async finishCupMatch(match) {
+      return finishCupMatch(this, match);
     },
 
     async finishCampMatch(match) {
@@ -573,6 +582,7 @@ export function createApp(rootEl) {
       const s = this.state;
       if (!s) return this.go('title');
       if (s.pending.event) await this.eventFlow();
+      if (s.pending.injury) await injuryFlow(this);
       if (s.pending.coachChange) await coachChangeFlow(this);
       if (s.pending.locker) await lockerFlow(this);
       // Milli kamp sürüyorsa (ya da yeni başladıysa) kamp ekranı devralır; kamp bitince runPending yeniden çağrılır
@@ -594,6 +604,8 @@ export function createApp(rootEl) {
       if (s.pending.seasonReport) await this.seasonFlow(s.pending.seasonReport);
       if (s.calendar.phase === 'retired') return this.go('retired');
       if (s.pending.offers) await this.offersFlow();
+      // Hafta içi kupa maçı / sezon açılışında Süper Kupa: maç ekranı devralır, bitince runPending yeniden çağrılır
+      if (s.pending.cupTie && s.calendar.phase === 'week' && (await cupFlow(this))) return;
       this.go('hub');
       await this.mentorFlow();
       this.go('hub');
@@ -633,8 +645,22 @@ export function createApp(rootEl) {
       sfx('coin');
       const ag = currentAgent(s);
       let choice;
+      // Devre arası: TRANSFER SON GÜN — teklifler saat ilerledikçe düşer, gece yarısı pencere kapanır
+      if (p.kind === 'mid' && !p.deadlineDone) {
+        p.deadlineDone = true;
+        const extra = Math.random() < 0.55 ? lastMinuteOffer(s, p.list) : null;
+        if (extra) p.list.push(extra);
+        this.save();
+        choice = await deadlineDaySheet(this, p);
+        if (choice === 'timeout' || choice === 'decline' || choice == null) {
+          declineOffers(s);
+          this.save();
+          toast(choice === 'timeout' ? 'Saat 00:00 — transfer penceresi kapandı. Kulübünde devam!' : 'Kulübünde kalmaya karar verdin.');
+          return;
+        }
+      }
       // Pazarlık turlarından sonra liste yeniden çizilir (masadan kalkan teklifler düşer)
-      for (;;) {
+      for (; !choice;) {
         const live = p.list.map((o, i) => ({ o, i })).filter(({ o }) => !o.withdrawn);
         if (!live.length) {
           // Hepsi masadan kalktı: sözleşme bittiyse son çare teklifini geri getir
@@ -662,12 +688,15 @@ export function createApp(rootEl) {
         });
         if (typeof choice === 'string' && choice.startsWith('neg:')) {
           await negotiationSheet(this, p.list[Number(choice.split(':')[1])]);
+          choice = null;
           continue;
         }
         break;
       }
       if (typeof choice === 'string' && choice.startsWith('offer:')) {
         const offer = p.list[Number(choice.split(':')[1])];
+        // İmzadan önce sözleşme maddeleri (gol primi, serbest kalma bedeli, ilk 11 garantisi…)
+        if (!offer.clausesDone) await clausesSheet(this, offer);
         const text = takeOffer(s, offer);
         this.save();
         const club = CLUB_BY_ID[offer.clubId];
@@ -812,3 +841,89 @@ function europeCard(m) {
     <div class="chips" style="justify-content:center;margin-top:8px">${m.played ? `<span class="chip">Not ${m.rating.toFixed(1)}</span>` : '<span class="chip">Forma giymedin</span>'}${m.goals ? `<span class="chip accent">${m.goals} gol</span>` : ''}${m.assists ? `<span class="chip accent">${m.assists} asist</span>` : ''}${m.prize ? `<span class="chip gold">Avrupa primi +${money(m.prize)}</span>` : ''}${m.stage === 'f' && m.won ? '<span class="chip gold">🏆 Kupa bizim!</span>' : m.out ? '<span class="chip bad">Elendik</span>' : ''}</div>
   </div>`;
 }
+
+/** TRANSFER SON GÜN: 23:00 → 00:00 (≈24 sn). Teklifler saat ilerledikçe gelir; son dakika teklifi faksla düşer. */
+function deadlineDaySheet(app, p) {
+  const s = app.state;
+  const DUR = 24000;
+  const arrivals = p.list.map((o, i) => ({ i, at: o.lastMinute ? 0.84 + Math.random() * 0.08 : Math.min(0.55, 0.04 + i * 0.16 + Math.random() * 0.1) }));
+  return sheet({
+    dismissable: false,
+    html: `<div class="dl-head"><span class="chip bad">TRANSFER SON GÜN</span><b class="dl-clock" data-clock>23:00</b></div>
+      <p class="lead" style="margin:6px 0 10px">Pencere gece yarısı kapanıyor. Teklifler masaya düştükçe karar ver; geç kalan kaçırır!</p>
+      <div class="dl-bar"><i data-bar></i></div>
+      <div class="dl-list" data-list></div>
+      <button class="btn ghost block" style="margin-top:12px" data-close="decline">Kulübümde kalıyorum</button>`,
+    onMount: (node, close) => {
+      const list = node.querySelector('[data-list]');
+      const clock = node.querySelector('[data-clock]');
+      const bar = node.querySelector('[data-bar]');
+      const shown = new Set();
+      const t0 = performance.now();
+      let raf = 0;
+      const tick = () => {
+        if (!node.isConnected) return;
+        const f = Math.min(1, (performance.now() - t0) / DUR);
+        const min = Math.floor(f * 60);
+        clock.textContent = f >= 1 ? '00:00' : `23:${String(min).padStart(2, '0')}`;
+        clock.classList.toggle('late', f > 0.8);
+        bar.style.width = `${(1 - f) * 100}%`;
+        for (const a of arrivals) {
+          if (!shown.has(a.i) && f >= a.at) {
+            shown.add(a.i);
+            const o = p.list[a.i];
+            const card = document.createElement('div');
+            card.className = `dl-offer ${o.lastMinute ? 'last' : ''}`;
+            card.innerHTML = `${o.lastMinute ? '<div class="dl-fax">📠 SON DAKİKA FAKSI!</div>' : ''}${offerCard(s, o, a.i)}`;
+            list.prepend(card);
+            sfx(o.lastMinute ? 'camera' : 'coin');
+            buzz(o.lastMinute ? [40, 30, 40, 30, 80] : 30);
+          }
+        }
+        if (f >= 1) { close('timeout'); return; }
+        raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
+      node.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-offer]');
+        if (b) { cancelAnimationFrame(raf); close(`offer:${b.dataset.offer}`); }
+      });
+    },
+  });
+}
+
+/** Sözleşme maddeleri: en fazla 2 madde seç, kulüp kabul eder ya da reddeder */
+async function clausesSheet(app, offer) {
+  const s = app.state;
+  const opts = clauseOptions(s, offer);
+  const picked = new Set();
+  const go = await sheet({
+    dismissable: false,
+    html: `<h3>Sözleşme maddeleri</h3><p class="lead">İmzadan önce en fazla <b>2 madde</b> isteyebilirsin. Kulüp pazarlık gücüne göre kabul ya da ret edecek; iki madde kabul edilirse maaştan küçük bir indirim istenir.</p>
+      <div class="stack" data-cl>${opts.map((o) => `<button class="btn block clause" data-cl-id="${o.id}"><span class="cl-top"><b>${esc(o.name)}</b><span class="chip ${o.p >= 0.6 ? 'good' : o.p >= 0.35 ? 'warn' : 'bad'}">%${Math.round(o.p * 100)}</span></span><span class="cl-desc">${esc(o.desc)}</span></button>`).join('')}</div>
+      <button class="btn primary block" style="margin-top:12px" data-close="ask">Maddeleri iste ve imzala</button>
+      <button class="btn ghost block" style="margin-top:8px" data-close="none">Maddesiz imzala</button>`,
+    onMount: (node) => node.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-cl-id]');
+      if (!b) return;
+      const id = b.dataset.clId;
+      if (picked.has(id)) picked.delete(id);
+      else if (picked.size < 2) picked.add(id);
+      node.querySelectorAll('[data-cl-id]').forEach((x) => x.classList.toggle('on', picked.has(x.dataset.clId)));
+      sfx('click');
+    }),
+  });
+  if (go !== 'ask' || !picked.size) { offer.clausesDone = true; return; }
+  const r = negotiateClauses(s, offer, [...picked]);
+  app.save();
+  const name = (id) => opts.find((o) => o.id === id)?.name || id;
+  if (r.accepted.length) sfx('levelup'); else sfx('error');
+  await sheet({
+    center: true,
+    html: `<h3 class="center">Kulübün cevabı</h3>
+      <div class="stack" style="margin:10px 0">${r.accepted.map((id) => `<div class="chip good" style="justify-content:center">✓ ${esc(name(id))}</div>`).join('')}${r.rejected.map((id) => `<div class="chip bad" style="justify-content:center">✗ ${esc(name(id))}</div>`).join('')}</div>
+      ${r.wageCut ? `<p class="muted small center">İki madde kabul edildi; maaş haftalık ${money(r.wageCut)} indirildi.</p>` : ''}
+      <button class="btn primary block" style="margin-top:12px" data-close>İmzala</button>`,
+  });
+}
+

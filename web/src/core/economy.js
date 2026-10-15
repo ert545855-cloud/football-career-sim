@@ -92,6 +92,7 @@ export function generateOffers(state, kind) {
   const curR = clubRating(world, career.clubId);
   const myCountry = countryOf(career.clubId);
   const offers = [];
+  const releaseClause = !!(career.contract?.clauses?.release && career.contract.clauses.clubId === career.clubId);
 
   // Yedekte kalan oyuncuya daha küçük kulüplerden "oynama şansı" teklifi gelir
   const rel = new RelationshipService(state);
@@ -118,6 +119,7 @@ export function generateOffers(state, kind) {
     let p = r < curR ? 0.45 : 0.16 + (f - 6.5) * 0.12 + player.fame / 260 + (hype ? 0.08 : 0);
     if (r >= curR && o >= r - 3) p += 0.15;
     if (kind === 'mid') p *= 0.7;
+    if (releaseClause) p *= 1.3; // serbest kalma bedeli: büyük kulüpler daha istekli
     if (chance(clamp(p, 0.03, 0.85))) offers.push(makeOffer(c.id, r, o, true));
   }
   const maxOffers = player.fame >= 50 ? 4 : 3;
@@ -205,3 +207,14 @@ export const money = (v) => {
   if (a >= 10_000) return `${sign}€${Math.round(a / 1000)}K`;
   return `${sign}€${a.toLocaleString('tr-TR')}`;
 };
+
+/** Transfer son günü: son dakika teklifi (varsa listede olmayan en güçlü kulüpten, daha yüksek imza parası) */
+export function lastMinuteOffer(state, list = []) {
+  const have = new Set(list.map((o) => o.clubId));
+  const extra = generateOffers(state, 'mid').filter((o) => !have.has(o.clubId) && o.clubId !== state.career.clubId);
+  if (!extra.length) return null;
+  const best = extra.sort((a, b) => clubRating(state.world, b.clubId) - clubRating(state.world, a.clubId))[0];
+  best.signingBonus = roundTo((best.signingBonus || best.wage * 6) * 1.3, 100);
+  best.lastMinute = true;
+  return best;
+}

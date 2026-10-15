@@ -37,6 +37,9 @@ import { ensureRanking, rankingSeasonEnd } from './world/ranking.js';
 import { coachOnMatch, coachOnSeasonEnd, ensureCoach, STYLES } from './coach.js';
 import { ensureLocker, lockerOnMatch, maybeLockerEvent } from './locker.js';
 import { planPress } from './press.js';
+import { createCup, cupOnWeekEnd, cupSeasonEnd, ensureCup, scheduleSuperCup } from './cup.js';
+import { ensureMedical, medicalOnWeekEnd } from './injury.js';
+import { applyClauses, clausesOnSeasonEnd } from './clauses.js';
 
 export const SAVE_VERSION = 1;
 
@@ -97,6 +100,8 @@ export function newGame(setup) {
   ensureRanking(state);
   ensureCoach(state);
   ensureLocker(state);
+  ensureMedical(state);
+  createCup(state);
   // Forma numarası: seçilmez, kulüp boştaki genç numaralarından verir
   if (!setup.number) assignYouthNumber(state, random);
   else state.career.numberHistory.push({ season: 1, clubId: state.career.clubId, number: player.number, reason: 'Başlangıç' });
@@ -347,6 +352,9 @@ function endWeek(state, ctx) {
     addNews(state, 'Hesabın ekside! Harcamalarını azalt.', 'bad');
   }
   if (flags.injuredWeeks > 0) flags.injuredWeeks -= 1;
+  // Sakatlık: iyileşme, dönüş ve kırılgan dönem
+  const med = medicalOnWeekEnd(state);
+  if (med?.returned) addNews(state, `${med.returned.name} geride kaldı: sahalara döndün!${med.lasting ? ' Ancak dizindeki ameliyat biraz hız kaybettirdi.' : ''}`, 'good');
   if (flags.suspendedWeeks > 0) flags.suspendedWeeks -= 1;
   if (flags.trainBoostWeeks > 0) flags.trainBoostWeeks -= 1;
   const chirpTweets = [];
@@ -383,6 +391,9 @@ function endWeek(state, ctx) {
   if (NATIONAL_WEEKS.includes(calendar.week)) chirpTweets.push(chirpNationalSquad(state, national));
   if (national) addNews(state, `Milli takım çağrısı: ${national.level === 'A' ? 'A Milli Takım' : national.level === 'U21' ? 'U-21' : 'U-19'} kadrosundasın!`, 'good');
 
+  // Kupa: bu hafta tur varsa diğer maçlar oynanır, senin eşleşmen hafta içi oynanır (pending.cupTie)
+  const cupTie = cupOnWeekEnd(state, calendar.week);
+
   const seasonOver = calendar.week >= SEASON_WEEKS;
   if (seasonOver) calendar.phase = 'seasonEnd';
   else {
@@ -392,7 +403,7 @@ function endWeek(state, ctx) {
     // Chirp: yeni haftanın maç önü kartı, sakatlıklar, dünya futbolu, trendler
     chirpTweets.push(...chirpWeekStart(state));
   }
-  return { finance: fin, changes: diffChanges(before, snapshot(state)), event, offers: state.pending.offers, seasonOver, discipline, chirp: chirpTweets, mentor, national, social };
+  return { finance: fin, changes: diffChanges(before, snapshot(state)), event, offers: state.pending.offers, seasonOver, discipline, chirp: chirpTweets, mentor, national, social, cupTie };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -465,6 +476,13 @@ export function endSeason(state) {
     if (squadClubId(state) !== startTerms.prevSquadClub) mentorOnTransfer(state, startTerms.prevSquadClub);
   }
 
+  // Sözleşme maddeleri: sadakat primi; küme düşme maddesi (düşerse sözleşme feshedilir)
+  const lgRows = sortedTable(world.leagues[leagueId]);
+  const hasLower = Object.values(LEAGUES).some((l) => l.country === league.country && !l.youth && l.tier === league.tier + 1);
+  const relegated = hasLower && position > lgRows.length - 3;
+  const cl = clausesOnSeasonEnd(state, relegated);
+  if (cl?.loyalty) addNews(state, `Sözleşmendeki sadakat primi yattı: €${cl.loyalty.toLocaleString('tr-TR')}.`, 'good');
+  if (cl?.released) addNews(state, 'Küme düşme maddesi devrede: sözleşmen feshedildi, istediğin kulübe gidebilirsin.', 'info');
   // Yeni bir kiralık dönemi başladıysa (altyapıdan yükselip kiralanma) sezon sonu teklifleri gelmez
   const offers = isTransferLocked({ ...state, calendar: { ...calendar, season: calendar.season + 1 } }) && career.contract.yearsLeft > 0 ? [] : agentNetworkOffers(state, generateOffers(state, 'end'), 'end');
   const mustChoose = career.contract.yearsLeft <= 0;
@@ -475,6 +493,11 @@ export function endSeason(state) {
   // Yeni sezon dünyası: küme düşme / çıkma, oyuncunun liginin sonuçları tutulur
   // Kulüp sıralaması: bu sezonun puanları kalıcı puana işlenir (dünya değişmeden önce)
   rankingSeasonEnd(state, world);
+  // Kupa: kalan turlar tamamlanır; Süper Kupa eşleşmesi (lig şampiyonu vs kupa şampiyonu)
+  const myTable = sortedTable(world.leagues[leagueId]);
+  const superPair = LEAGUES[leagueId]?.tier === 1 ? cupSeasonEnd(state, myTable[0]?.id, myTable[1]?.id) : (cupSeasonEnd(state, null, null), null);
+  const cupWinner = state.lastCup?.winner;
+  if (cupWinner) addNews(state, `${state.lastCup.name}: ${CLUB_BY_ID[cupWinner].name} şampiyon!`, cupWinner === career.clubId ? 'good' : 'info');
   const nextWorld = createWorld(calendar.season + 1, evolveRatings(world), { prev: world, focus: DEFAULT_FOCUS });
   // Avrupa: bu sezonun kazananları, gelecek sezonun katılımcıları (bu sezonun tablolarından)
   const euroWinners = europeWinners(world);
@@ -525,6 +548,9 @@ export function endSeason(state) {
   flags.benchStreak = 0;
   player.energy = 100;
   state.pending.match = null;
+  // Yeni sezonun kupası; Süper Kupa'daysan sezon açılışında oynanır
+  createCup(state);
+  scheduleSuperCup(state, superPair);
   // Yeni sezon: kadro yaşlanır; ≤ 26 ise mentor seçimi açılır, değilse rol değişimi (gençlere akıl hocalığı)
   report.mentor.start = mentorOnSeasonStart(state);
   state.pending.seasonReport = report;
@@ -539,6 +565,7 @@ export function endSeason(state) {
 export function takeOffer(state, offer) {
   const fromClubId = state.career.clubId;
   const text = acceptOffer(state, offer);
+  applyClauses(state, offer);
   chirpOnTransfer(state, offer, fromClubId);
   if (!offer.renewal) {
     const prevSquad = state.career.academy?.parentId || fromClubId;
@@ -547,6 +574,10 @@ export function takeOffer(state, offer) {
     state.career.guarantee = null;
     const m = mentorOnTransfer(state, prevSquad);
     if (m.ended) addNews(state, `Mentorun ${m.ended} ile yolların ayrıldı.`, 'info');
+    // Yeni kulüp: kupa yolu sıfırlanır (yeni ülkenin kupası), Süper Kupa hakkı eski kulüpte kalır
+    if (state.pending.cupTie) state.pending.cupTie = null;
+    state.cup = null;
+    ensureCup(state);
     const n = ensureNumberAfterMove(state);
     if (n.changed) addNews(state, `Yeni kulübünde ${n.number} numaralı formayı giyeceksin.`, 'info');
     chirpWelcome(state, { ...offer, from: fromClubId });

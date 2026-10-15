@@ -5,6 +5,8 @@ import { addProgress, changeEnergy, changeFame, changeMorale, changeRel, form, o
 import { bigMatchSetup } from './mentor/index.js';
 import { fatigueAt, weatherFor } from './weather.js';
 import { contextWeights, momentWeights, styleGoals } from './coach.js';
+import { matchInjuryRoll } from './injury.js';
+import { goalBonusFor } from './clauses.js';
 
 /** İlk 11 kararı: OVR + hoca ilişkisi + form + moral, rakip oyuncuya karşı. */
 export function selection(state) {
@@ -112,10 +114,13 @@ export function buildMoments(position, role, subMinute = null, subOff = null, o 
   return spreadMinutes(count, from, subOff ? subOff - 2 : 88).map((m) => makeMoment(position, m, o));
 }
 
-export function planMatch(state) {
+/**
+ * Maç planı. o: kupa/özel maç için {homeId, awayId, id, cup, knockout, big} (verilmezse lig fikstürü)
+ */
+export function planMatch(state, o = {}) {
   const { player, career, world, calendar } = state;
   const week = calendar.week;
-  const [homeId, awayId] = fixtureFor(world, career.clubId, week);
+  const [homeId, awayId] = o.homeId ? [o.homeId, o.awayId] : fixtureFor(world, career.clubId, week);
   const isHome = homeId === career.clubId;
   const myId = career.clubId;
   const oppId = isHome ? awayId : homeId;
@@ -154,7 +159,9 @@ export function planMatch(state) {
   const moments = buildMoments(player.position, role, subMinute, subOff, tactic);
 
   return {
-    id: `${calendar.season}-${week}`,
+    id: o.id || `${calendar.season}-${week}`,
+    cup: o.cup || null,
+    knockout: !!o.knockout,
     season: calendar.season,
     week,
     homeId,
@@ -172,7 +179,7 @@ export function planMatch(state) {
     energy0: player.energy,
     stoppage: randInt(1, 5),
     /** Derbi / final / zirve / kader maçı: heyecan, etkin yetenek çarpanı ve mini oyun temposu */
-    big: bigMatchSetup(state, { myId, oppId, week }),
+    big: o.big || bigMatchSetup(state, { myId, oppId, week }),
     events,
     moments,
     score: { my: 0, opp: 0 },
@@ -417,7 +424,7 @@ export function finalizeMatch(state, match) {
     s.ratingSum += rating;
     if (rating >= 8) s.motm++;
     bonuses.win = res === 'W' ? Math.round(wage * 0.1) : 0;
-    bonuses.goals = Math.round(t.goals * wage * 0.15);
+    bonuses.goals = Math.round(t.goals * wage * 0.15) + goalBonusFor(state, t.goals); // sözleşmedeki gol primi dahil
     bonuses.assists = Math.round(t.assists * wage * 0.08);
     state.flags.benchStreak = 0;
   } else {
@@ -439,6 +446,9 @@ export function finalizeMatch(state, match) {
     const base = match.role === 'starter' ? 25 * (match.subOff ? Math.max(0.7, match.subOff / 90) : 1) : 12;
     changeEnergy(player, -base * (1.2 - player.stats.stamina / 250) * (match.weather?.fatigue || 1));
   }
+
+  // Sakatlık zarı: yorgunluk, zemin, geçmiş sakatlıklar
+  const injury = matchInjuryRoll(state, match, played);
 
   // Maç içi gelişim
   const gained = {};
@@ -468,5 +478,6 @@ export function finalizeMatch(state, match) {
       fame: round1(player.fame - before.fame),
     },
     motm: !!(rating && rating >= 8),
+    injury,
   };
 }

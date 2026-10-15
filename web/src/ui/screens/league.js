@@ -1,4 +1,5 @@
 // LİG EKRANI — 28 ülke × 3 lig (Türkiye 4): puan durumu, fikstürüm, haftanın sonuçları; Avrupa kupaları.
+import { cupSection } from '../cupView.js';
 import { CLUB_BY_ID, COUNTRIES, COUNTRY_BY_ID, LEAGUES, SEASON_WEEKS } from '../../core/data.js';
 import { EURO_SLOTS } from '../../core/world/countries.js';
 import { fixturesOf, leagueOf, sortedTable, weekResults } from '../../core/league.js';
@@ -113,11 +114,12 @@ export function leagueScreen(app, params = {}) {
       <h1 class="h-title">Lig</h1>
       <p class="muted small" style="margin:4px 0 12px">Sezon ${s.calendar.season} · Hafta ${Math.min(s.calendar.week, SEASON_WEEKS)}/${SEASON_WEEKS}</p>
       <div class="seg" style="margin-bottom:10px">
-        <button class="${view.tab !== 'europe' && view.tab !== 'rank' ? 'on' : ''}" data-mode="leagues">🌍 Ligler</button>
+        <button class="${view.tab !== 'europe' && view.tab !== 'rank' && view.tab !== 'cup' ? 'on' : ''}" data-mode="leagues">🌍 Lig</button>
+        <button class="${view.tab === 'cup' ? 'on' : ''}" data-mode="cup">🥇 Kupa</button>
         <button class="${view.tab === 'europe' ? 'on' : ''}" data-mode="europe">🏆 Avrupa</button>
-        <button class="${view.tab === 'rank' ? 'on' : ''}" data-mode="rank">📊 Sıralama</button>
+        <button class="${view.tab === 'rank' ? 'on' : ''}" data-mode="rank">📊 Sıra</button>
       </div>
-      ${view.tab === 'rank' ? rankingSection(app, view) : view.tab === 'europe' ? europeSection(app) : `
+      ${view.tab === 'rank' ? rankingSection(app, view) : view.tab === 'cup' ? cupSection(s) : view.tab === 'europe' ? europeSection(app) : `
       <div class="country-row" data-countries>${countries.map((c) => `<button class="country ${c.id === view.country ? 'on' : ''}" data-country="${c.id}"><span class="flag">${c.flag}</span><span>${esc(c.name)}</span></button>`).join('')}</div>
       <div class="seg wrap" style="margin:10px 0">
         ${leaguesOf(view.country).filter((l) => !l.youth || myLeague === l.id).map((l) => `<button class="${view.league === l.id ? 'on' : ''}" data-lg="${l.id}">${esc(l.name)}</button>`).join('')}
@@ -137,7 +139,7 @@ export function leagueScreen(app, params = {}) {
         if (!t) return;
         if (t.dataset.europe !== undefined) return; // Avrupa bölümü kendi tıklamalarını yönetir
         app.click();
-        if (t.dataset.mode) view.tab = t.dataset.mode === 'europe' ? 'europe' : t.dataset.mode === 'rank' ? 'rank' : 'table';
+        if (t.dataset.mode) view.tab = ['europe', 'rank', 'cup'].includes(t.dataset.mode) ? t.dataset.mode : 'table';
         if (t.dataset.rscope) view.rankScope = t.dataset.rscope;
         if (t.dataset.country) {
           view.country = t.dataset.country;
