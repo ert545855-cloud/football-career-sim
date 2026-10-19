@@ -65,6 +65,11 @@ export function agentScreen(app) {
         <span class="small" style="color:var(--accent);font-weight:800">${icon('chart', 'ico xs')} Yatırım ekranına git</span>
       </button>
 
+      <button class="card ag-inv" data-act="sponsors" style="margin-top:10px">
+        <div class="row between"><span class="muted small">Sponsorluklar</span><b class="tnum">${(s.sponsors?.active || []).length} aktif · ${(s.sponsors?.offers || []).length} teklif</b></div>
+        <span class="small" style="color:var(--accent);font-weight:800">${icon('briefcase', 'ico xs')} Sponsorlar ekranına git</span>
+      </button>
+
       <div class="h-sec">Sözleşmen</div>
       <div class="card" style="display:grid;gap:8px">
         <div class="row" style="gap:10px">${crestSVG(club, 'crest sm')}<b class="grow">${esc(club.name)}</b>${g ? '<span class="chip good">İlk 11 garantisi</span>' : ''}</div>
@@ -89,6 +94,7 @@ export function agentScreen(app) {
         app.click();
         if (t.dataset.act === 'back') return app.go('career');
         if (t.dataset.act === 'invest') return app.go('invest', { from: 'agent' });
+        if (t.dataset.act === 'sponsors') return app.go('sponsors', { from: 'career' });
         if (t.dataset.act === 'raise') {
           const r = askRaise(s);
           app.save();

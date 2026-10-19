@@ -44,6 +44,7 @@ import { agentAvatar, negotiationSheet } from './agentView.js';
 import { agentScreen } from './screens/agent.js';
 import { investScreen } from './screens/invest.js';
 import { gymScreen } from './screens/gym.js';
+import { sponsorsScreen } from './screens/sponsors.js';
 import { investPct } from '../core/invest.js';
 import { socialScreen } from './screens/social.js';
 import { outingsLeft } from '../core/social/index.js';
@@ -104,6 +105,7 @@ export function createApp(rootEl) {
     agent: agentScreen,
     invest: investScreen,
     gym: gymScreen,
+    sponsors: sponsorsScreen,
     social: socialScreen,
     home: homeScreen,
     garage: garageScreen,
@@ -357,6 +359,11 @@ export function createApp(rootEl) {
     async runAction(id) {
       const s = this.state;
       if (id === 'train') return this.train();
+      if (id === 'sponsor') {
+        const chk = canDoAction(s, 'sponsor');
+        if (!chk.ok) { toast(chk.reason, 'bad'); sfx('error'); return; }
+        return this.go('sponsors', { shoot: true });
+      }
       if (id === 'gym') {
         const chk = canDoAction(s, 'gym');
         if (!chk.ok) { toast(chk.reason, 'bad'); sfx('error'); return; }
@@ -585,6 +592,7 @@ export function createApp(rootEl) {
             <div class="row between small" style="margin-top:6px"><span class="muted">Yaşam gideri</span><b style="color:var(--bad)">−${money(f.living)}</b></div>
             ${f.upkeep ? `<div class="row between small" style="margin-top:6px"><span class="muted">Eşya/abonelik</span><b style="color:var(--bad)">−${money(f.upkeep)}</b></div>` : ''}
             ${f.agent ? `<div class="row between small" style="margin-top:6px"><span class="muted">Menajer komisyonu</span><b style="color:var(--bad)">−${money(f.agent)}</b></div>` : ''}
+            ${we.sponsors?.income ? `<div class="row between small" style="margin-top:6px"><span class="muted">Sponsorluk</span><b style="color:var(--good)">+${money(we.sponsors.income)}</b></div>` : ''}
             ${we.invest?.weekly?.autoInvested ? `<div class="row between small" style="margin-top:6px"><span class="muted">Otomatik yatırım</span><b>−${money(we.invest.weekly.autoInvested)}</b></div>` : ''}
             ${we.invest?.weekly?.value ? `<div class="row between small" style="margin-top:6px"><span class="muted">Portföy ${money(we.invest.weekly.value)}</span><b style="color:${we.invest.weekly.change >= 0 ? 'var(--good)' : 'var(--bad)'}">${we.invest.weekly.change >= 0 ? '+' : ''}${money(we.invest.weekly.change)} (${investPct(we.invest.weekly.pct)})</b></div>` : ''}
             <div class="divider" style="margin:10px 0"></div>

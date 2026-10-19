@@ -1,5 +1,6 @@
 // @ts-check
 // OYUNCU PAYLAŞIMI — maç sonu "Chirp'te Paylaş": 3 üslup, her biri ilişkileri farklı etkiler.
+import { sponsorFollowerMult } from '../sponsors.js';
 import { questsOn } from '../quests.js';
 import { CLUB_BY_ID } from '../data.js';
 import { CommentModel, TweetModel, extractTags, playerAuthor } from './models.js';
@@ -139,7 +140,7 @@ export class PlayerPostService {
     player.morale = Math.max(0, Math.min(100, player.morale + moraleDelta));
     changes.push({ key: /** @type any */ ('morale'), label: 'Moral', delta: moraleDelta });
 
-    this.timeline.data.followers += Math.round(10 + player.fame * 3 + likes / 15);
+    this.timeline.data.followers += Math.round((10 + player.fame * 3 + likes / 15) * sponsorFollowerMult(this.state));
 
     let discipline = null;
     if (st.risk) {

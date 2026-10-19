@@ -46,6 +46,7 @@ import { archiveOnMatch, ensureArchive, monthlyAward, teamOfSeason } from './arc
 import { investOnWeek } from './invest.js';
 import { canGym, gymOnRest, gymOnWeek } from './gym.js';
 import { questsOn } from './quests.js';
+import { canShoot, sponsorsOnMatch, sponsorsOnWeek } from './sponsors.js';
 import { boardOnMatch, electionDue, ensurePresident, ensureRival, makeElection, rivalOnMatch, rivalSeasonEnd, withheldWage, worldStarsWindow } from './living.js';
 import { offerFor } from './economy.js';
 
@@ -165,9 +166,7 @@ export function canDoAction(state, id) {
       return c;
     }
     case 'sponsor':
-      if (player.fame < 20) return { ok: false, reason: 'Reklam çekimi için ünün 20 olmalı.' };
-      if (player.energy < 12) return { ok: false, reason: 'Çok yorgunsun.' };
-      return { ok: true };
+      return canShoot(state);
     default:
       return { ok: true };
   }
@@ -324,6 +323,7 @@ export function getMatch(state) {
 export function completeMatch(state, match) {
   const summary = finalizeMatch(state, match);
   state.career.lastRole = match.role;
+  summary.sponsorBonus = sponsorsOnMatch(state, summary); // gol primleri, imaj
   questsOn(state, 'match', summary); // haftalık görevler
   const hg = match.isHome ? match.score.my : match.score.opp;
   const ag = match.isHome ? match.score.opp : match.score.my;
@@ -403,6 +403,9 @@ function endWeek(state, ctx) {
   // Yatırım: fiyatlar değişir, maaştan otomatik yatırım, menajerin portföy notları
   const invest = investOnWeek(state, { summary: ctx?.summary, fin: { net: fin.net - (held || 0) } });
   for (const n of invest.news) addNews(state, n.text, n.kind);
+  // Sponsorluk: haftalık ücretler, avantajlar, yükümlülükler, yeni teklifler
+  const sponsors = sponsorsOnWeek(state);
+  for (const n of sponsors.news) addNews(state, n.text, n.kind);
   // Kişilik ve uyum: haftanın alışkanlıkları
   for (const n of characterOnWeek(state, { trainings: calendar.trainings, played: ctx?.summary?.played, rating: ctx?.summary?.rating, yellow: ctx?.yellow || 0 })) addNews(state, n, 'good');
   // Transfer söylentileri (ilgi aşaması)
@@ -419,7 +422,7 @@ function endWeek(state, ctx) {
   const fx = itemEffects(state);
   const before = snapshot(state);
 
-  changeEnergy(player, 35 + fx.energy);
+  changeEnergy(player, 35 + fx.energy + (sponsors.energy || 0));
   changeMorale(player, (55 - player.morale) * 0.1 + fx.morale);
   if (fx.fans) changeRel(player, 'fans', fx.fans);
   if (fx.fame) changeFame(player, fx.fame * 0.3);
@@ -486,7 +489,7 @@ function endWeek(state, ctx) {
     // Chirp: yeni haftanın maç önü kartı, sakatlıklar, dünya futbolu, trendler
     chirpTweets.push(...chirpWeekStart(state));
   }
-  return { finance: fin, changes: diffChanges(before, snapshot(state)), event, offers: state.pending.offers, seasonOver, discipline, chirp: chirpTweets, mentor, national, social, cupTie, invest };
+  return { finance: fin, changes: diffChanges(before, snapshot(state)), event, offers: state.pending.offers, seasonOver, discipline, chirp: chirpTweets, mentor, national, social, cupTie, invest, sponsors };
 }
 
 // ─────────────────────────────────────────────────────────────

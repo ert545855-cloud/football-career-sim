@@ -42,6 +42,10 @@ export const FLOWS = {
     { sel: '.gym-scene', title: 'Spor salonu', text: 'Ekipmana dokun: halter ve dambıl gücünü, koşu bandı kondisyonunu artırır. Esneme kas ağrısını alır. Haftada 2 ağırlık/kardiyo seansı yapabilirsin.' },
     { sel: '.gym-meters', title: 'Maça etkisi', text: 'Kondisyon yüksekse maçta geç yorulursun ve sakatlık riskin düşer. Güç top kapmayı ve kafa toplarını kolaylaştırır. Maç gününe kas ağrısıyla çıkma: dinlen ya da esneme yap.' },
   ],
+  sponsors: [
+    { sel: '.sp-board', title: 'Sponsorlar', text: 'Ünün ve marka imajın arttıkça markalar sana teklif getirir: haftalık ücret, gol primi ve sahaya katkısı olan avantajlar (krampon, enerji içeceği…).' },
+    { sel: '#sp-shoot', title: 'Reklam çekimi', text: 'Her sözleşmede zorunlu çekimler var. Yönetmen pozu söyler, doğru poza hızlıca bas. Çekimi yapmazsan ceza ödersin ve imajın düşer.' },
+  ],
   invest: [
     { sel: '.inv-hero', title: 'Yatırım', text: 'Kazandığın parayı burada değerlendirirsin. Toplam servetin nakit ve portföyünden oluşur. Fiyatlar her hafta sonu değişir.' },
     { sel: '.inv-agent', title: 'Menajerin takipte', text: 'Menajerin portföyünü izler: düşüşte, aşırı riskte ya da kasan azalınca seni uyarır. İstersen "Menajer yönetsin" ile parayı bir plana göre o yönetir (yıllık ~%2 ücret).' },
