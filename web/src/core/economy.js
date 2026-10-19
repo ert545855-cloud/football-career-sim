@@ -160,6 +160,12 @@ export function generateOffers(state, kind) {
   return offers;
 }
 
+/** Belirli bir kulüpten standart teklif (söylenti/kiralık için) */
+export function offerFor(state, clubId) {
+  if (!CLUB_BY_ID[clubId]) return null;
+  return makeOffer(clubId, clubRating(state.world, clubId), ovr(state.player), true);
+}
+
 function makeOffer(clubId, r, o, move) {
   const wage = wageFor(r, o, countryOf(clubId));
   return {

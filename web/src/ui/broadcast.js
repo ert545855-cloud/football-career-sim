@@ -813,6 +813,8 @@ export function createBroadcast(root, o) {
     scorer.scripted = true;
     scorer.tx = cx; scorer.ty = cy; scorer.sp = 7.8;
     scorer.celebrate = true;
+    scorer.celebT = 0;
+    scorer.celebStyle = scorer === mePlayer && meOn ? (me.celebration || 'corner') : ['corner', 'slide', 'plane', 'heart', 'dance', 'corner'][Math.floor(Math.random() * 6)];
     att.filter((p) => p !== scorer && p.pos !== 'GK').sort((a, b) => Math.hypot(a.x - cx, a.y - cy) - Math.hypot(b.x - cx, b.y - cy)).slice(0, 4).forEach((p, i) => {
       p.scripted = true; p.mark = null;
       p.tx = cx - d * (1.2 + (i % 2) * 1.2); p.ty = cy - 1.5 - Math.floor(i / 2) * 1.4; p.sp = 7;
@@ -1097,8 +1099,14 @@ export function createBroadcast(root, o) {
       if (p.pose === 'lunge' && p.side) { dir = p.rot ? (p.ty > 34 ? 'down' : 'up') : 'side'; flip = !p.rot && (p.side === 'my' ? false : true); }
       else if (p.pose === 'ready') { dir = 'down'; }
       else { const f = sp > 0.3 ? dirFromVelocity(p.vx, p.vy, 'down') : null; dir = f ? f.dir : 'side'; flip = f ? f.flip : dirOf(p.side || 'my') < 0; if (p.pose === 'kick') { dir = 'side'; flip = (p.vx || dirOf(p.side)) < 0; } }
-    } else if (p.celebrate && sp < 0.6) {
-      frame = 'ready'; dir = 'down';
+    } else if (p.celebrate && (sp < 0.6 || p.celebStyle === 'plane')) {
+      const cs = p.celebStyle || 'corner';
+      const ct = p.celebT || 0;
+      if (cs === 'plane') { dir = sp > 0.6 ? 'side' : 'down'; flip = p.vx < 0; frame = 'lunge'; }
+      else if (cs === 'slide') { dir = 'side'; flip = (p.side === 'my') === (p.x > 52.5) ? false : true; frame = 'lunge'; }
+      else if (cs === 'dance') { dir = 'down'; frame = Math.floor(ct * 4) % 2 ? 'run0' : 'run2'; }
+      else if (cs === 'flip' && ct < 0.7) { dir = 'side'; frame = 'ready'; p.rot = -Math.PI * 2 * ease(ct / 0.7); p.lift = Math.sin(Math.PI * (ct / 0.7)) * 1.3; }
+      else { frame = 'ready'; dir = 'down'; if (cs === 'flip') { p.rot = 0; p.lift = 0; } }
     } else if (sp > 0.35) {
       const f = dirFromVelocity(p.vx, p.vy, p.st.last || 'down');
       dir = f.dir; flip = f.flip;
@@ -1259,7 +1267,7 @@ export function createBroadcast(root, o) {
     if (S.freeze || S.wipe?.fired) return;
     if (S.script) updateScript(dt);
     else ambient(dt);
-    for (const p of players) steer(p, dt);
+    for (const p of players) { steer(p, dt); if (p.celebrate && Math.hypot(p.vx, p.vy) < 0.6) p.celebT = (p.celebT || 0) + dt; }
     // hakem: topu çapraz takip
     const b = S.ball;
     const rt = [clamp(b.x - 9 * (b.x > 52.5 ? 1 : -1) * 0.5, 8, 97), clamp(b.y + 11, 8, 60)];

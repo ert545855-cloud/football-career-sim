@@ -64,6 +64,10 @@ export function offerCard(state, offer, i, { negotiable = false } = {}) {
           ${offer.guarantee ? '<span class="chip good">İlk 11 garantisi</span>' : ''}
           ${offer.viaAgent ? `<span class="chip accent">${icon('handshake', 'ico xs')} Ajanının bağlantısı</span>` : ''}
           ${offer.negotiated ? '<span class="chip accent">Pazarlıkla iyileşti</span>' : ''}
+          ${offer.loan ? `<span class="chip warn">${icon('swap', 'ico xs')} Kiralık · sezon sonuna kadar</span>${offer.buyOption ? `<span class="chip">Satın alma opsiyonu ${money(offer.buyOption)}</span>` : ''}` : ''}
+          ${!offer.renewal && !offer.loan && offer.fee != null ? (offer.free ? '<span class="chip good">Bonservissiz (serbest)</span>' : `<span class="chip">Bonservis ${money(offer.fee)}</span>`) : ''}
+          ${!offer.renewal && offer.budget ? `<span class="chip">Kulüp bütçesi ${money(offer.budget)}</span>` : ''}
+          ${offer.interest ? `<span class="chip accent">${icon('eye', 'ico xs')} Seni uzun süredir izliyor</span>` : ''}
         </div>
       </div>
     </div>

@@ -11,6 +11,7 @@ import { agentAvatar } from '../agentView.js';
 import { nationalCrest } from '../nationalView.js';
 import { ensureNational } from '../../core/national.js';
 import { ballonSummary, golden } from '../ballonView.js';
+import { archiveHTML, livingWorldHTML } from '../lifeView.js';
 
 export function careerScreen(app) {
   const s = app.state;
@@ -69,6 +70,10 @@ export function careerScreen(app) {
 
       <div class="h-sec">Kupalar ve ödüller</div>
       ${awards || '<div class="card muted small">Henüz ödülün yok. İlk kupa için çalışmaya devam!</div>'}
+
+      ${archiveHTML(s)}
+
+      ${livingWorldHTML(s)}
 
       ${history ? `<div class="h-sec">Sezonlar</div><div class="card" style="padding:8px 10px"><table class="table"><thead><tr><th>#</th><th>Kulüp</th><th>M</th><th>G</th><th>A</th><th>Not</th><th>Sıra</th><th>OVR</th></tr></thead><tbody>${history}</tbody></table></div>` : ''}
 

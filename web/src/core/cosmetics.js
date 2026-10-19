@@ -11,6 +11,7 @@ export const COSMETIC_SLOTS = [
   { id: 'sleeve', name: 'Kol', where: 'Her yerde' },
   { id: 'hair', name: 'Berber', where: 'Saç modelin' },
   { id: 'dye', name: 'Saç rengi', where: 'Saç rengin' },
+  { id: 'celebration', name: 'Gol sevinci', where: 'Canlı yayında attığın gollerden sonra' },
 ];
 
 const K = (body, accent, pattern, shorts, socks) => ({ body, accent, pattern, shorts, socks });
@@ -49,10 +50,21 @@ export const COSMETICS = [
   // Berber (saç modeli) ve saç rengi
   ...AVATAR.hairStyles.map((h) => ({ id: `hair_${h}`, slot: 'hair', name: AVATAR.hairStyleNames[h], price: 250, hair: h })),
   ...['Siyah', 'Kahve', 'Kumral', 'Sarı', 'Platin', 'Kızıl'].map((n, i) => ({ id: `dye_${i}`, slot: 'dye', name: n, price: 350, hairColor: i })),
+  // Gol sevinci (canlı yayın)
+  { id: 'cel_corner', slot: 'celebration', name: 'Köşe bayrağı koşusu', price: 0, celebration: 'corner', pose: { dir: 'side', frame: 'run0' }, desc: 'Klasik: köşeye koş, tribünü selamla.' },
+  { id: 'cel_slide', slot: 'celebration', name: 'Diz kayması', price: 900, celebration: 'slide', pose: { dir: 'side', frame: 'lunge' }, desc: 'Çimde dizlerinin üstünde kay.' },
+  { id: 'cel_plane', slot: 'celebration', name: 'Uçak', price: 1200, celebration: 'plane', pose: { dir: 'down', frame: 'lunge' }, desc: 'Kollar açık, tribünlerin önünden süzül.' },
+  { id: 'cel_heart', slot: 'celebration', name: 'Kalp', price: 800, celebration: 'heart', pose: { dir: 'down', frame: 'ready' }, desc: 'Taraftara ellerinle kalp yap.' },
+  { id: 'cel_shush', slot: 'celebration', name: 'Sus işareti', price: 1500, celebration: 'shush', pose: { dir: 'down', frame: 'ready' }, desc: 'Deplasmanda rakip tribünü sustur.' },
+  { id: 'cel_dance', slot: 'celebration', name: 'Dans', price: 2200, celebration: 'dance', pose: { dir: 'down', frame: 'run0' }, desc: 'Takım arkadaşlarınla koreografi.' },
+  { id: 'cel_flip', slot: 'celebration', name: 'Ters takla', price: 3500, celebration: 'flip', pose: { dir: 'side', frame: 'ready' }, desc: 'Akrobatik: havada ters takla!' },
 ];
 
 export const COSMETIC_BY_ID = Object.fromEntries(COSMETICS.map((c) => [c.id, c]));
-const DEFAULT_EQ = { boots: 'boots_black', training: 'tr_club', band: 'band_none', gloves: 'gloves_none', sleeve: 'sleeve_short' };
+const DEFAULT_EQ = { boots: 'boots_black', training: 'tr_club', band: 'band_none', gloves: 'gloves_none', sleeve: 'sleeve_short', celebration: 'cel_corner' };
+
+/** Giyili gol sevinci (canlı yayın animasyonu) */
+export const celebrationOf = (state) => COSMETIC_BY_ID[ensureCosmetics(state).eq.celebration]?.celebration || 'corner';
 
 export function ensureCosmetics(state) {
   const c = (state.cosmetics ||= {});

@@ -9,6 +9,7 @@ import { animateBars, esc } from '../dom.js';
 import { meter, statRow } from '../components.js';
 import { currentClub } from '../../core/game.js';
 import { MENTOR_TRAITS } from '../../core/mentor/index.js';
+import { characterCard, perkSheet, playstyleSheet } from '../lifeView.js';
 
 function radar(stats) {
   // Ölçek: en yüksek stat'a göre (erken kariyerde şekil okunur kalsın), en az 50
@@ -99,6 +100,8 @@ export function playerScreen(app) {
         <p class="muted small" style="margin:0">Etkin yetenek; stat, enerji (yorgunluk) ve morale göre hesaplanır.</p>
       </div>
 
+      ${characterCard(s)}
+
       ${medicalCard(s)}
 
       <div class="h-sec">Kulüpteki yerin</div>
@@ -123,6 +126,14 @@ export function playerScreen(app) {
       </div>`,
     mount(el) {
       animateBars(el);
+      el.querySelector('[data-playstyle]')?.addEventListener('click', async () => {
+        app.click();
+        if (await playstyleSheet(app)) app.go('player');
+      });
+      el.querySelector('[data-perks]')?.addEventListener('click', async () => {
+        app.click();
+        if (await perkSheet(app)) app.go('player');
+      });
       el.querySelector('[data-go-mentor]')?.addEventListener('click', () => {
         app.click();
         app.go('mentor');

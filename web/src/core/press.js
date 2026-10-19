@@ -3,6 +3,7 @@
 import { clamp, pick, shuffle, chance } from './rng.js';
 import { changeFame, changeMorale, changeRel, form } from './player.js';
 import { CLUB_BY_ID } from './data.js';
+import { changePersona } from './character.js';
 
 const TONES = {
   humble: { label: 'Mütevazı', icon: 'smile' },
@@ -143,6 +144,12 @@ export function answerPress(state, press, answers, match = null) {
   // Maçtaki heyecan: özgüvenli cevaplar sakinleştirir, kışkırtıcı olanlar ateşler
   if (match?.big && tot.nerves) match.big.nerves = clamp(match.big.nerves + tot.nerves, 0, 0.9);
   if (discipline) state.flags.pressWarn = (state.flags.pressWarn || 0) + 1;
+  // Kişilik: kibirli/kışkırtıcı cevaplar hırsı körükler ama disiplini düşürür; alçakgönüllülük disiplini artırır
+  for (const tone of answers) {
+    if (tone === 'provoke') { changePersona(state, 'ambition', 0.8); changePersona(state, 'discipline', -0.7); }
+    else if (tone === 'confident') { changePersona(state, 'ambition', 0.4); changePersona(state, 'leadership', 0.3); }
+    else if (tone === 'humble') changePersona(state, 'discipline', 0.3);
+  }
   state.career.pressLog = [{ s: state.calendar.season, w: state.calendar.week, kind: press.kind, tones: answers, headline }, ...(state.career.pressLog || [])].slice(0, 20);
   const labels = { fame: 'Ün', fans: 'Taraftar', manager: 'Hoca', teammates: 'Takım', morale: 'Moral' };
   const changes = Object.entries(tot).filter(([k, v]) => v && labels[k]).map(([k, v]) => ({ key: k, label: labels[k], delta: Math.round(v * 10) / 10 }));

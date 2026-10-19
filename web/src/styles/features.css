@@ -705,3 +705,20 @@
 @media (orientation: portrait) {
   .bc.bc-full { width: 100dvh; height: 100vw; transform-origin: top left; transform: translateX(100vw) rotate(90deg); }
 }
+
+/* ─────────── Karakter / arşiv ─────────── */
+.stars { color: #fbbf24; letter-spacing: 1px; font-size: 14px; white-space: nowrap; }
+.stars i { font-style: normal; color: rgba(255, 255, 255, 0.16); }
+.char-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+.char-grid > div { display: flex; flex-direction: column; gap: 3px; }
+.drill-opt, .style-opt, .camp-opt { text-align: left; color: inherit; font: inherit; cursor: pointer; width: 100%; }
+.drill-opt[disabled] { opacity: 0.55; }
+.style-opt.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.gk-row { display: grid; grid-template-columns: 116px 1fr 28px; align-items: center; gap: 8px; font-size: 12.5px; margin: 4px 0; }
+.gk-row i { display: block; height: 7px; border-radius: 4px; background: linear-gradient(90deg, var(--accent) var(--w), rgba(255, 255, 255, 0.08) var(--w)); }
+.gk-row b { text-align: right; }
+.rival-card { border-color: rgba(251, 113, 133, 0.35); }
+.perk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.perk { display: flex; flex-direction: column; gap: 4px; text-align: left; color: inherit; font: inherit; cursor: pointer; padding: 10px; }
+.perk.on { border-color: var(--accent); background: rgba(198, 255, 61, 0.08); opacity: 1; }
+.perk[disabled]:not(.on) { opacity: 0.55; }

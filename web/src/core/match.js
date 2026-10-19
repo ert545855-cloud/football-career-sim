@@ -8,6 +8,7 @@ import { contextWeights, momentWeights, styleGoals } from './coach.js';
 import { matchInjuryRoll } from './injury.js';
 import { goalBonusFor } from './clauses.js';
 import { clubLineup, pickScorer, shortName } from './lineups.js';
+import { cardEscapeChance } from './character.js';
 
 /** İlk 11 kararı: OVR + hoca ilişkisi + form + moral, rakip oyuncuya karşı. */
 export function selection(state) {
@@ -183,6 +184,8 @@ export function planMatch(state, o = {}) {
     big: o.big || bigMatchSetup(state, { myId, oppId, week }),
     events,
     moments,
+    /** Disiplin (kişilik): faulde karttan kurtulma şansı */
+    discipline: player.persona?.discipline ?? 50,
     /** Maç kadroları (golcü/asist isimleri) ve gol listesi (skor tabelasında gösterilir) */
     lineups: { my: clubLineup(state, myId, { mine: true }), opp: clubLineup(state, oppId) },
     goals: [],
@@ -293,7 +296,8 @@ export function applyAiEvent(match, ev) {
 /** Anın oynandığı dakikadaki yorgunluk (0..0.65) */
 export function momentFatigue(state, match, minute) {
   if (!match) return 0;
-  return fatigueAt({ minute, energy: match.energy0 ?? state.player.energy, stamina: state.player.stats.stamina, weather: match.weather, from: match.role === 'starter' ? 0 : match.subMinute || 0 });
+  const f = fatigueAt({ minute, energy: match.energy0 ?? state.player.energy, stamina: state.player.stats.stamina, weather: match.weather, from: match.role === 'starter' ? 0 : match.subMinute || 0 });
+  return state.player.perks?.includes('engine') ? f * 0.85 : f; // Motor uzmanlığı
 }
 
 /**
@@ -442,11 +446,12 @@ export function resolveMoment(match, moment, result, playerName) {
       }[result.method];
       lines.push({ minute: m, kind: 'tackle', text: how || `${playerName} araya girip topu kaptı!` });
     } else if (result.outcome === 'foul') {
-      // Faul: kart riski + tehlikeli bölgede serbest vuruş
+      // Faul: kart riski + tehlikeli bölgede serbest vuruş (disiplinli oyuncu hakemi ikna eder)
       t.lost++;
+      if (result.card && chance(cardEscapeChance(match.discipline ?? 50))) { result.card = false; result.warned = true; }
       t.rating -= result.card ? 0.55 : 0.3;
       if (result.card) t.yellow = (t.yellow || 0) + 1;
-      lines.push({ minute: m, kind: 'chance', text: result.card ? `${playerName} rakibini düşürdü, hakem sarı kartını çıkardı!` : `${playerName} faul yaptı, hakem düdüğü çaldı.` });
+      lines.push({ minute: m, kind: 'chance', text: result.card ? `${playerName} rakibini düşürdü, hakem sarı kartını çıkardı!` : result.warned ? `${playerName} faul yaptı; sakin tavrıyla hakemi ikna etti, sadece sözlü uyarı aldı.` : `${playerName} faul yaptı, hakem düdüğü çaldı.` });
       if (moment.context === 'threat' && chance(0.12)) {
         match.score.opp += 1;
         const g = recordGoal(match, 'opp', m + 1, { assist: null, kind: 'freekick' });

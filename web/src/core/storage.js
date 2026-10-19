@@ -14,6 +14,10 @@ import { ensureCoach } from './coach.js';
 import { ensureLocker } from './locker.js';
 import { ensureMedical } from './injury.js';
 import { ensureCup } from './cup.js';
+import { ensureCharacter } from './character.js';
+import { ensureMarket } from './market.js';
+import { ensureArchive } from './archive.js';
+import { ensurePresident, ensureRival } from './living.js';
 import { addFocus, leagueIdIn, upgradeWorld, useWorld } from './league.js';
 import { ensureEurope } from './world/europe.js';
 
@@ -94,6 +98,10 @@ export function migrate(state) {
   ensureLocker(state);
   ensureMedical(state);
   if (state.calendar?.phase === 'week') ensureCup(state);
+  ensureCharacter(state);
+  ensureMarket(state);
+  ensureArchive(state);
+  if (state.calendar?.phase === 'week') { ensureRival(state); ensurePresident(state); }
   state.pending.locker = state.pending.locker ?? null;
   return state;
 }

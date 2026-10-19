@@ -73,7 +73,7 @@ export function mountWardrobe(app, el) {
     const big = el.querySelector('[data-big]');
     const look = view.preview ? previewLook(s, view.preview, { training: view.training }) : playerLook(s, { training: view.training });
     if (big) drawInto(big, look, { both: true });
-    el.querySelectorAll('[data-px]').forEach((cv) => drawInto(cv, previewLook(s, cv.dataset.px, { training: view.training || COSMETIC_BY_ID[cv.dataset.px]?.slot === 'training' }), { dir: COSMETIC_BY_ID[cv.dataset.px]?.slot === 'hair' || COSMETIC_BY_ID[cv.dataset.px]?.slot === 'dye' ? 'down' : 'down' }));
+    el.querySelectorAll('[data-px]').forEach((cv) => { const it = COSMETIC_BY_ID[cv.dataset.px]; drawInto(cv, previewLook(s, cv.dataset.px, { training: view.training || it?.slot === 'training' }), it?.pose ? { dir: it.pose.dir, frame: it.pose.frame } : { dir: 'down' }); });
   };
   requestAnimationFrame(redraw);
   el.addEventListener('click', (e) => {

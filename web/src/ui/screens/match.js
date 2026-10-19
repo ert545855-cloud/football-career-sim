@@ -3,9 +3,10 @@ import { CLUB_BY_ID, GAME_WEIGHTS } from '../../core/data.js';
 import { applyAiEvent, MOMENT_INTRO, momentFatigue, momentTitle, resolveMoment } from '../../core/match.js';
 import { conditionPct, windArrow } from '../../core/weather.js';
 import { effectiveSkill } from '../../core/player.js';
+import { characterSkillMult } from '../../core/character.js';
 import { clubRating } from '../../core/league.js';
 import { runMiniGame } from '../../games/index.js';
-import { playerLook } from '../../core/cosmetics.js';
+import { celebrationOf, playerLook } from '../../core/cosmetics.js';
 import { buzz, sfx } from '../../audio.js';
 import { crestSVG, icon } from '../art.js';
 import { confetti, el, esc, sleep } from '../dom.js';
@@ -157,7 +158,7 @@ export function matchScreen(app, { match }) {
       const bc = createBroadcast(bcEl, {
         myKit: my, oppKit: opp, homeIsMy: match.isHome,
         lineups: match.lineups || {},
-        me: { look: meLook, num: s.player.number, name: shortName, pos: s.player.position, onPitch: match.role === 'starter' },
+        me: { look: meLook, num: s.player.number, name: shortName, pos: s.player.position, onPitch: match.role === 'starter', celebration: celebrationOf(s) },
         weather: match.weather,
         speed: () => app.settings.speed || 1,
         auto: app.autoplay,
@@ -254,7 +255,8 @@ export function matchScreen(app, { match }) {
         // Büyük maç heyecanı etkin yeteneği düşürür (Soğukkanlı mentor %20 azaltır)
         // Maç içi yorgunluk: dakika ilerledikçe etkin yetenek düşer
         const fatigue = momentFatigue(s, match, m.minute);
-        const skill = effectiveSkill(s.player, weights) * (match.big?.skillMult ?? 1) * (1 - fatigue * 0.3);
+        // Oyun tarzı, zayıf ayak, beceri ve yeni kulübe uyum
+        const skill = effectiveSkill(s.player, weights) * (match.big?.skillMult ?? 1) * (1 - fatigue * 0.3) * characterSkillMult(s, type, m.context);
         await sleep(350);
         const result = await runMiniGame({
           type,

@@ -43,6 +43,9 @@ export function hubScreen(app) {
     career.loan && calendar.season <= career.loan.untilSeason ? `<span class="chip warn">${icon('swap', 'ico sm')} Kiralık · ${esc(CLUB_BY_ID[career.loan.parentId].short)}</span>` : '',
     career.academy && calendar.season <= career.academy.untilSeason ? `<span class="chip accent">${icon('star', 'ico sm')} Altyapı · U-17</span>` : '',
     career.guarantee && calendar.season <= career.guarantee.untilSeason ? `<span class="chip good">${icon('check', 'ico sm')} İlk 11 garantisi</span>` : '',
+    s.adapt && s.adapt.pct < 100 ? `<span class="chip" title="Yeni kulübüne uyum: etkin yeteneği hafifçe etkiler">${icon('users', 'ico sm')} Uyum %${s.adapt.pct}</span>` : '',
+    s.market?.interest?.length ? `<span class="chip accent" title="Transfer söylentileri">${icon('eye', 'ico sm')} ${s.market.interest.length} kulüp izliyor</span>` : '',
+    s.board?.crisis ? `<span class="chip bad">${icon('coin', 'ico sm')} Kulüpte mali kriz</span>` : '',
   ].join('');
 
   const news = career.news.slice(0, 3).map((n) => `<div class="li"><span class="news-dot ${n.kind}"></span><div class="grow small">${esc(n.text)}</div><span class="muted small">H${n.w}</span></div>`).join('');

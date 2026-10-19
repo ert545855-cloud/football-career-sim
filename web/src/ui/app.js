@@ -61,6 +61,8 @@ import { lastMinuteOffer } from '../core/economy.js';
 import { activeCamp, startTournamentCamp, tournamentFor } from '../core/nationalCamp.js';
 import { scheduleCloudSync } from '../cloud.js';
 import { runTryoutStation, heartsHTML } from '../games/tryoutStation.js';
+import { drillSheet, electionSheet, monthAwardSheet, summerCampSheet, testimonialSheet } from './lifeView.js';
+import { summerCampDue } from '../core/summerCamp.js';
 import { POSITIONS as POS } from '../core/data.js';
 import { createWorld } from '../core/league.js';
 import { MAX_SCORE, TryoutSession, buildStarterOffers, randomAvatar, tryoutStatBonus } from '../core/onboarding/index.js';
@@ -346,7 +348,14 @@ export function createApp(rootEl) {
     async runAction(id) {
       const s = this.state;
       if (id === 'train') return this.train();
-      const r = doAction(s, id);
+      let opt;
+      if (id === 'drill') {
+        const chk = canDoAction(s, 'drill');
+        if (!chk.ok) { toast(chk.reason, 'bad'); sfx('error'); return; }
+        opt = await drillSheet(this);
+        if (!opt) return;
+      }
+      const r = doAction(s, id, opt);
       if (!r.ok) {
         toast(r.text, 'bad');
         sfx('error');
@@ -584,6 +593,7 @@ export function createApp(rootEl) {
       const s = this.state;
       if (!s) return this.go('title');
       if (s.pending.event) await this.eventFlow();
+      if (s.pending.monthAward) await monthAwardSheet(this);
       if (s.pending.injury) await injuryFlow(this);
       if (s.pending.coachChange) await coachChangeFlow(this);
       if (s.pending.locker) await lockerFlow(this);
@@ -605,7 +615,10 @@ export function createApp(rootEl) {
       }
       if (s.pending.seasonReport) await this.seasonFlow(s.pending.seasonReport);
       if (s.calendar.phase === 'retired') return this.go('retired');
+      if (s.pending.election) await electionSheet(this);
       if (s.pending.offers) await this.offersFlow();
+      // Yeni sezon: yaz kampı (2. sezondan itibaren)
+      if (summerCampDue(s)) await summerCampSheet(this);
       // Hafta içi kupa maçı / sezon açılışında Süper Kupa: maç ekranı devralır, bitince runPending yeniden çağrılır
       if (s.pending.cupTie && s.calendar.phase === 'week' && (await cupFlow(this))) return;
       this.go('hub');
@@ -763,6 +776,7 @@ export function createApp(rootEl) {
       if (choice === 'retire' || r.mustRetire) {
         retire(s);
         this.save();
+        await testimonialSheet(this);
       } else this.save();
     },
   };

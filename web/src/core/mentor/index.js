@@ -26,7 +26,10 @@ export function mentorBonus(state) {
 
 /** Kulüp nüfuzu kazanımı (Lider mentor ×1.2). */
 export function gainInfluence(state, amount, opts) {
-  return new MentorManager(state).gainInfluence(amount, opts);
+  // Liderlik (kişilik): doğal lider soyunma odasında daha hızlı söz sahibi olur
+  const lead = state.player?.persona?.leadership;
+  const mult = lead == null || amount <= 0 ? 1 : (0.85 + (lead / 100) * 0.4) * (state.player.perks?.includes('captain') ? 1.15 : 1);
+  return new MentorManager(state).gainInfluence(amount * mult, opts);
 }
 
 /** Maç sonu nüfuz: oynadıkça ve iyi oynadıkça kulüpte sözün geçer. */

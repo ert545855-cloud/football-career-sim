@@ -40,6 +40,11 @@ import { planPress } from './press.js';
 import { createCup, cupOnWeekEnd, cupSeasonEnd, ensureCup, scheduleSuperCup } from './cup.js';
 import { ensureMedical, medicalOnWeekEnd } from './injury.js';
 import { applyClauses, clausesOnSeasonEnd } from './clauses.js';
+import { ambitionMorale, characterOnWeek, doDrill, ensureCharacter, potentialSeasonEnd, setAbroad, trainingPersonaMult } from './character.js';
+import { ensureMarket, interestOffers, loanOffer, priceOffers, recordTransfer, rumorsOnWeek } from './market.js';
+import { archiveOnMatch, ensureArchive, monthlyAward, teamOfSeason } from './archive.js';
+import { boardOnMatch, electionDue, ensurePresident, ensureRival, makeElection, rivalOnMatch, rivalSeasonEnd, withheldWage, worldStarsWindow } from './living.js';
+import { offerFor } from './economy.js';
 
 export const SAVE_VERSION = 1;
 
@@ -107,6 +112,13 @@ export function newGame(setup) {
   else state.career.numberHistory.push({ season: 1, clubId: state.career.clubId, number: player.number, reason: 'Başlangıç' });
   // Chirp boş başlamasın: ilk haftanın maç önü kartı ve gündem
   chirpWeekStart(state);
+  // Karakter (kişilik, zayıf ayak, potansiyel), piyasa, arşiv ve yaşayan dünya
+  ensureCharacter(state);
+  state.player.ovr0 = ovr(state.player);
+  ensureMarket(state);
+  ensureArchive(state);
+  ensureRival(state);
+  ensurePresident(state);
   return state;
 }
 
@@ -139,6 +151,10 @@ export function canDoAction(state, id) {
     case 'media':
       if (player.energy < 8) return { ok: false, reason: 'Çok yorgunsun.' };
       return { ok: true };
+    case 'drill':
+      if (flags.injuredWeeks > 0) return { ok: false, reason: 'Sakatsın, özel çalışma yapamazsın.' };
+      if (player.energy < 12) return { ok: false, reason: 'Enerjin çok düşük. Önce dinlen.' };
+      return { ok: true };
     case 'sponsor':
       if (player.fame < 20) return { ok: false, reason: 'Reklam çekimi için ünün 20 olmalı.' };
       if (player.energy < 12) return { ok: false, reason: 'Çok yorgunsun.' };
@@ -161,8 +177,8 @@ export function diffChanges(before, after) {
     .filter((c) => c.delta !== 0);
 }
 
-/** Anlık sonuçlu aksiyonlar (antrenman hariç). */
-export function doAction(state, id) {
+/** Anlık sonuçlu aksiyonlar (antrenman hariç). opt: özel çalışmada 'weakFoot' | 'skillMoves' */
+export function doAction(state, id, opt) {
   const check = canDoAction(state, id);
   if (!check.ok) return { ok: false, text: check.reason };
   const { player, career } = state;
@@ -221,6 +237,16 @@ export function doAction(state, id) {
       text = pick(['Bir şampuan reklamında rol aldın.', 'Spor ayakkabı kataloğu için poz verdin.', 'Bir mobil oyunun reklam yüzü oldun.']);
       break;
     }
+    case 'drill': {
+      const r = doDrill(state, opt === 'skillMoves' ? 'skillMoves' : 'weakFoot');
+      if (!r.ok) return { ok: false, text: r.text };
+      changeEnergy(player, -r.energy);
+      title = r.up ? `${r.name}: ${'★'.repeat(r.stars)}${'☆'.repeat(5 - r.stars)}` : `${r.name} çalışması`;
+      text = r.up
+        ? pick([`Tekrarlar meyvesini verdi! ${r.name} artık ${r.stars} yıldız.`, `Antrenör alkışladı: ${r.name} seviyen yükseldi (${r.stars}★).`])
+        : `${pick(['Saatlerce duvara vurdun.', 'Konilerin arasında ter döktün.', 'Antrenörle birebir çalıştın.'])} Sonraki yıldıza %${Math.round(r.prog * 100)}.`;
+      break;
+    }
     default:
       return { ok: false, text: 'Bilinmeyen aksiyon.' };
   }
@@ -251,7 +277,8 @@ export function finishTraining(state, stat, result, diff = state.training?.diff 
   // Zorluk ve yorgunluk: zor antrenman daha çok geliştirir; yorgunken verim düşer
   const diffMult = difficultyGain(diff, result.success);
   const fatigue = fatigueFactor(player.energy);
-  const gained = addProgress(player, stat, trainingAmount(result, bonus) * mentorMult * diffMult * fatigue);
+  // Profesyonellik: düzenli çalışan oyuncu antrenmandan daha çok alır
+  const gained = addProgress(player, stat, trainingAmount(result, bonus) * mentorMult * diffMult * fatigue * trainingPersonaMult(state));
   const stars = starsFor(result);
   const rec = recordDrill(state, stat, diff, stars);
   const game = TRAINING[stat].game;
@@ -323,6 +350,19 @@ export function completeMatch(state, match) {
   addNews(state, news, summary.result === 'W' ? 'good' : summary.result === 'L' ? 'bad' : 'info');
   if (!summary.played) addNews(state, `${opp} maçında forma giymedin.`, 'bad');
 
+  // Kariyer arşivi: gol türleri, kulüp toplamları, rekorlar
+  const record = archiveOnMatch(state, match, summary);
+  if (record) addNews(state, record, 'good');
+  // Hırs: kenarda kalmak koyar, büyük maç zaferi coşturur
+  const amb = ambitionMorale(state, { played: summary.played, big: !!match.big, result: summary.result });
+  if (amb) changeMorale(state.player, amb);
+  // Yaşayan dünya: kişisel rakip, başkan ve kulüp maliyesi
+  const rv = rivalOnMatch(state, summary, match);
+  if (rv?.h2h) addNews(state, `Rakibin ${state.rival.name} ile kozlarınızı paylaştınız: ${summary.scoreLine}. Sen ${rv.h2h.myGoals} gol, o ${rv.h2h.rivalGoals} gol.`, summary.result === 'W' ? 'good' : summary.result === 'L' ? 'bad' : 'info');
+  else if (rv?.goals >= 2) addNews(state, `Rakibin ${state.rival.name} bu hafta ${rv.goals} gol attı. Manşetler onu konuşuyor.`, 'info');
+  const bd = boardOnMatch(state, summary);
+  if (bd?.crisisStart) addNews(state, `Kulüpte mali kriz! Başkan ${state.board.president} maaşların birkaç hafta gecikeceğini açıkladı.`, 'bad');
+  if (bd?.crisisEnd) addNews(state, `Kriz atlatıldı: geciken maaşların (€${bd.crisisEnd.toLocaleString('tr-TR')}) hesabına yattı.`, 'good');
   // Altın Krampon gibi kozmetiklerin küçük ün etkisi
   const cf = cosmeticFame(state);
   if (cf && summary.played) changeFame(state.player, cf);
@@ -333,7 +373,7 @@ export function completeMatch(state, match) {
     const rank = ballonRank(state);
     if (rank <= 10) chirp.push(new ChirpTriggerEngine(state).post(FABRICIO, 'ballon', 'Altın Top yarışında ara sıralama: {player} {rank}. sırada! Avrupa devleri gözlerini Türkiye\'ye çevirdi.', { rank }));
   }
-  const weekEnd = endWeek(state, { summary });
+  const weekEnd = endWeek(state, { summary, yellow: match.tally?.yellow || 0 });
   return { summary, results, weekEnd, europe, chirp: [...chirp, ...euroTweets, ...weekEnd.chirp] };
 }
 
@@ -341,6 +381,21 @@ function endWeek(state, ctx) {
   const { player, career, calendar, flags } = state;
   const fin = weeklyFinance(state);
   career.money += fin.net;
+  // Mali kriz: maaş bu hafta yatmaz (sonra toplu ödenir)
+  const held = withheldWage(state);
+  if (held) career.money -= held;
+  // Kişilik ve uyum: haftanın alışkanlıkları
+  for (const n of characterOnWeek(state, { trainings: calendar.trainings, played: ctx?.summary?.played, rating: ctx?.summary?.rating, yellow: ctx?.yellow || 0 })) addNews(state, n, 'good');
+  // Transfer söylentileri (ilgi aşaması)
+  for (const n of rumorsOnWeek(state, ctx?.summary)) addNews(state, n, 'info');
+  // Ayın oyuncusu
+  const month = monthlyAward(state);
+  if (month) {
+    addNews(state, `${month.title} seçildin! (Ort. ${month.avg.toFixed(1)}, ${month.goals} gol, ${month.assists} asist)`, 'good');
+    changeFame(player, 3);
+    changeMorale(player, 5);
+    state.pending.monthAward = month;
+  }
   if (fin.agent && state.agent) state.agent.paid = (state.agent.paid || 0) + fin.agent;
   const fx = itemEffects(state);
   const before = snapshot(state);
@@ -359,6 +414,7 @@ function endWeek(state, ctx) {
   if (med?.returned) addNews(state, `${med.returned.name} geride kaldı: sahalara döndün!${med.lasting ? ' Ancak dizindeki ameliyat biraz hız kaybettirdi.' : ''}`, 'good');
   if (flags.suspendedWeeks > 0) flags.suspendedWeeks -= 1;
   if (flags.trainBoostWeeks > 0) flags.trainBoostWeeks -= 1;
+  if (flags.campFitWeeks > 0) flags.campFitWeeks -= 1;
   const chirpTweets = [];
   const discipline = chirpOnWeekEnd(state);
   chirpTweets.push(...discipline.tweets);
@@ -381,8 +437,13 @@ function endWeek(state, ctx) {
 
   let offers = null;
   // Kiralıkta / altyapıdayken devre arası transfer penceresi kapalı
+  if (calendar.week === MID_WINDOW_WEEK) for (const n of worldStarsWindow(state, 'mid')) addNews(state, n, 'info');
   if (calendar.week === MID_WINDOW_WEEK && !isTransferLocked(state)) {
     offers = agentNetworkOffers(state, generateOffers(state, 'mid'), 'mid');
+    offers = interestOffers(state, offers, (id) => offerFor(state, id));
+    const loan = loanOffer(state, (id) => offerFor(state, id));
+    if (loan) offers.push(loan);
+    offers = priceOffers(state, offers, 'mid');
     state.pending.offers = offers.length ? { kind: 'mid', list: offers, mandatory: false } : null;
     chirpTweets.push(...chirpOnOffers(state, offers));
   }
@@ -427,6 +488,8 @@ export function endSeason(state) {
   if (s.goals > 0 && s.goals >= aiTop) awards.push({ season: calendar.season, title: `${league.name} Gol Kralı`, icon: 'boot' });
   if (s.apps >= 14 && avg >= 7.3) awards.push({ season: calendar.season, title: `${league.name} Sezonun Oyuncusu`, icon: 'star' });
   if (player.age <= 21 && s.apps >= 10 && avg >= 7.0) awards.push({ season: calendar.season, title: 'Yılın Genç Oyuncusu', icon: 'medal' });
+  const tots = teamOfSeason(state, { avg, apps: s.apps, leagueName: league.name });
+  if (tots) awards.push(tots);
   for (const a of awards) {
     changeFame(player, 8);
     changeRel(player, 'fans', 5);
@@ -471,6 +534,23 @@ export function endSeason(state) {
   const coachEnd = coachOnSeasonEnd(state);
   if (coachEnd) addNews(state, `Sezon sonu: ${coachEnd.old.name} ile yollar ayrıldı. Yeni teknik direktör ${coachEnd.coach.name}.`, 'info');
 
+  // Kiralıkta satın alma opsiyonu: iyi oynadıysan kiralayan kulüp seni bonservisiyle alır
+  if (career.loan?.buyOption && career.loan.loanTo === career.clubId && s.apps >= 8 && avg >= 7.0 && chance(0.6)) {
+    const fee = career.loan.buyOption;
+    recordTransfer(state, { from: career.loan.parentId, to: career.clubId, fee, kind: 'buy' });
+    addNews(state, `${CLUB_BY_ID[career.clubId].name} satın alma opsiyonunu kullandı (€${fee.toLocaleString('tr-TR')}). Artık kalıcı olarak buradasın!`, 'good');
+    career.contract = { wage: Math.round(career.contract.wage * 1.15 / 50) * 50, yearsLeft: 3 };
+    career.loan = null;
+  }
+  // Potansiyel yeniden değerlendirme, rakibin sezonu
+  const potNote = potentialSeasonEnd(state, { avg, apps: s.apps });
+  if (potNote) addNews(state, potNote, 'good');
+  const rivalEnd = rivalSeasonEnd(state);
+  if (rivalEnd) addNews(state, rivalEnd.retired ? `Kariyer boyu rakibin ${rivalEnd.name} futbolu bıraktı.` : `Rakibin ${rivalEnd.name} sezonu ${rivalEnd.last.goals} gol, ${rivalEnd.last.assists} asistle kapattı${rivalEnd.moved ? `; yeni kulübü ${CLUB_BY_ID[rivalEnd.moved]?.name}` : ''}.`, 'info');
+  for (const n of worldStarsWindow(state, 'end')) addNews(state, n, 'info');
+  // Başkanlık seçimi
+  if (electionDue(state)) makeElection(state);
+
   // Başlangıç yolları: kiralık dönüşü / altyapıdan A takıma yükselme (tekliflerden önce)
   const startTerms = resolveStartTerms(state);
   if (startTerms) {
@@ -486,7 +566,8 @@ export function endSeason(state) {
   if (cl?.loyalty) addNews(state, `Sözleşmendeki sadakat primi yattı: €${cl.loyalty.toLocaleString('tr-TR')}.`, 'good');
   if (cl?.released) addNews(state, 'Küme düşme maddesi devrede: sözleşmen feshedildi, istediğin kulübe gidebilirsin.', 'info');
   // Yeni bir kiralık dönemi başladıysa (altyapıdan yükselip kiralanma) sezon sonu teklifleri gelmez
-  const offers = isTransferLocked({ ...state, calendar: { ...calendar, season: calendar.season + 1 } }) && career.contract.yearsLeft > 0 ? [] : agentNetworkOffers(state, generateOffers(state, 'end'), 'end');
+  let offers = isTransferLocked({ ...state, calendar: { ...calendar, season: calendar.season + 1 } }) && career.contract.yearsLeft > 0 ? [] : agentNetworkOffers(state, generateOffers(state, 'end'), 'end');
+  if (offers.length) offers = priceOffers(state, interestOffers(state, offers, (id) => offerFor(state, id)), 'end');
   const mustChoose = career.contract.yearsLeft <= 0;
   state.pending.offers = offers.length ? { kind: 'end', list: offers, mandatory: mustChoose } : null;
   chirpOnSeasonEnd(state, { awards });
@@ -566,11 +647,13 @@ export function endSeason(state) {
 
 export function takeOffer(state, offer) {
   const fromClubId = state.career.clubId;
+  const prevContract = { ...state.career.contract };
   const text = acceptOffer(state, offer);
   applyClauses(state, offer);
   chirpOnTransfer(state, offer, fromClubId);
   if (!offer.renewal) {
     const prevSquad = state.career.academy?.parentId || fromClubId;
+    recordTransfer(state, { from: fromClubId, to: offer.clubId, fee: offer.fee || 0, kind: offer.loan ? 'loan' : offer.free ? 'free' : 'transfer' });
     state.career.loan = null;
     state.career.academy = null;
     state.career.guarantee = null;
@@ -583,6 +666,16 @@ export function takeOffer(state, offer) {
     const n = ensureNumberAfterMove(state);
     if (n.changed) addNews(state, `Yeni kulübünde ${n.number} numaralı formayı giyeceksin.`, 'info');
     chirpWelcome(state, { ...offer, from: fromClubId });
+  }
+  // Kiralık: sözleşme ana kulüpte kalır; sezon sonunda dönüş (ya da satın alma opsiyonu)
+  if (offer.loan) {
+    state.career.contract = prevContract;
+    state.career.loan = { parentId: fromClubId, untilSeason: state.calendar.season, buyOption: offer.buyOption || 0, loanTo: offer.clubId };
+  }
+  // Uyum: yeni kulüp (yurt dışıysa daha yavaş)
+  if (!offer.renewal) {
+    ensureCharacter(state);
+    setAbroad(state, (CLUB_BY_ID[offer.clubId]?.country || 'tr') !== (CLUB_BY_ID[fromClubId]?.country || 'tr'));
   }
   // Pazarlıkla alınan "ilk 11 garantisi" maddesi: sezon ortasında imzalandıysa gelecek sezonu da kapsar
   if (offer.guarantee) state.career.guarantee = { untilSeason: state.calendar.season + (state.calendar.week > 1 ? 1 : 0), reason: 'contract' };

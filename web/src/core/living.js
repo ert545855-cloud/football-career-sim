@@ -63,7 +63,9 @@ export function rivalSeasonEnd(state) {
   const r = state.rival;
   if (!r) return null;
   r.age++;
-  r.ovr = clamp(r.ovr + (r.age <= 23 ? randInt(1, 4) : r.age <= 29 ? randInt(-1, 2) : randInt(-3, 0)), 30, 92);
+  // rakip de senin gibi gelişir: genç yaşta hızlı, 30'dan sonra düşüş; arada sana yetişmeye çalışır
+  const gap = ovr(state.player) - r.ovr;
+  r.ovr = clamp(r.ovr + (r.age <= 21 ? randInt(4, 7) : r.age <= 24 ? randInt(2, 5) : r.age <= 29 ? randInt(-1, 2) : randInt(-3, 0)) + (gap > 6 ? 2 : gap < -6 ? -1 : 0), 30, 92);
   const out = { name: r.name, last: { ...r.season } };
   r.season = { goals: 0, assists: 0, apps: 0, rating: 0 };
   if (r.age >= 36 && chance(0.5)) { r.retired = true; out.retired = true; return out; }

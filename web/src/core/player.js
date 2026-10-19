@@ -1,6 +1,7 @@
 import { STAT_KEYS, POSITIONS, GROWTH } from './data.js';
 import { clamp, lerp } from './rng.js';
 import { RELATION_DEFAULTS } from './chirp/relationships.js';
+import { potentialMult, styleGrowth } from './character.js';
 
 /**
  * @param {{name:string, position:string, avatar?:object, number?:number, statBonus?:Record<string, number>}} setup
@@ -98,7 +99,9 @@ export function ageFactor(age) {
 export function addProgress(player, stat, amount) {
   if (!(amount > 0)) return 0;
   const room = Math.max(0.06, 1 - player.stats[stat] / 105);
-  player.progress[stat] += amount * growthMult(player, stat) * ageFactor(player.age) * room;
+  // Potansiyel tavanı ve oyun tarzı (ilgili statlarda bonus)
+  const pot = player.potential ? potentialMult(player, ovr(player)) : 1;
+  player.progress[stat] += amount * growthMult(player, stat) * ageFactor(player.age) * room * pot * styleGrowth(player, stat);
   let gained = 0;
   while (player.progress[stat] >= 1 && player.stats[stat] < 99) {
     player.progress[stat] -= 1;

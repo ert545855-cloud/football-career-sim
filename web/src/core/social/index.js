@@ -15,6 +15,7 @@ import { BEATS2, CLOSERS2, CONTEXT_BEATS, OPENER_SETS, OPENERS2, REACTIONS2 } fr
 import { isWinterWeek, monthName, weekWeather } from '../weather.js';
 import { ensureHome, homeOf, homeScore } from './home.js';
 import { rollSocialEvents } from './events.js';
+import { changePersona } from '../character.js';
 
 export * from './data.js';
 export * from './home.js';
@@ -260,6 +261,9 @@ export function finishOuting(state, outing) {
   changeMorale(p, t.morale + clamp(Math.round(avg), -3, 4));
   if (t.prestige >= 3) changeFame(p, 0.5);
   if (outing.venueId === 'home') changeRel(p, 'teammates', 2);
+  // Kişilik: gece hayatı profesyonelliği, takımla vakit liderliği etkiler
+  if (outing.venueId === 'bar') changePersona(state, 'professionalism', -0.5);
+  if (outing.personKind === 'teammate' || outing.kind === 'teammate') changePersona(state, 'leadership', 0.3);
 
   let stage = null;
   let mood = avg >= 3 ? 'positive' : avg >= 0 ? 'neutral' : 'negative';

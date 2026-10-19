@@ -11,6 +11,8 @@ import { buyItem } from '../src/core/economy.js';
 import { clubRating } from '../src/core/league.js';
 import { MentorManager } from '../src/core/mentor/index.js';
 import { finishTournament, playNationalMatch, startTournament, tournamentEligible } from '../src/core/national.js';
+import { resolveElection } from '../src/core/living.js';
+import { runSummerCamp, summerCampDue } from '../src/core/summerCamp.js';
 
 /** Mentorluk kararları: sezon başı en iyi adayı seç (Çalışkan öncelikli), haftada bir buluş, gençleri kabul et. */
 export function playMentor(state) {
@@ -97,6 +99,7 @@ export function playWeek(state, humanSkill = 0.5) {
     if (state.pending.injury) chooseTreatment(state, 'rest');
   }
   state.pending.coachChange = null;
+  state.pending.monthAward = null;
   handleOffers(state);
   if (out.weekEnd.seasonOver) {
     if (tournamentEligible(state)) {
@@ -104,7 +107,9 @@ export function playWeek(state, humanSkill = 0.5) {
       finishTournament(state, fakeGame(0.5, humanSkill));
     }
     const report = endSeason(state);
+    if (state.pending.election) resolveElection(state, 'neutral');
     handleOffers(state);
+    if (summerCampDue(state)) runSummerCamp(state, ['fitness', 'tactics', 'technique'][Math.floor(Math.random() * 3)]);
     return { out, report };
   }
   return { out };
