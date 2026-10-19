@@ -11,6 +11,7 @@ import { addProgress, changeEnergy, changeFame, changeMorale, changeRel, form, o
 import { HOME_NATION, NATIONAL_TEAMS, NATIONS, callUpScore, ensureNational, nationByShort } from './national.js';
 import { buildEvents, buildMoments } from './match.js';
 import { fatigueAt, weatherFor } from './weather.js';
+import { nationLineup } from './lineups.js';
 
 export const CAMP_SLOTS = 2; // maç başına kamp hakkı
 export const TOURNEY_SLOTS = 1;
@@ -199,6 +200,14 @@ export function doCampAction(state, id, result = null) {
   return { ok: true, text, changes };
 }
 
+/** Milli takımın sahadaki 10'u (oyuncu hariç): kalıcı kamp kadrosundan */
+function campXI(state, level) {
+  const sq = squadFor(state, level).slice(0, 11).map((p) => ({ name: p.name, pos: p.pos, num: p.num }));
+  const i = sq.findIndex((p) => p.pos === state.player.position);
+  if (i >= 0) sq.splice(i, 1);
+  return sq;
+}
+
 /** Kampın sıradaki maçı: kulüp maç ekranıyla uyumlu nesne */
 export function planCampMatch(state) {
   const camp = activeCamp(state);
@@ -241,6 +250,8 @@ export function planCampMatch(state) {
     big: { kind: stage === 'final' ? 'final' : 'national', title: `${my.name} · ${fx.comp}`, nerves, tempo: 1 + nerves * 0.35, skillMult: (1 - nerves * 0.15) * (camp.prep ? 1.05 : 1) * (1 + (camp.chem - 50) / 1000), cool: false },
     comp: fx.comp,
     events, moments,
+    lineups: { my: campXI(state, level), opp: nationLineup(nation.short, level) },
+    goals: [],
     score: { my: 0, opp: 0 },
     tally: { rating: 0, goals: 0, assists: 0, won: 0, lost: 0, progress: [] },
   };

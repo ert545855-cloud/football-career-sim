@@ -3,7 +3,7 @@
 // Pop sesi: four-on-the-floor davul, pompalanan akorlar (kick'te kısılır), detune saw akor, kare dalga arpej, gecikmeli lead.
 import { audioCtx, onUnlock } from '../audio.js';
 import {
-  TRACKS, PLAYLISTS, STEPS_PER_BAR, DRUMS, BASS, CHORDS, ARP, LOOP_BARS,
+  TRACKS, PLAYLISTS, STEPS_PER_BAR, DRUMS, BASS, CHORDS, ARP, LOOP_BARS, LOOP_FROM,
   chordDegree, chordNotes, composeMelody, degreeToMidi, layersFor,
 } from './compose.js';
 
@@ -355,7 +355,8 @@ function stopTimer() {
 }
 
 function level() {
-  return M.enabled ? M.vol * 0.42 * (M.duck ? 0.3 : 1) : 0;
+  // Mini oyunda müzik tamamen kesilmez, sadece hafifçe kısılır
+  return M.enabled ? M.vol * 0.42 * (M.duck ? 0.55 : 1) : 0;
 }
 function applyLevel(time = 0.4) {
   if (!M.ctx) return;
@@ -369,19 +370,24 @@ function switchTo(id) {
   const tr = TRACKS[id];
   if (!tr || !M.ctx) return;
   const fresh = M.id !== id;
+  const wasPlaying = !!M.track && !!M.timer;
   M.id = id;
   M.track = tr;
   M.melody = composeMelody(tr);
   M.loops = 0;
   if (fresh) {
-    M.step = 0;
-    M.next = M.ctx.currentTime + 0.12;
-    // yumuşak geçiş: kısa kısıp yeni parçayla aç
+    // Bir parça çalarken geçiş: sessizliğe düşmeden, yeni parça girişi atlayıp ritimle başlar (kesilme hissi yok)
+    M.step = wasPlaying && id !== 'story' ? LOOP_FROM * STEPS_PER_BAR : 0;
+    M.next = M.ctx.currentTime + 0.06;
     const t = M.ctx.currentTime;
     M.out.gain.cancelScheduledValues(t);
-    M.out.gain.setValueAtTime(Math.min(M.out.gain.value, level()), t);
-    M.out.gain.linearRampToValueAtTime(0.0001, t + 0.1);
-    M.out.gain.linearRampToValueAtTime(level(), t + 1.2);
+    M.out.gain.setValueAtTime(Math.max(0.0001, M.out.gain.value), t);
+    if (wasPlaying) {
+      M.out.gain.linearRampToValueAtTime(level() * 0.6, t + 0.25);
+      M.out.gain.linearRampToValueAtTime(level(), t + 1.1);
+    } else {
+      M.out.gain.linearRampToValueAtTime(level(), t + 1.2);
+    }
   }
   M.listeners.forEach((fn) => fn(nowPlaying()));
   if (M.enabled) startTimer();
@@ -414,7 +420,16 @@ export function playMusic(id) {
   const list = PLAYLISTS[id] || null;
   M.want = { id, list };
   if (id !== 'story') M.intensity = null;
+  // iOS bazen bağlamı askıya alır (bildirim, arama): devam ettir
+  const ctx = audioCtx();
+  if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
   start();
+}
+
+/** Çalan bir şey varsa ona dokunma (maç ekranı: şarkı kesilmeden devam eder); yoksa kariyer listesini başlat */
+export function keepMusic(fallback = 'career') {
+  if (M.track && M.timer && M.enabled) return;
+  playMusic(fallback);
 }
 
 /** Hikâye/maç için yoğunluk (0 sakin piyano … 3 tam pop) */

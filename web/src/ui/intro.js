@@ -3,8 +3,8 @@
 // Dokun: yazıyı tamamla / sonraki repliğe geç. "Atla" ile doğrudan isim ekranına.
 // Mantıksal tuval 180×320 birim; her şey tam sayı birimlerle çizilir (piksel sanat görünümü).
 import { el } from './dom.js';
-import { drawPixelPlayer, drawPixelBall } from '../games/pixel/sprites.js';
-import { defaultLook, PW, PH } from '../games/pixel/playerPixels.js';
+import { drawPixelPlayer, drawPixelBall, crispScale, SPRITE_SCALE, SPRITE_W, SPRITE_H } from '../games/pixel/sprites.js';
+import { defaultLook } from '../games/pixel/playerPixels.js';
 import { npcLook } from '../games/pixel/looks.js';
 import { drawSprite } from '../assets/sprites.js';
 import { playMusic, setMusicIntensity } from '../music/player.js';
@@ -114,12 +114,12 @@ function lamp(c, x, y, on = true) {
 function person(c, look, x, y, h, o = {}) {
   drawPixelPlayer(c, x, y, h, look, { dir: 'side', shadow: true, ...o });
   if (o.mustache) {
-    const s = h / PH;
-    const left = x - (PW * s) / 2;
-    const top = y - h + s * 0.5 - (o.lift || 0);
-    for (const col of [11, 12, 13, 14]) {
-      const gx = o.flip ? PW - 1 - col : col;
-      R(c, left + gx * s, top + 8 * s, Math.ceil(s), Math.ceil(s), '#2a201b');
+    const s = crispScale(c, (h * SPRITE_SCALE) / SPRITE_H);
+    const left = x - (SPRITE_W * s) / 2;
+    const top = y - SPRITE_H * s + s * 0.5 - (o.lift || 0);
+    for (const col of [9, 10, 11]) {
+      const gx = o.flip ? SPRITE_W - 1 - col : col;
+      R(c, left + gx * s, top + 5 * s, Math.ceil(s), Math.ceil(s), '#2a201b');
     }
   }
 }

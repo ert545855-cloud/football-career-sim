@@ -14,7 +14,7 @@ import { passSkill, kickFromPath } from './drawPassLogic.js';
 import { FixedStep, createBall, kick, stepBall, createBody, steer, stepBody, bodySpeed, interceptBall, restPoint, collideBodies, firstTouch, groundSpeed, predict, envFor, applyGrip } from './physics.js';
 import { weatherFx } from './weatherFx.js';
 import { drawPixelPlayer, drawMovingPlayer, drawPixelBall } from './pixel/sprites.js';
-import { npcLook, lookFromAvatar } from './pixel/looks.js';
+import { npcLook, lookFromAvatar, keeperLook } from './pixel/looks.js';
 import { sfx, buzz } from '../audio.js';
 
 export function playDrawPass(host, opts) {
@@ -27,6 +27,10 @@ export function playDrawPass(host, opts) {
     const tryout = scenario === 'tryout';
     // OFSAYT: son bölgede (maçta ve atak zincirinde) savunma çizgisinin gerisindeki arkadaşa pas = ofsayt
     const offsideOn = final && opts.offside !== false;
+    // POZİSYON BİTSİN: son bölgede isabetli pastan sonra arkadaşın vurur; yalnız gol olursa asist sayılır
+    const finishOn = final && !tryout && opts.finish !== false && !opts.warm;
+    const gkLook = keeperLook('#22d3ee', 4);
+    const GK = { u: 0, to: 0, dive: 0 };
     const level = clamp(opts.level ?? 0, 0, 1);
     const myClub = opts.myKit || { colors: ['#2563eb', '#ffffff'] };
     const oppClub = opts.oppKit || { colors: ['#b91c1c', '#ffffff'] };
@@ -104,6 +108,7 @@ export function playDrawPass(host, opts) {
           look: npcLook(oppClub, 101 + i * 13 + (opts.seed || 0), [4, 5, 6, 8][i]), st: { ph: Math.random() * 4, last: 'down' },
         })),
         spacing: 6 * k,
+        goalY: 6 * k, goalHalf: W * 0.12,
         startR: 70 * k, // çizim topa bu kadar yakın başlamalı
         minLen: 40 * k,
         stealR: 22 * k * sk.steal,
@@ -250,6 +255,7 @@ export function playDrawPass(host, opts) {
         sfx('miss');
         return;
       }
+      if (outcome === 'success' && finishOn) S.finishAt = 0.55; // pas tuttu → arkadaşın bitirişi
       if (outcome === 'success') {
         big.show(curved ? 'FALSOLU PAS!' : 'İSABETLİ PAS!', '#c6ff3d', 50);
         particles.burst(S.ball.x, S.ball.y, { n: curved ? 34 : 24, colors: ['#c6ff3d', '#fff'], speed: 220, life: 0.8 });
@@ -296,7 +302,13 @@ export function playDrawPass(host, opts) {
       }
       setTimeout(() => {
         stage.stop();
-        resolve({ success, accuracy, outcome: S.outcome, curve: path.valid ? path.curve : 0, through: !!S.through && success });
+        const fin = S.fin;
+        resolve({
+          success, accuracy, outcome: S.outcome, curve: path.valid ? path.curve : 0, through: !!S.through && success,
+          // Pozisyonun sonucu: yalnız gol olursa asist
+          finish: fin ? fin.outcome : null, assistGoal: fin ? fin.outcome === 'goal' : (finishOn ? false : undefined),
+          shooterNum: fin ? fin.num : null,
+        });
       }, 50);
     }
 
@@ -486,6 +498,26 @@ export function playDrawPass(host, opts) {
       return false;
     }
 
+    /** Arkadaşın şutu: gol olasılığı pasın isabetine, ara pasa ve takım kalitesine bağlı */
+    function startFinish() {
+      const m = L.mates[S.received] || L.mates[0];
+      const c = Number.isFinite(S.clearance) ? clamp(S.clearance / (50 * L.k), 0, 1) : 1;
+      const acc = clamp(0.45 + 0.3 * c + 0.25 * Math.min(1, Math.abs(path.curve) * 1.5) - (S.heavy ? 0.25 : 0), 0, 1);
+      const distM = Math.hypot(m.x - L.W / 2, m.y) / L.ppm;
+      const pGoal = clamp(0.12 + 0.26 * acc + (S.through ? 0.14 : 0) + ((opts.teamQ ?? 0.5) - 0.5) * 0.2 - Math.max(0, distM - 14) * 0.012, 0.06, 0.62);
+      const r = Math.random();
+      const outcome = r < pGoal ? 'goal' : r < pGoal + (1 - pGoal) * 0.55 ? 'save' : 'miss';
+      const u = outcome === 'miss' ? (Math.random() < 0.5 ? -1 : 1) * lerp(1.15, 1.5, Math.random()) : (Math.random() < 0.5 ? -1 : 1) * lerp(0.3, 0.9, Math.random());
+      GK.to = outcome === 'save' ? clamp(u, -0.95, 0.95) : outcome === 'goal' ? -Math.sign(u) * lerp(0.2, 0.6, Math.random()) : u * 0.5;
+      S.fin = { t: 0, T: 0.6, x0: m.x, y0: m.y - 6 * L.k, u, outcome, num: m.num, done: false };
+      S.phase = 'finish';
+      S.ts = 1;
+      S.tsTarget = 1;
+      m.st.kick = 0.25;
+      sfx('kick');
+      buzz('shot');
+    }
+
     const stage = createStage(host, {
       tempo: opts.tempo ?? 1,
       update(dt) {
@@ -557,7 +589,38 @@ export function playDrawPass(host, opts) {
           if (S.trail.length > 26) S.trail.shift();
         } else if (S.phase === 'after') {
           S.afterT += dt;
-          if (S.afterT > 1.5) finish();
+          if (S.finishAt != null && S.afterT > S.finishAt) { S.finishAt = null; startFinish(); }
+          else if (S.finishAt == null && S.afterT > 1.5) finish();
+        } else if (S.phase === 'finish') {
+          // Arkadaşın şutu kaleye uçar, kaleci uzanır
+          const f = S.fin;
+          f.t += dt;
+          const p = clamp(f.t / f.T, 0, 1);
+          const gx = L.W / 2 + f.u * L.goalHalf;
+          b.x = lerp(f.x0, gx, p);
+          b.y = lerp(f.y0, L.goalY + 4 * L.k, p);
+          b.h = Math.sin(Math.PI * p) * 0.6;
+          b.rot += dt * 14;
+          GK.u = lerp(GK.u, GK.to, Math.min(1, dt * 7));
+          GK.dive = clamp((GK.to - GK.u) * 3, -1, 1) * (p > 0.25 ? 1 : 0) + Math.sign(GK.to) * Math.min(1, p * 1.6) * 0.8;
+          if (p >= 1 && !f.done) {
+            f.done = true;
+            if (f.outcome === 'goal') {
+              big.show('GOL! ASİST!', '#c6ff3d', 58);
+              particles.burst(b.x, b.y, { n: 40, colors: ['#c6ff3d', '#ffcf3d', '#fff'], speed: 320, gravity: 500, life: 1.2, size: 5 });
+              stage.shake(10);
+              sfx('goal');
+              buzz('goal');
+            } else if (f.outcome === 'save') {
+              big.show('KALECİ KURTARDI', '#38bdf8', 44);
+              sfx('save');
+              buzz('save');
+            } else {
+              big.show('AUTA GİTTİ', '#ff5d6c', 44);
+              sfx('miss');
+            }
+          }
+          if (f.t > f.T + 1.3) finish();
         }
       },
 
@@ -635,6 +698,20 @@ export function playDrawPass(host, opts) {
           ctx.fillRect(W - 14 * k - (up ? 0 : 8 * k), fy - 4 * k - up * 14 * k, 10 * k, 7 * k);
           ctx.fillStyle = '#e11d48';
           ctx.fillRect(W - 14 * k - (up ? 0 : 8 * k) + 5 * k, fy - 4 * k - up * 14 * k, 5 * k, 7 * k);
+        }
+        // Kale ve kaleci (son bölge): arkadaşın bitirişi buraya
+        if (finishOn) {
+          const gx0 = W / 2 - L.goalHalf;
+          ctx.fillStyle = 'rgba(255,255,255,.12)';
+          ctx.fillRect(gx0, 0, L.goalHalf * 2, L.goalY + 4 * k);
+          ctx.strokeStyle = 'rgba(255,255,255,.25)';
+          ctx.lineWidth = 1;
+          for (let x = gx0; x <= gx0 + L.goalHalf * 2; x += 6 * k) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, L.goalY + 4 * k); ctx.stroke(); }
+          ctx.fillStyle = '#f8fafc';
+          ctx.fillRect(gx0 - 3 * k, 0, 4 * k, L.goalY + 8 * k);
+          ctx.fillRect(gx0 + L.goalHalf * 2 - 1 * k, 0, 4 * k, L.goalY + 8 * k);
+          ctx.fillRect(gx0 - 3 * k, L.goalY + 4 * k, L.goalHalf * 2 + 6 * k, 3 * k);
+          drawPixelPlayer(ctx, W / 2 + GK.u * L.goalHalf, L.goalY + 44 * k, L.ph, gkLook, { dir: 'down', frame: S.phase === 'finish' ? 'lunge' : 'ready', rot: GK.dive * 0.9 });
         }
         // oyuncular: y sırasına göre (arkadaki önce)
         const drawables = [];

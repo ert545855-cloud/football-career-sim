@@ -51,7 +51,7 @@ export function settingsScreen(app) {
         <span class="muted">Yükledikten sonra tam ekran açılır ve internet olmadan da oynanır.</span>
         ${app.installPrompt ? '<button class="btn primary block" style="margin-top:10px" data-act="install">Şimdi yükle</button>' : ''}
       </div>
-      <p class="muted small center" style="margin-top:18px">Krampon v1.0 · Kulüpler ve isimler kurgusaldır.</p>`,
+      <p class="muted small center" style="margin-top:18px">New Football Stars v1.1 · Kulüpler, sponsorlar ve isimler kurgusaldır.</p>`,
     mount(el) {
       mountCloudSection(app, el);
       const np = el.querySelector('[data-np]');

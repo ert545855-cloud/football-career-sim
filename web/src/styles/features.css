@@ -646,3 +646,62 @@
 .treat .tr-top { display: flex; justify-content: space-between; gap: 8px; }
 .treat .tr-top span { font-size: 12px; font-weight: 800; opacity: .85; }
 .treat .tr-desc { font-size: 12.5px; font-weight: 600; opacity: .8; }
+
+/* ─────────── Canlı yayın (maç ekranı) ─────────── */
+.bc-wrap { margin: -6px -16px 0; }
+.bc { position: relative; width: 100%; aspect-ratio: 16 / 10.2; overflow: hidden; background: #0a0f18; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+@media (min-width: 560px) { .bc-wrap { margin: 0; } .bc { border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.1); } }
+.bc-cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.bc-sb { position: absolute; left: 7px; top: 7px; display: flex; align-items: stretch; height: 25px; border-radius: 5px; overflow: hidden; background: rgba(7, 12, 26, 0.92); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45); font-weight: 900; font-size: 12.5px; color: #fff; letter-spacing: 0.02em; }
+.bc-time { display: grid; place-items: center; min-width: 46px; padding: 0 7px; background: rgba(255, 255, 255, 0.09); font-variant-numeric: tabular-nums; }
+.bc-tm { display: flex; align-items: center; gap: 4px; padding: 0 6px; box-shadow: inset 3px 0 0 var(--tc); }
+.bc-tm.r { box-shadow: inset -3px 0 0 var(--tc); }
+.bc-tm .bc-crest, .bc-tm svg { width: 17px; height: 17px; }
+.bc-sc { display: grid; place-items: center; padding: 0 8px; background: #0b1d3a; color: #ffd23f; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bc-sc.score-pop { animation: bcPop 0.6s ease; }
+@keyframes bcPop { 0% { transform: scale(1); } 30% { transform: scale(1.35); background: #ffd23f; color: #0b1d3a; } 100% { transform: scale(1); } }
+.bc-card { position: absolute; right: 7px; top: 7px; display: flex; align-items: center; gap: 6px; padding: 2px 8px 2px 2px; border-radius: 5px; background: rgba(7, 12, 26, 0.92); border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45); }
+.bc-card.off { opacity: 0.6; }
+.bc-face { width: 25px; height: 25px; image-rendering: pixelated; border-radius: 3px; background: linear-gradient(180deg, #2a3d63, #16223b); }
+.bc-card-t b { display: block; font-size: 11px; font-weight: 900; letter-spacing: 0.03em; white-space: nowrap; max-width: 92px; overflow: hidden; text-overflow: ellipsis; }
+.bc-card-t em { font-style: normal; color: #ffd23f; margin-right: 4px; }
+.bc-cond { display: block; width: 74px; height: 4px; margin-top: 3px; border-radius: 2px; overflow: hidden; background: rgba(255, 255, 255, 0.16); }
+.bc-cond u { display: block; height: 100%; width: 100%; background: #22c55e; transition: width 0.4s ease, background 0.4s; }
+.bc-tag { position: absolute; left: 7px; top: 37px; padding: 2px 6px; border-radius: 3px; font-size: 9px; font-weight: 900; letter-spacing: 0.1em; color: #fff; background: rgba(220, 38, 38, 0.92); }
+.bc-tag.live::before { content: '●'; margin-right: 4px; animation: bcBlink 1.2s steps(2) infinite; }
+.bc-tag.replay { background: #ffd23f; color: #111827; }
+@keyframes bcBlink { 50% { opacity: 0.2; } }
+.bc-mini { position: absolute; left: 50%; bottom: 6px; width: 86px; height: 55px; opacity: 0.88; transform: translateX(-50%); border-radius: 3px; border: 1px solid rgba(255, 255, 255, 0.35); box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4); }
+.bc-goal { position: absolute; left: 0; right: 0; top: 38%; display: grid; place-items: center; pointer-events: none; opacity: 0; }
+.bc-goal.on { animation: bcGoal 2.3s ease forwards; }
+.bcg { display: flex; flex-direction: column; align-items: center; min-width: 72%; padding: 5px 20px 7px; color: #fff; text-shadow: 0 2px 0 rgba(0, 0, 0, 0.55); background: linear-gradient(90deg, transparent, var(--c1) 16%, var(--c1) 84%, transparent); border-top: 3px solid var(--c2); border-bottom: 3px solid var(--c2); }
+.bcg b { font-size: 34px; line-height: 1; font-weight: 900; font-style: italic; letter-spacing: 0.05em; }
+.bcg span { font-size: 14px; font-weight: 900; letter-spacing: 0.04em; }
+.bcg em { font-style: normal; margin-right: 6px; color: #ffd23f; }
+.bcg small { font-size: 11px; font-weight: 800; opacity: 0.92; }
+@keyframes bcGoal { 0% { opacity: 0; transform: scale(1.7); } 12% { opacity: 1; transform: scale(1); } 82% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-12px); } }
+.bc-goals { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 6px 16px 0; min-height: 8px; font-size: 11.5px; color: var(--muted); }
+@media (min-width: 560px) { .bc-goals { padding: 6px 2px 0; } }
+.bc-goals > div:last-child { text-align: right; }
+.bc-goals span { display: inline-block; margin: 0 7px 2px 0; white-space: nowrap; }
+.bc-goals > div:last-child span { margin: 0 0 2px 7px; }
+.bc-goals .me { color: var(--accent); font-weight: 800; }
+.bc-goals i { font-style: normal; color: var(--accent); }
+.cond-txt { font-size: 11.5px; font-weight: 800; color: var(--muted); }
+.feed .ln.chant { background: rgba(255, 210, 63, 0.07); border-color: rgba(255, 210, 63, 0.28); font-style: italic; }
+
+.bc-btn { position: absolute; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.25); background: rgba(7, 12, 26, 0.78); color: #fff; font-size: 16px; font-weight: 900; line-height: 1; padding: 0; cursor: pointer; }
+.bc-fs { right: 7px; bottom: 7px; }
+.bc-fs-skip { right: 43px; bottom: 7px; display: none; }
+.bc.bc-full { position: fixed; z-index: 80; left: 0; top: 0; width: 100vw; height: 100dvh; aspect-ratio: auto; border-radius: 0; border: 0; }
+.bc.bc-full .bc-fs-skip { display: grid; }
+.bc.bc-full .bc-mini { width: 120px; height: 77px; }
+.bc.bc-full .bc-sb { height: 30px; font-size: 14px; left: calc(env(safe-area-inset-top, 0px) + 10px); top: 10px; }
+.bc.bc-full .bc-card { top: 10px; right: 10px; }
+.bc.bc-full .bc-tag { top: 46px; left: calc(env(safe-area-inset-top, 0px) + 10px); }
+.bc.bc-full .bc-fs, .bc.bc-full .bc-fs-skip { width: 40px; height: 40px; bottom: 12px; }
+.bc.bc-full .bc-fs { right: 12px; }
+.bc.bc-full .bc-fs-skip { right: 58px; }
+@media (orientation: portrait) {
+  .bc.bc-full { width: 100dvh; height: 100vw; transform-origin: top left; transform: translateX(100vw) rotate(90deg); }
+}

@@ -1,7 +1,13 @@
 // PİKSEL SPRITE ÇİZİCİ — playerPixels ızgaralarını tuvale (önbellekli) çevirir ve keskin (bulanıksız) çizer.
-import { buildPlayer, buildBall, PW, PH, dirFromVelocity, runFrame } from './playerPixels.js';
+import { buildBall, dirFromVelocity, runFrame } from './playerPixels.js';
+import { buildPlayerTall, TW, TH } from './playerTall.js';
 
 export { dirFromVelocity, runFrame };
+
+/** Gerçekçi oranlı oyuncular eski chibi boyuna göre biraz daha uzun çizilir (ince gövde, küçük kafa). */
+export const SPRITE_SCALE = 1.12;
+export const SPRITE_W = TW;
+export const SPRITE_H = TH;
 
 const cache = new Map();
 const MAX = 600;
@@ -43,11 +49,11 @@ function cached(key, make) {
 const lookKey = (L) => JSON.stringify(L);
 
 export function playerCanvas(look, dir = 'down', frame = 'idle') {
-  return cached(`p|${lookKey(look)}|${dir}|${frame}`, () => buildPlayer(look, dir, frame));
+  return cached(`t|${lookKey(look)}|${dir}|${frame}`, () => buildPlayerTall(look, dir, frame));
 }
 
 /** Cihaz piksellerine oturan ölçek: pikseller eşit boyda görünsün. */
-function crispScale(ctx, s) {
+export function crispScale(ctx, s) {
   const dpr = Math.abs(ctx.getTransform?.().a || 1);
   return Math.max(1, Math.round(s * dpr)) / dpr;
 }
@@ -58,15 +64,15 @@ function crispScale(ctx, s) {
  */
 export function drawPixelPlayer(ctx, x, y, h, look, o = {}) {
   const { dir = 'down', frame = 'idle', flip = false, alpha = 1, shadow = true, ring = null, marker = null, rot = 0, lift = 0, label = null } = o;
-  const s = crispScale(ctx, h / PH);
-  const w = PW * s;
-  const hh = PH * s;
+  const s = crispScale(ctx, (h * SPRITE_SCALE) / TH);
+  const w = TW * s;
+  const hh = TH * s;
   ctx.save();
   ctx.globalAlpha = alpha;
   if (shadow) {
     ctx.fillStyle = 'rgba(0,0,0,.32)';
     ctx.beginPath();
-    ctx.ellipse(x, y - s * 0.5, w * 0.34, s * 2.2, 0, 0, Math.PI * 2);
+    ctx.ellipse(x + s, y - s * 0.5, w * 0.46, s * 2.2, 0, 0, Math.PI * 2);
     ctx.fill();
   }
   if (ring) {
@@ -74,7 +80,7 @@ export function drawPixelPlayer(ctx, x, y, h, look, o = {}) {
     ctx.lineWidth = Math.max(1.5, s * 0.9);
     ctx.globalAlpha = alpha * 0.85;
     ctx.beginPath();
-    ctx.ellipse(x, y - s * 0.5, w * 0.42, s * 2.8, 0, 0, Math.PI * 2);
+    ctx.ellipse(x, y - s * 0.5, w * 0.6, s * 2.8, 0, 0, Math.PI * 2);
     ctx.stroke();
     ctx.globalAlpha = alpha;
   }
@@ -82,7 +88,7 @@ export function drawPixelPlayer(ctx, x, y, h, look, o = {}) {
   if (rot) ctx.rotate(rot);
   if (flip) ctx.scale(-1, 1);
   ctx.imageSmoothingEnabled = false;
-  // ızgaranın 27. satırı (dış hat) ayak hizası
+  // ızgaranın son satırı (dış hat) ayak hizası
   ctx.drawImage(playerCanvas(look, dir, frame), -w / 2, -hh + s * 0.5, w, hh);
   ctx.restore();
   if (marker) {

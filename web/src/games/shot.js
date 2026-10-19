@@ -471,7 +471,7 @@ export function playShot(host, opts) {
         ctx.clip();
         ctx.font = '800 10px system-ui, sans-serif';
         ctx.fillStyle = '#c6ff3d';
-        const msg = 'KRAMPON  •  FUTBOL KARİYERİ  •  ';
+        const msg = 'NEW FOOTBALL STARS  •  TURBO KOLA  •  YILDIZ BANK  •  ';
         const mw = ctx.measureText(msg).width;
         for (let x = -((t * 30) % mw); x < W; x += mw) ctx.fillText(msg, x, L.hy - 4);
         ctx.restore();

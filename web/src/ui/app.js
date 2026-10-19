@@ -13,7 +13,7 @@ import { DIFFICULTY, DIFF_IDS, ensureTraining, fatigueFactor } from '../core/tra
 import { playerLook } from '../core/cosmetics.js';
 import { isWinterWeek, snowyCountry, weekWeather } from '../core/weather.js';
 import { setSnow } from './snow.js';
-import { playMusic } from '../music/player.js';
+import { keepMusic, playMusic } from '../music/player.js';
 import { lookFromAvatar } from '../games/pixel/looks.js';
 import { buzz, sfx } from '../audio.js';
 import { crestSVG, icon, playerAvatar } from './art.js';
@@ -157,8 +157,10 @@ export function createApp(rootEl) {
       def.mount?.(screenEl, screenEl);
       this.applyWinter(name, params);
       // Müzik: giriş ekranlarında ana tema, maçta maç parçası, kariyer ekranlarında sırayla pop liste
-      const track = { title: 'title', create: 'title', tryouts: 'title', afterCareer: 'title', retired: 'title', match: 'match', settings: null, intro: null }[name];
-      if (track !== null) playMusic(track || 'career');
+      // Maç ekranı: çalan şarkı kesilmeden devam eder (parça değiştirilmez)
+      const track = { title: 'title', create: 'title', tryouts: 'title', afterCareer: 'title', retired: 'title', match: 'keep', settings: null, intro: null }[name];
+      if (track === 'keep') keepMusic('career');
+      else if (track !== null) playMusic(track || 'career');
       setTimeout(() => this.flushAchievements(), 350);
     },
 

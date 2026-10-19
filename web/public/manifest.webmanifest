@@ -1,7 +1,7 @@
 {
-  "name": "Krampon — Futbol Kariyeri",
-  "short_name": "Krampon",
-  "description": "NSS tarzı mobil futbol kariyer simülasyonu.",
+  "name": "New Football Stars — Futbol Kariyeri",
+  "short_name": "NF Stars",
+  "description": "Piksel sanat futbol kariyer simülasyonu: seçmelerden yıldızlığa.",
   "lang": "tr",
   "start_url": "./",
   "scope": "./",
@@ -9,10 +9,28 @@
   "orientation": "portrait",
   "background_color": "#06110d",
   "theme_color": "#06110d",
-  "categories": ["games", "sports"],
+  "categories": [
+    "games",
+    "sports"
+  ],
   "icons": [
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }

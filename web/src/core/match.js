@@ -7,6 +7,7 @@ import { fatigueAt, weatherFor } from './weather.js';
 import { contextWeights, momentWeights, styleGoals } from './coach.js';
 import { matchInjuryRoll } from './injury.js';
 import { goalBonusFor } from './clauses.js';
+import { clubLineup, pickScorer, shortName } from './lineups.js';
 
 /** İlk 11 kararı: OVR + hoca ilişkisi + form + moral, rakip oyuncuya karşı. */
 export function selection(state) {
@@ -182,10 +183,39 @@ export function planMatch(state, o = {}) {
     big: o.big || bigMatchSetup(state, { myId, oppId, week }),
     events,
     moments,
+    /** Maç kadroları (golcü/asist isimleri) ve gol listesi (skor tabelasında gösterilir) */
+    lineups: { my: clubLineup(state, myId, { mine: true }), opp: clubLineup(state, oppId) },
+    goals: [],
     score: { my: 0, opp: 0 },
     tally: { rating: 0, goals: 0, assists: 0, won: 0, lost: 0, progress: [] },
   };
 }
+
+/**
+ * Gol kaydı: golcü ve asist isimleri. o.me → golü oyuncu attı; o.meAssist → asist oyuncunun.
+ * İsim verilmezse kadrodan mevkiye göre ağırlıklı seçilir.
+ */
+export function recordGoal(match, side, minute, o = {}) {
+  const xi = match.lineups?.[side] || [];
+  const rnd = () => rand(0, 1);
+  let scorer = o.scorer || null;
+  let assist = o.assist;
+  if (!scorer) {
+    const pk = pickScorer(xi, rnd, { assistP: o.assistP ?? 0.62 });
+    scorer = pk.scorer?.name || null;
+    if (assist === undefined) assist = pk.assist?.name || null;
+  } else if (assist === undefined) {
+    const others = xi.filter((p) => p.pos !== 'GK' && p.name !== scorer);
+    assist = others.length && rnd() < (o.assistP ?? 0.55) ? others[Math.floor(rnd() * others.length)].name : null;
+  }
+  if (assist === scorer) assist = null;
+  const g = { side, minute, scorer, assist: assist || null, me: !!o.me, meAssist: !!o.meAssist, kind: o.kind || null };
+  (match.goals ||= []).push(g);
+  return g;
+}
+
+/** "X (asist: Y)" */
+const byLine = (g) => (g?.scorer ? `${shortName(g.scorer)}${g.assist ? ` (asist: ${shortName(g.assist)})` : ''}` : '');
 
 // ─────────────────────────────────────────────────────────────
 // ANLATIM
@@ -199,6 +229,24 @@ const T = {
     'Karambolde top ağlarda! {team} golü attı.',
     'Uzaktan füze! {team} adına harika bir gol.',
     'Hızlı kontra atak! {team} rakibini cezalandırdı.',
+  ],
+  goalS: [
+    ['{scorer} ağları sarstı! {team} sevinç içinde.', 'solo'],
+    ['{scorer} köşeye nefis bir vuruş yaptı, top ağlarda!', 'solo'],
+    ['{scorer} uzaktan füzeyi ateşledi, top doksana!', 'long'],
+    ['Karambolde en hızlı {scorer} davrandı, {team} golü buldu.', 'solo'],
+    ['{scorer} savunmadan sıyrıldı, kaleciyi de geçip topu ağlara yuvarladı.', 'counter'],
+    ['{scorer} penaltı noktasından affetmedi, {team} golü buldu.', 'penalty'],
+    ['{scorer} serbest vuruşu barajın üstünden aşırttı, kaleci çaresiz!', 'freekick'],
+  ],
+  goalA: [
+    ['{assist} ortaladı, {scorer} kafayla filelere gönderdi! {team} golü buldu.', 'cross'],
+    ['{assist} ara pasını verdi, {scorer} kaleciyle karşı karşıya affetmedi.', 'open'],
+    ['{assist} çizgiye indi, geri pas; {scorer} tek vuruşta ağlara gönderdi.', 'cross'],
+    ['{assist} kornerden kesti, {scorer} yükseldi ve gol!', 'corner'],
+    ['Kontra atak! {assist} topu taşıdı, {scorer} bitirdi. {team} sevinç içinde.', 'open'],
+    ['{assist} topuğuyla aktardı, {scorer} plaseyle köşeye bıraktı.', 'open'],
+    ['{assist} ile {scorer} duvar pası yaptı, {scorer} vuruşunda top ağlarda!', 'open'],
   ],
   chance: ['{team} tehlikeli geldi, top az farkla auta çıktı.', '{team} pozisyona girdi ama vuruş zayıf kaldı.', '{team} baskı kuruyor, şut kalenin üstünden.'],
   save: ['{opp} kalecisi devleşti, {team} gol sevincini yarıda bıraktı.', 'Müthiş kurtarış! {team} golü kaçırdı.'],
@@ -232,7 +280,12 @@ export function applyAiEvent(match, ev) {
   const opp = sideName(match, ev.side === 'my' ? 'opp' : 'my');
   if (ev.kind === 'goal') {
     match.score[ev.side] += 1;
-    return { minute: ev.minute, kind: ev.side === 'my' ? 'goal-my' : 'goal-opp', text: `GOL! ${fill(pick(T.goal), { team, opp })} ${scoreLine(match)}` };
+    const g = recordGoal(match, ev.side, ev.minute);
+    const scorer = g.scorer ? shortName(g.scorer) : team;
+    const [tpl, kind] = g.assist ? pick(T.goalA) : pick(T.goalS);
+    g.kind = kind;
+    const text = g.scorer ? fill(tpl, { team, opp, scorer, assist: shortName(g.assist || '') }) : fill(pick(T.goal), { team, opp });
+    return { minute: ev.minute, kind: ev.side === 'my' ? 'goal-my' : 'goal-opp', scorer: g.scorer, text: `GOL! ${text} ${scoreLine(match)}` };
   }
   return { minute: ev.minute, kind: ev.kind, text: fill(pick(T[ev.kind] || T.chance), { team, opp }) };
 }
@@ -271,7 +324,10 @@ export function resolveMoment(match, moment, result, playerName) {
               : result.rebound ? 'kalecinin çeldiği topu boş kaleye gönderdi' : 'filelere gönderdi';
       if (result.panenka) t.rating += 0.3;
       if (moment.context === 'freekick') t.rating += 0.25;
-      lines.push({ minute: m, kind: 'goal-me', text: `GOOOL! ${playerName} ${how}! ${scoreLine(match)}` });
+      const set = moment.context === 'penalty' || moment.context === 'freekick' || result.panenka;
+      const g = recordGoal(match, 'my', m, { me: true, scorer: playerName, assist: set ? null : undefined, assistP: moment.context === 'corner' ? 1 : 0.55, kind: moment.context });
+      g.kind = { penalty: 'penalty', freekick: 'freekick', corner: 'corner', edge: 'long' }[moment.context] || (g.assist ? 'open' : 'solo');
+      lines.push({ minute: m, kind: 'goal-me', scorer: playerName, text: `GOOOL! ${playerName} ${how}!${g.assist ? ` Asist: ${shortName(g.assist)}.` : ''} ${scoreLine(match)}` });
     } else {
       t.lost++;
       const o = result.outcome;
@@ -298,7 +354,8 @@ export function resolveMoment(match, moment, result, playerName) {
       t.goals += 1;
       t.won += 2;
       t.rating += 1.2;
-      lines.push({ minute: m, kind: 'goal-me', text: `GOOOL! ${playerName} ver-kaçla başladı, ${moment.context === 'counter' ? 'son adamı da geçip' : 'savunmanın arkasına sarkıp'} topu ağlara gönderdi! Muhteşem bir atak! ${scoreLine(match)}` });
+      const g = recordGoal(match, 'my', m, { me: true, scorer: playerName, assistP: 1, kind: moment.context === 'counter' ? 'counter' : 'open' });
+      lines.push({ minute: m, kind: 'goal-me', scorer: playerName, text: `GOOOL! ${playerName} ${g.assist ? `${shortName(g.assist)} ile ` : ''}ver-kaçla başladı, ${moment.context === 'counter' ? 'son adamı da geçip' : 'savunmanın arkasına sarkıp'} topu ağlara gönderdi! Muhteşem bir atak! ${scoreLine(match)}` });
     } else if (st === 'pass') {
       t.lost++;
       t.rating -= result.outcome === 'offside' ? 0.15 : 0.3;
@@ -320,16 +377,39 @@ export function resolveMoment(match, moment, result, playerName) {
     if (result.success) {
       t.won++;
       t.rating += 0.3;
-      const pGoal = moment.context === 'final' ? 0.3 + 0.25 * acc : 0.08 + 0.06 * acc;
-      if (chance(pGoal)) {
+      // ASİST KURALI: pas ancak pozisyon tamamen bitip gol olursa asist sayılır.
+      // Mini oyun son pası oynatıp bitirişi de gösterir (assistGoal); otomatik/3B modda olasılıkla belirlenir.
+      const finalBall = moment.context === 'final';
+      const played = result.assistGoal !== undefined;
+      const goal = finalBall && (played ? !!result.assistGoal : chance(0.16 + 0.18 * acc));
+      const xi = match.lineups?.my || [];
+      const shooter = (played && result.shooterNum && xi.find((p) => p.num === result.shooterNum && p.pos !== 'GK'))
+        || pick(xi.filter((p) => p.pos === 'FW').length ? xi.filter((p) => p.pos === 'FW') : [{ name: null }]);
+      const sn = shooter?.name ? shortName(shooter.name) : 'takım arkadaşı';
+      const curved = Math.abs(result.curve || 0) >= 0.25;
+      if (goal) {
         match.score.my += 1;
         t.assists += 1;
         t.rating += 0.7;
-        lines.push({ minute: m, kind: 'goal-my', assist: true, text: `${playerName} ölçülü bir pas çıkardı, takım arkadaşı golü attı! ASİST! ${scoreLine(match)}` });
+        recordGoal(match, 'my', m, { scorer: shooter?.name || null, assist: playerName, meAssist: true, kind: curved ? 'cross' : 'open' });
+        lines.push({ minute: m, kind: 'goal-my', assist: true, scorer: shooter?.name, text: `${playerName} ${curved ? 'falsolu' : 'ölçülü'} bir pas çıkardı, ${sn} vuruşu yaptı ve GOL! ASİST ${playerName}'ın. ${scoreLine(match)}` });
+      } else if (finalBall) {
+        // Pas tuttu ama pozisyon golle bitmedi: asist yok, sadece kilit pas
+        t.rating += curved ? 0.15 : 0.1;
+        const fin = result.finish || pick(['save', 'miss']);
+        lines.push({ minute: m, kind: fin === 'save' ? 'save' : 'chance', text: `${playerName} kilit pası verdi, ${sn} ${fin === 'save' ? 'vurdu ama kaleci kurtardı' : 'vurdu ama top auta gitti'}. Gol olmadığı için asist yok.` });
       } else {
-        const curved = Math.abs(result.curve || 0) >= 0.25;
         if (curved) t.rating += 0.1;
-        lines.push({ minute: m, kind: 'pass', text: curved ? `${playerName} falsolu bir pasla savunmayı deldi.` : `${playerName} isabetli bir pasla oyunu yönlendirdi.` });
+        // Oyun kurma pası: asla asist sayılmaz; bazen atak sürer ve başkası gol atar
+        if (chance(0.05 + 0.04 * acc)) {
+          match.score.my += 1;
+          t.rating += 0.15;
+          const g = recordGoal(match, 'my', m + 1, { kind: 'open' });
+          lines.push({ minute: m, kind: 'pass', text: curved ? `${playerName} falsolu bir pasla savunmayı deldi.` : `${playerName} isabetli bir pasla oyunu kurdu.` });
+          lines.push({ minute: m + 1, kind: 'goal-my', scorer: g.scorer, text: `Atak sürdü ve GOL! ${byLine(g)}. Hücumu ${playerName} başlattı ama son pas onun değil. ${scoreLine(match)}` });
+        } else {
+          lines.push({ minute: m, kind: 'pass', text: curved ? `${playerName} falsolu bir pasla savunmayı deldi.` : `${playerName} isabetli bir pasla oyunu yönlendirdi.` });
+        }
       }
     } else {
       t.lost++;
@@ -343,7 +423,8 @@ export function resolveMoment(match, moment, result, playerName) {
       lines.push({ minute: m, kind: 'chance', text: why || `Pas rakipte kaldı: ${playerName} topu kaptırdı.` });
       if (moment.context === 'buildup' && chance(0.15)) {
         match.score.opp += 1;
-        lines.push({ minute: m + 1, kind: 'goal-opp', text: `Top kaybı pahalıya patladı, rakip golü buldu. ${scoreLine(match)}` });
+        const g = recordGoal(match, 'opp', m + 1, { kind: 'counter' });
+        lines.push({ minute: m + 1, kind: 'goal-opp', scorer: g.scorer, text: `Top kaybı pahalıya patladı: GOL! ${byLine(g)}. ${scoreLine(match)}` });
       }
     }
   } else {
@@ -368,14 +449,17 @@ export function resolveMoment(match, moment, result, playerName) {
       lines.push({ minute: m, kind: 'chance', text: result.card ? `${playerName} rakibini düşürdü, hakem sarı kartını çıkardı!` : `${playerName} faul yaptı, hakem düdüğü çaldı.` });
       if (moment.context === 'threat' && chance(0.12)) {
         match.score.opp += 1;
-        lines.push({ minute: m + 1, kind: 'goal-opp', text: `Serbest vuruştan gelen top ağlarda. ${scoreLine(match)}` });
+        const g = recordGoal(match, 'opp', m + 1, { assist: null, kind: 'freekick' });
+        lines.push({ minute: m + 1, kind: 'goal-opp', scorer: g.scorer, text: `Serbest vuruşu ${g.scorer ? shortName(g.scorer) : 'rakip'} kullandı, top ağlarda. ${scoreLine(match)}` });
       }
     } else {
       t.lost++;
       t.rating -= 0.45;
       if (moment.context === 'threat' && chance(0.42)) {
         match.score.opp += 1;
-        lines.push({ minute: m, kind: 'goal-opp', text: result.method === 'through' ? `${playerName} ara pasını kesemedi, rakip forvet golü buldu. ${scoreLine(match)}` : `${playerName} rakibini durduramadı ve top ağlarda. ${scoreLine(match)}` });
+        const g = recordGoal(match, 'opp', m, { kind: result.method === 'through' ? 'open' : 'solo' });
+        const who = g.scorer ? shortName(g.scorer) : 'rakip forvet';
+        lines.push({ minute: m, kind: 'goal-opp', scorer: g.scorer, text: result.method === 'through' ? `${playerName} ara pasını kesemedi, ${who} golü buldu.${g.assist ? ` Pas: ${shortName(g.assist)}.` : ''} ${scoreLine(match)}` : `${playerName} rakibini durduramadı: ${who} topu ağlara gönderdi. ${scoreLine(match)}` });
       } else {
         lines.push({ minute: m, kind: 'chance', text: `${playerName} geçildi ama kaleci gole izin vermedi.` });
       }

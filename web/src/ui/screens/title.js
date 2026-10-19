@@ -1,4 +1,4 @@
-import { ballSVG, icon } from '../art.js';
+import { icon } from '../art.js';
 import { hasSave } from '../../core/storage.js';
 import { sprite } from '../../assets/sprites.js';
 import { checkCloudOnStart } from '../cloudView.js';
@@ -17,10 +17,8 @@ export function titleScreen(app) {
         <div class="title-tower l">${sprite('light_tower', { h: 190 })}</div>
         <div class="title-tower r">${sprite('light_tower', { h: 190 })}</div>
         <div class="logo">
-          <div class="word">KRAMPON</div>
+          <img class="logo-img" src="./logo.webp" alt="New Football Stars" />
           <div class="tag">Futbol Kariyeri</div>
-          <div class="hero-ball">${ballSVG()}</div>
-          <div class="hero-shadow"></div>
         </div>
         <div class="title-actions">
           ${app.draft ? `<button class="btn primary lg block" data-act="tryouts">${icon('play')} Seçmelere Devam Et</button>` : ''}

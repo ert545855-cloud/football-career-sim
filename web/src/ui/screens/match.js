@@ -12,6 +12,35 @@ import { confetti, el, esc, sleep } from '../dom.js';
 import { sprite } from '../../assets/sprites.js';
 import { FEED_SPRITES } from '../spriteMap.js';
 import { nationalCrest } from '../nationalView.js';
+import { createBroadcast } from '../broadcast.js';
+import { playerCanvas } from '../../games/pixel/sprites.js';
+import { shortName as shortOf } from '../../core/lineups.js';
+
+const CHANTS = [
+  (t) => `Ooo ${t} ooo! Ooo ${t} ooo!`,
+  (t) => `Sonuna kadar ${t}, sonuna kadar!`,
+  () => 'Hep beraber, hep birlikte, bu maçı kazanmaya!',
+  (t) => `${t}! (alkış alkış alkış) ${t}!`,
+  () => 'Bu tribün susmaz, bu tribün yorulmaz!',
+  () => 'Kalk ayağa, kalk ayağa, yürü yürü!',
+];
+
+/** Oyuncunun piksel portresi (kafa + omuzlar) */
+function drawFace(cnv, look) {
+  try {
+    const src = playerCanvas(look, 'down', 'idle');
+    const dpr = Math.min(3, window.devicePixelRatio || 1);
+    const size = cnv.clientWidth || 26;
+    cnv.width = Math.round(size * dpr);
+    cnv.height = Math.round(size * dpr);
+    const g = cnv.getContext('2d');
+    g.imageSmoothingEnabled = false;
+    // ızgara satır 0–14: saç, yüz, boyun, omuz
+    const rows = 15;
+    const k = cnv.height / rows;
+    g.drawImage(src, 0, 0, src.width, rows, (cnv.width - src.width * k) / 2, 0, src.width * k, rows * k);
+  } catch { /* portre olmadan da çalışır */ }
+}
 
 const pickLine = (a) => a[Math.floor(Math.random() * a.length)];
 const WX_KICKOFF = {
@@ -38,7 +67,9 @@ export function matchScreen(app, { match }) {
   const away = match.teams?.away || CLUB_BY_ID[match.awayId];
   const my = match.myKit || CLUB_BY_ID[match.myId];
   const opp = match.oppKit || CLUB_BY_ID[match.oppId];
-  const crest = (t) => (t.national ? nationalCrest('crest', t.national) : crestSVG(t));
+  const crest = (t, cls = 'crest') => (t.national ? nationalCrest(cls, t.national) : crestSVG(t, cls));
+  const hs = home.short || (home.name || '').slice(0, 3).toUpperCase();
+  const as = away.short || (away.name || '').slice(0, 3).toUpperCase();
   const name = s.player.name;
   const shortName = name.split(' ')[0];
 
@@ -50,6 +81,8 @@ export function matchScreen(app, { match }) {
   const w = match.weather;
   if (w && w.id !== 'clear' && w.id !== 'cloudy') timeline.push({ minute: 20 + Math.floor(Math.random() * 45), order: 1, kind: 'wx' });
   timeline.push({ minute: 45, order: 4, kind: 'ht' });
+  // Tribün tezahüratları
+  [8 + Math.floor(Math.random() * 12), 30 + Math.floor(Math.random() * 12), 58 + Math.floor(Math.random() * 12), 80 + Math.floor(Math.random() * 6)].forEach((m) => timeline.push({ minute: m, order: 1, kind: 'chant' }));
   timeline.push({ minute: 90 + match.stoppage, order: 9, kind: 'ft' });
   timeline.sort((a, b) => a.minute - b.minute || a.order - b.order);
 
@@ -58,16 +91,32 @@ export function matchScreen(app, { match }) {
   return {
     tabs: false,
     html: `
-      <div class="scoreboard">
-        <div class="t">${crest(home)}<span class="ellipsis" style="max-width:110px">${esc(home.name)}</span></div>
-        <div class="center"><div class="sc" data-score>0 - 0</div><span class="min" data-min>0'</span></div>
-        <div class="t">${crest(away)}<span class="ellipsis" style="max-width:110px">${esc(away.name)}</span></div>
+      <div class="bc-wrap">
+        <div class="bc" data-bc>
+          <canvas class="bc-cv"></canvas>
+          <div class="bc-sb">
+            <span class="bc-time" data-min>00:00</span>
+            <span class="bc-tm" style="--tc:${home.colors?.[0] || '#fff'}">${crest(home, 'crest bc-crest')}<b>${esc(hs)}</b></span>
+            <span class="bc-sc" data-score>0 - 0</span>
+            <span class="bc-tm r" style="--tc:${away.colors?.[0] || '#fff'}"><b>${esc(as)}</b>${crest(away, 'crest bc-crest')}</span>
+          </div>
+          <div class="bc-card ${match.role === 'starter' ? '' : 'off'}" data-card>
+            <canvas class="bc-face"></canvas>
+            <div class="bc-card-t"><b><em>${s.player.number}</em>${esc(shortName.toUpperCase())}</b><i class="bc-cond" data-cond><u></u></i></div>
+          </div>
+          <span class="bc-tag live" data-tag>CANLI</span>
+          <canvas class="bc-mini"></canvas>
+          <div class="bc-goal" data-goalbanner></div>
+          <button class="bc-btn bc-fs" data-fs aria-label="Tam ekran">⛶</button>
+          <button class="bc-btn bc-fs-skip" data-fs-skip aria-label="Sıradaki an">»</button>
+        </div>
+        <div class="bc-goals"><div data-gl-h></div><div data-gl-a></div></div>
       </div>
       <div class="row between" style="margin-top:10px">
         <span class="chip ${match.role === 'starter' ? 'accent' : 'warn'}" data-role>${icon('user')} ${roleText}</span>
         <span class="chip">${match.moments.length ? `${match.moments.length} kritik an` : 'Kritik an yok'}</span>
       </div>
-      ${w ? `<div class="wx-strip wx-${w.id}"><span class="wx-e">${w.emoji}</span><b>${esc(w.name)}</b><span>${w.temp}°C</span>${w.windKmh >= 12 ? `<span>${windArrow(w.wind)} ${w.windKmh} km/sa</span>` : ''}<span class="grow"></span>${match.role !== 'out' ? `<span class="cond" data-cond title="Kondisyon">${icon('bolt', 'ico xs')} <i><b style="width:100%"></b></i><em>%100</em></span>` : ''}</div>` : ''}
+      ${w ? `<div class="wx-strip wx-${w.id}"><span class="wx-e">${w.emoji}</span><b>${esc(w.name)}</b><span>${w.temp}°C</span>${w.windKmh >= 12 ? `<span>${windArrow(w.wind)} ${w.windKmh} km/sa</span>` : ''}<span class="grow"></span><span class="cond-txt" data-condtxt>${match.role !== 'out' ? '%100' : ''}</span></div>` : ''}
       ${match.big ? `<div class="big-banner ${match.big.cool ? 'cool' : ''}">${icon(match.big.kind === 'derby' ? 'fire' : match.big.kind === 'final' ? 'trophy' : match.big.kind === 'national' ? 'flag' : 'star', 'ico sm')}<b>${esc(match.big.title)}</b><span>Heyecan %${Math.round(match.big.nerves * 100)}${match.big.cool ? ' · Soğukkanlı' : ''}</span></div>` : ''}
       <div class="mom-bar"><i data-mom></i></div>
       <div class="feed" data-feed></div>
@@ -91,15 +140,59 @@ export function matchScreen(app, { match }) {
       let skipTo = null;
       let momentum = 50;
       let offPitch = false;
-      const condEl = el0.querySelector('[data-cond]');
+      const condEl = el0.querySelector('[data-cond] u');
+      const condTxt = el0.querySelector('[data-condtxt]');
       const updateCond = () => {
-        if (!condEl) return;
+        if (!condEl || match.role === 'out') return;
         const on = match.role === 'starter' || (match.subMinute && minute >= match.subMinute);
         const f = on && !offPitch ? momentFatigue(s, match, Math.min(90, minute)) : momentFatigue(s, match, Math.min(90, match.subOff || minute));
         const pct = match.role === 'bench' && !on ? 100 : conditionPct(f);
-        condEl.querySelector('b').style.width = `${pct}%`;
-        condEl.querySelector('b').style.background = pct < 60 ? 'var(--bad)' : pct < 78 ? '#f59e0b' : 'var(--good)';
-        condEl.querySelector('em').textContent = `%${pct}`;
+        condEl.style.width = `${pct}%`;
+        condEl.style.background = pct < 60 ? 'var(--bad)' : pct < 78 ? '#f59e0b' : '#22c55e';
+        if (condTxt) condTxt.textContent = `Kondisyon %${pct}`;
+      };
+      // ── Canlı yayın ──
+      const bcEl = el0.querySelector('[data-bc]');
+      const meLook = playerLook(s, { club: my });
+      const bc = createBroadcast(bcEl, {
+        myKit: my, oppKit: opp, homeIsMy: match.isHome,
+        lineups: match.lineups || {},
+        me: { look: meLook, num: s.player.number, name: shortName, pos: s.player.position, onPitch: match.role === 'starter' },
+        weather: match.weather,
+        speed: () => app.settings.speed || 1,
+        auto: app.autoplay,
+        names: { home: home.name, away: away.name, homeShort: hs, awayShort: as, city: CLUB_BY_ID[match.homeId]?.city || '' },
+      });
+      bc.onSfx((n) => sfx(n));
+      if (import.meta.env?.DEV) window.__bc = bc;
+      drawFace(el0.querySelector('.bc-face'), meLook);
+      const glH = el0.querySelector('[data-gl-h]');
+      const glA = el0.querySelector('[data-gl-a]');
+      const renderGoals = () => {
+        const homeSide = match.isHome ? 'my' : 'opp';
+        const fmt = (g) => `<span class="${g.me ? 'me' : ''}">⚽ ${esc(g.me ? shortName : shortOf(g.scorer || '') || '?')} ${g.minute}'${g.meAssist ? ' <i>(A: sen)</i>' : ''}</span>`;
+        glH.innerHTML = (match.goals || []).filter((g) => g.side === homeSide).map(fmt).join('');
+        glA.innerHTML = (match.goals || []).filter((g) => g.side !== homeSide).map(fmt).join('');
+      };
+      let chanceAnims = 0;
+      const animate = async (ln, g) => {
+        if (skipTo !== null || app.autoplay) return;
+        const goal = ln.kind === 'goal-my' || ln.kind === 'goal-me' || ln.kind === 'goal-opp';
+        if (goal) {
+          const side = ln.kind === 'goal-opp' ? 'opp' : 'my';
+          const me = ln.kind === 'goal-me';
+          const meAssist = !!g?.meAssist;
+          await bc.play({
+            side, outcome: 'goal', kind: g?.kind || (me ? 'solo' : 'open'),
+            scorer: me ? shortName : g?.scorer, me,
+            assist: meAssist ? shortName : g?.assist ?? undefined, meAssist,
+            assistLabel: meAssist ? shortName : g?.assist ? shortOf(g.assist) : '',
+            replay: me || meAssist,
+          });
+        } else if (ln.ai && ['save', 'post', 'chance'].includes(ln.kind) && (app.settings.speed || 1) === 1 && chanceAnims < 4) {
+          chanceAnims++;
+          await bc.play({ side: ln.side || 'my', outcome: ln.kind === 'save' ? 'save' : ln.kind === 'post' ? 'post' : 'miss', kind: Math.random() < 0.5 ? 'open' : 'long' });
+        }
       };
       let last = performance.now();
       let raf = 0;
@@ -115,6 +208,11 @@ export function matchScreen(app, { match }) {
         void scoreEl.offsetWidth;
         scoreEl.classList.add('score-pop');
       };
+      const clock = (mm) => {
+        const m0 = Math.floor(mm);
+        if (m0 >= 90) return `90+${Math.max(1, m0 - 89)}`;
+        return `${String(m0).padStart(2, '0')}:${String(Math.floor((mm % 1) * 60)).padStart(2, '0')}`;
+      };
       const line = (minuteN, text, kind = '') => {
         const n = el(`<div class="ln ${kind}"><span class="m">${minuteN}'</span><span class="ln-ic">${FEED_SPRITES[kind] ? sprite(FEED_SPRITES[kind], { size: 22 }) : ''}</span><span class="tx"></span></div>`);
         n.querySelector('.tx').textContent = (kind === 'goal-me' ? '⭐ ' : '') + text;
@@ -123,6 +221,7 @@ export function matchScreen(app, { match }) {
       };
       const push = (ln) => {
         line(ln.minute, ln.text, ln.kind);
+        if (ln.kind?.startsWith('goal')) renderGoals();
         if (ln.kind === 'goal-my' || ln.kind === 'goal-me') {
           momentum = Math.min(85, momentum + 18);
           pop();
@@ -149,6 +248,7 @@ export function matchScreen(app, { match }) {
 
       async function playMoment(m) {
         busy = true;
+        bc.pause();
         const type = m.type;
         const weights = GAME_WEIGHTS[type];
         // Büyük maç heyecanı etkin yeteneği düşürür (Soğukkanlı mentor %20 azaltır)
@@ -174,21 +274,35 @@ export function matchScreen(app, { match }) {
           weather: match.weather,
           fatigue,
         });
+        bc.resume();
+        const g0 = (match.goals || []).length;
         const lines = resolveMoment(match, m, result, shortName);
-        lines.forEach((ln) => push({ ...ln, kind: ln.kind === 'goal-me' ? 'goal-me' : ln.kind }));
+        const newGoals = (match.goals || []).slice(g0);
         if (lines.some((l) => l.kind === 'goal-me')) confetti();
+        for (const ln of lines) {
+          push(ln);
+          if (ln.kind?.startsWith('goal')) await animate(ln, newGoals.shift());
+        }
         busy = false;
         last = performance.now();
       }
 
       async function process(item) {
         if (item.kind === 'kickoff') return;
-        if (item.kind === 'ht') { line(45, `İlk yarı sona erdi. ${scoreText()}`, 'whistle'); sfx('shortWhistle'); return; }
+        if (item.kind === 'ht') { line(45, `İlk yarı sona erdi. ${scoreText()}`, 'whistle'); sfx('shortWhistle'); if (skipTo === null) await bc.halfTime(); return; }
+        if (item.kind === 'chant') {
+          const awayEnd = Math.random() < 0.3;
+          line(item.minute, `📣 ${awayEnd ? 'Deplasman tribünü' : 'Tribünler'}: "${pickLine(CHANTS)(awayEnd ? as : hs)}"`, 'chant');
+          sfx('chant');
+          return;
+        }
         if (item.kind === 'wx') { line(item.minute, pickLine(WX_MID[w.id] || ['Hava şartları oyunu zorluyor.']), ''); return; }
         if (item.kind === 'subOff') {
           offPitch = true;
           line(item.minute, `${shortName} kramp girdi, bacakları ağırlaştı. Hoca onu oyundan aldı; tribünler ayakta alkışlıyor.`, 'sub');
           roleEl.innerHTML = `${icon('user')} Oyundan çıktın (${item.minute}')`;
+          bc.setOnPitch(false);
+          el0.querySelector('[data-card]')?.classList.add('off');
           roleEl.className = 'chip warn';
           sfx('shortWhistle');
           return;
@@ -196,6 +310,8 @@ export function matchScreen(app, { match }) {
         if (item.kind === 'sub') {
           line(item.minute, `Oyuncu değişikliği: ${shortName} oyuna giriyor!`, 'sub');
           roleEl.innerHTML = `${icon('user')} Oyundasın (${item.minute}')`;
+          bc.setOnPitch(true);
+          el0.querySelector('[data-card]')?.classList.remove('off');
           roleEl.className = 'chip accent';
           sfx('shortWhistle');
           return;
@@ -203,6 +319,9 @@ export function matchScreen(app, { match }) {
         if (item.kind === 'ft') {
           finished = true;
           line(item.minute, `Maç sona erdi! ${scoreText()}`, 'whistle');
+          const hg = match.isHome ? match.score.my : match.score.opp;
+          const ag = match.isHome ? match.score.opp : match.score.my;
+          bc.fullTime(hg > ag ? 'home' : ag > hg ? 'away' : null);
           sfx('whistle');
           buzz('whistle');
           cancelAnimationFrame(raf);
@@ -212,7 +331,13 @@ export function matchScreen(app, { match }) {
           else app.finishMatch(match);
           return;
         }
-        if (item.ev) { push(applyAiEvent(match, item.ev)); return; }
+        if (item.ev) {
+          const g0 = (match.goals || []).length;
+          const ln = applyAiEvent(match, item.ev);
+          push(ln);
+          await animate({ ...ln, ai: true, side: item.ev.side }, (match.goals || [])[g0]);
+          return;
+        }
         if (item.m) {
           skipTo = null;
           await playMoment(item.m);
@@ -227,18 +352,30 @@ export function matchScreen(app, { match }) {
           const speed = app.settings.speed || 1;
           minute += dt * 4.2 * speed;
           if (skipTo !== null) minute = Math.max(minute, skipTo);
-          minEl.textContent = `${Math.min(90 + match.stoppage, Math.floor(minute))}'`;
+          minEl.textContent = clock(Math.min(90 + match.stoppage, minute));
           updateCond();
           if (Math.random() < 0.1) setMom();
           while (idx < timeline.length && timeline[idx].minute <= minute && !busy && !finished) {
             const item = timeline[idx++];
-            if (item.m) minEl.textContent = `${item.minute}'`;
+            if (item.m) minEl.textContent = clock(item.minute);
             await process(item);
           }
         }
         if (!finished) raf = requestAnimationFrame(tick);
       };
-      raf = requestAnimationFrame(tick);
+      bc.start();
+      // Tünel çıkışı → başlama vuruşu
+      busy = true;
+      bc.intro().catch(() => {}).finally(() => { busy = false; last = performance.now(); raf = requestAnimationFrame(tick); });
+
+      // Tam ekran yatay yayın (dikey telefonda 90° döner)
+      const fsBtn = el0.querySelector('[data-fs]');
+      const setFull = (on) => {
+        bcEl.classList.toggle('bc-full', on);
+        fsBtn.textContent = on ? '✕' : '⛶';
+      };
+      fsBtn.addEventListener('click', (e) => { e.stopPropagation(); app.click(); setFull(!bcEl.classList.contains('bc-full')); });
+      el0.querySelector('[data-fs-skip]').addEventListener('click', (e) => { e.stopPropagation(); skipBtn.click(); });
 
       speedBtn.addEventListener('click', () => {
         app.click();

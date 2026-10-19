@@ -60,7 +60,6 @@ export async function runMiniGame(o) {
       </div>
     </div>`);
   root().appendChild(layer);
-  duckMusic(true);
   await new Promise((res) => {
     if (o.auto) return res();
     layer.querySelector('[data-go]').addEventListener('click', () => {
@@ -70,6 +69,7 @@ export async function runMiniGame(o) {
     }, { once: true });
   });
   layer.querySelector('.game-intro').remove();
+  duckMusic(true); // yalnız oyun sırasında hafifçe kıs
   const host = layer.querySelector('.game-stage');
 
   let result;

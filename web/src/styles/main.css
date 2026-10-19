@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────────────────────
-   KRAMPON — gece stadyumu teması, mobil öncelikli
+   NEW FOOTBALL STARS — gece stadyumu teması, mobil öncelikli
    ───────────────────────────────────────────────────────────── */
 :root {
   --bg: #06110d;
@@ -314,6 +314,8 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.01em; }
 @keyframes flicker { 0%, 100% { opacity: 0.85; } 50% { opacity: 1; } 52% { opacity: 0.7; } 54% { opacity: 1; } }
 .logo { text-align: center; position: relative; z-index: 1; }
 .logo .word { font-size: 52px; font-weight: 900; letter-spacing: 0.06em; line-height: 1; background: linear-gradient(180deg, #fff, #c6ff3d 70%, #84c217); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 6px 20px rgba(198, 255, 61, 0.3)); }
+.logo .logo-img { display: block; width: min(78vw, 330px); height: auto; margin: 0 auto; image-rendering: pixelated; filter: drop-shadow(0 10px 26px rgba(0, 0, 0, 0.55)); animation: logoIn 0.7s cubic-bezier(0.2, 1.4, 0.4, 1); }
+@keyframes logoIn { from { opacity: 0; transform: scale(0.7) translateY(14px); } to { opacity: 1; transform: none; } }
 .logo .tag { margin-top: 10px; color: var(--muted); font-weight: 700; letter-spacing: 0.3em; font-size: 12px; text-transform: uppercase; }
 .hero-ball { width: 150px; height: 150px; margin: 64px auto 0; animation: bounce 1.6s cubic-bezier(0.5, 0, 0.5, 1) infinite; }
 .hero-ball svg { width: 100%; height: 100%; animation: spin 6s linear infinite; }

@@ -4,25 +4,27 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
     <meta name="theme-color" content="#06110d" />
-    <meta name="description" content="Krampon: 17 yaşında bir futbolcunun kariyerini yönet. Antrenman, maçlar, transferler, mağaza ve olaylar. iOS ve Android'de çalışır." />
+    <meta name="description" content="New Football Stars: 17 yaşında bir futbolcunun kariyerini yönet. Antrenman, maçlar, transferler, mağaza ve olaylar. iOS ve Android'de çalışır." />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Krampon" />
+    <meta name="apple-mobile-web-app-title" content="NF Stars" />
     <meta name="format-detection" content="telephone=no" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" type="image/png" href="./icons/icon-192.png" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
-    <title>Krampon — Futbol Kariyeri</title>
+    <title>New Football Stars — Futbol Kariyeri</title>
     <style>
       /* Yükleme ekranı (JS gelene kadar) */
       html, body { background: #06110d; }
-      .boot { position: fixed; inset: 0; display: grid; place-items: center; color: #c6ff3d; font: 900 28px system-ui, sans-serif; letter-spacing: .08em; }
+      .boot { position: fixed; inset: 0; display: grid; place-items: center; color: #ffd23f; font: 900 22px system-ui, sans-serif; letter-spacing: .06em; }
+      .boot img { width: min(62vw, 280px); height: auto; image-rendering: pixelated; animation: bootPulse 1.4s ease-in-out infinite; }
+      @keyframes bootPulse { 50% { transform: scale(1.04); } }
     </style>
   </head>
   <body>
-    <div id="app" class="app"><div class="boot">KRAMPON</div></div>
-    <noscript>Krampon'u oynamak için JavaScript'i etkinleştir.</noscript>
+    <div id="app" class="app"><div class="boot"><img src="./logo.webp" alt="New Football Stars" /></div></div>
+    <noscript>New Football Stars'ı oynamak için JavaScript'i etkinleştir.</noscript>
     <script type="module" src="./src/main.js"></script>
   </body>
 </html>

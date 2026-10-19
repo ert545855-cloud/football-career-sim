@@ -10,7 +10,9 @@ import { MentorManager } from '../mentor/index.js';
 import {
   FRIEND_STAGES, PEOPLE, PERSON_BY_ID, ROMANCE_STAGES, SOCIAL_RULES, TONES, VENUES,
 } from './data.js';
-import { BEATS, CLOSERS, OPENERS, OPENER_OPTIONS, REACTIONS } from './dialogues.js';
+import { BEATS, OPENERS } from './dialogues.js';
+import { BEATS2, CLOSERS2, CONTEXT_BEATS, OPENER_SETS, OPENERS2, REACTIONS2 } from './dialogues2.js';
+import { isWinterWeek, monthName, weekWeather } from '../weather.js';
 import { ensureHome, homeOf, homeScore } from './home.js';
 import { rollSocialEvents } from './events.js';
 
@@ -134,7 +136,33 @@ const fill = (text, vars) => text.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '')
 /**
  * Buluşmayı hazırlar (durumu değiştirmez). companionId 'alone' olabilir (yalnız çıkış: tanışma şansı).
  */
+/** Sohbet bağlamı: son maç, sakatlık, teklifler, milli takım, hoca, kupa, kış, rakip… */
+export function talkContext(state) {
+  const lm = state.career.lastMatch || null;
+  const wk = weekWeather(state);
+  const cup = state.cup;
+  const ctx = {
+    last: lm,
+    injured: (state.flags.injuredWeeks || 0) > 0,
+    offers: !!state.pending.offers?.list?.length,
+    national: (state.national?.log?.[0]?.s === state.calendar.season) && state.calendar.week - (state.national.log[0].w || 0) <= 3,
+    coachNew: state.coach?.reason === 'sacked' && state.coach.since?.s === state.calendar.season && state.calendar.week - state.coach.since.w <= 6,
+    cup: !!cup && !cup.out && !cup.winner && ['qf', 'sf', 'f'].includes(cup.current),
+    winter: isWinterWeek(state.calendar.week),
+    bench: (state.flags.benchStreak || 0) >= 2,
+    fame: state.player.fame || 0,
+    rival: state.rival?.name || null,
+  };
+  ctx.vars = {
+    opp: lm?.opp || 'son', score: lm?.score || '', goals: String(state.career.season?.goals || 0), coach: state.coach?.name || 'hoca',
+    rival: state.rival?.name || 'rakibin', month: monthName(state.calendar.week), weather: (wk?.name || 'güzel').toLocaleLowerCase('tr'), pos: '',
+  };
+  return ctx;
+}
+
 export function startOuting(state, { venueId, tierId, companionId }) {
+  const s0 = ensureSocial(state);
+  s0.seen ||= {};
   const check = canGoOut(state, venueId, tierId, companionId);
   if (!check.ok) return { ok: false, reason: check.reason };
   const t = venueTier(state, venueId, tierId);
@@ -145,14 +173,35 @@ export function startOuting(state, { venueId, tierId, companionId }) {
 
   const beats = [];
   if (!alone) {
-    // Açılış (görseldeki gibi): mekâna göre soru + 4 cevap; arkadaşa flörtöz cevap yerine samimi/esprili
-    let opts = OPENER_OPTIONS[venueId].slice();
-    if (kind !== 'romance') opts = opts.map((o) => (o.tone === 'flirty' ? { tone: venueId === 'bar' ? 'deep' : 'funny', text: venueId === 'bar' ? 'Seninle böyle oturmayı özlemişim.' : 'Kahvesi güzel ama asıl tatlıları efsane!' } : o));
-    beats.push({ id: `open_${venueId}`, line: pick(OPENERS[venueId]), options: opts });
-    const pool = shuffle(BEATS.filter((b) => b.kinds.includes(kind) && (!b.venues || b.venues.includes(venueId))));
-    for (const b of pool.slice(0, SOCIAL_RULES.beatsPerOuting - 1)) {
-      beats.push({ id: b.id, line: fill(b.line, vars), options: b.options.map((o) => ({ ...o, text: fill(o.text, vars) })) });
+    const ctx = talkContext(state);
+    Object.assign(vars, ctx.vars);
+    // Kişi başına son görülen anlar ve açılışlar: tükenene kadar tekrar yok
+    const seen = (s0.seen[p.id] ||= []);
+    const fresh = (b) => !seen.includes(b.id);
+    // Açılış: mekâna göre geniş havuzdan (son kullanılan hariç) + rastgele cevap seti
+    const recentOpen = ((s0.lastOpener ||= {})[p.id] = [].concat(s0.lastOpener[p.id] || []));
+    const allOpen = OPENERS2[venueId] || OPENERS[venueId];
+    const openers = allOpen.filter((l) => !recentOpen.includes(l));
+    const line = pick(openers.length ? openers : allOpen);
+    s0.lastOpener[p.id] = [...recentOpen, line].slice(-5);
+    let opts = pick(OPENER_SETS[venueId]).slice();
+    if (kind !== 'romance') opts = opts.map((o) => (o.tone === 'flirty' ? { tone: venueId === 'bar' ? 'deep' : 'funny', text: pick(venueId === 'bar' ? ['Seninle böyle oturmayı özlemişim.', 'Bu akşam tam ihtiyacım olan şeydi.'] : ['Kahvesi güzel ama asıl tatlıları efsane!', 'Sohbet ilaç gibi geldi.']) } : o));
+    beats.push({ id: `open_${venueId}`, line: fill(line, vars), options: shuffle(opts.map((o) => ({ ...o, text: fill(o.text, vars) }))) });
+    const fits = (b) => b.kinds.includes(kind) && (!b.venues || b.venues.includes(venueId));
+    // Önce duruma bağlı bir an (son maç, sakatlık, transfer…), sonra geniş havuz
+    const ctxPool = shuffle(CONTEXT_BEATS.filter((b) => fits(b) && b.when(ctx) && fresh(b)));
+    let genPool = shuffle([...BEATS, ...BEATS2].filter((b) => fits(b) && fresh(b)));
+    if (genPool.length < SOCIAL_RULES.beatsPerOuting) {
+      // hepsi görüldüyse geçmişi sıfırla
+      s0.seen[p.id] = seen.slice(-4);
+      genPool = shuffle([...BEATS, ...BEATS2].filter((b) => fits(b) && !s0.seen[p.id].includes(b.id)));
     }
+    const chosen = [...ctxPool.slice(0, 1), ...genPool].slice(0, SOCIAL_RULES.beatsPerOuting - 1);
+    for (const b of chosen) {
+      beats.push({ id: b.id, line: fill(b.line, vars), options: shuffle(b.options.map((o) => ({ ...o, text: fill(o.text, vars) }))) });
+      s0.seen[p.id].push(b.id);
+    }
+    s0.seen[p.id] = s0.seen[p.id].slice(-24);
   }
   return {
     ok: true,
@@ -186,9 +235,14 @@ export function answerOuting(state, outing, optIndex) {
   outing.score += delta;
   outing.picks.push(opt.tone);
   const mood = delta >= 4 ? 'positive' : delta >= 0 ? 'neutral' : 'negative';
-  const pool = REACTIONS[outing.kind] || REACTIONS.friend;
+  const pool = REACTIONS2[outing.kind] || REACTIONS2.friend;
   outing.i += 1;
-  return { tone: opt.tone, delta, mood, reply: fill(pick(pool[mood]), outing.vars), done: outing.i >= outing.beats.length };
+  // aynı buluşmada aynı tepki iki kez çıkmasın
+  outing.used ||= [];
+  const options = pool[mood].filter((r) => !outing.used.includes(r));
+  const reply = pick(options.length ? options : pool[mood]);
+  outing.used.push(reply);
+  return { tone: opt.tone, delta, mood, reply: fill(reply, outing.vars), done: outing.i >= outing.beats.length };
 }
 
 /**
@@ -254,7 +308,7 @@ export function finishOuting(state, outing) {
     { key: 'fame', label: 'Ün', delta: round1(p.fame - before.fame) },
   ].filter((c) => c.delta);
   if (outing.companionId !== 'alone' && outing.score) changes.unshift({ key: "rel", label: outing.person.name, delta: round1(outing.score * 0.8 + 1) });
-  return { changes, closer: fill(pick(CLOSERS[mood]), outing.vars), mood, stage, events, met };
+  return { changes, closer: fill(pick(CLOSERS2[mood]), outing.vars), mood, stage, events, met };
 }
 
 /** Hafta sonu: görüşülmeyen sevgili ilişkisi soğur; evin konforu enerji/moral verir */

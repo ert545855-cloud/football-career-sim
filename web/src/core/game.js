@@ -313,6 +313,8 @@ export function completeMatch(state, match) {
   }
 
   const opp = CLUB_BY_ID[match.oppId].name;
+  // Sohbetler ve haberler için son maç
+  state.career.lastMatch = { res: summary.result, score: `${summary.score.my}-${summary.score.opp}`, opp, goals: summary.goals, assists: summary.assists, weather: match.weather?.id || null, s: match.season, w: match.week };
   const resTxt = { W: 'Galibiyet', D: 'Beraberlik', L: 'Mağlubiyet' }[summary.result];
   let news = `${resTxt}: ${summary.scoreLine}`;
   if (summary.played) news += ` · Not ${summary.rating.toFixed(1)}`;

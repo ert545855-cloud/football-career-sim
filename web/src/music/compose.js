@@ -7,7 +7,7 @@ export const STEPS_PER_BAR = 16;
 
 /** Parçalar (isimler ve melodiler tamamen özgün) */
 export const TRACKS = {
-  title: { title: 'Krampon', mood: 'Ana tema', bpm: 122, root: 50, scale: 'major', prog: [1, 5, 6, 4], drums: 'four', bass: 'pump8', chords: 'stab', lead: 'bright', seed: 7, arp: true, intensity: 3 },
+  title: { title: 'New Football Stars', mood: 'Ana tema', bpm: 122, root: 50, scale: 'major', prog: [1, 5, 6, 4], drums: 'four', bass: 'pump8', chords: 'stab', lead: 'bright', seed: 7, arp: true, intensity: 3 },
   career: { title: 'Yükseliş', mood: 'Kariyer', bpm: 108, root: 53, scale: 'major', prog: [6, 4, 1, 5], drums: 'pop', bass: 'synco', chords: 'pluck', lead: 'soft', seed: 21, arp: true, intensity: 3 },
   city: { title: 'Mahalle Işıkları', mood: 'Kariyer', bpm: 114, root: 55, scale: 'major', prog: [4, 5, 3, 6], drums: 'pop', bass: 'synco', chords: 'offbeat', lead: 'bright', seed: 33, arp: true, intensity: 3 },
   groove: { title: 'Soyunma Odası', mood: 'Kariyer', bpm: 100, root: 48, scale: 'major', prog: [2, 5, 1, 6], drums: 'pop', bass: 'walk', chords: 'pluck', lead: 'soft', seed: 47, arp: false, intensity: 3 },

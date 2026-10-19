@@ -88,6 +88,11 @@ const SFX = {
   levelup: () => { [523, 659, 784, 1046].forEach((f, i) => tone(f, 0.18, { type: 'triangle', gain: 0.14, delay: i * 0.08 })); },
   error: () => tone(200, 0.18, { type: 'sawtooth', gain: 0.08, slide: -60 }),
   swish: () => noise(0.25, { gain: 0.2, freq: 3000, q: 0.7, sweep: -1500 }),
+  // Tribün tezahüratı: üç alkış + kalabalık uğultusu
+  chant: () => {
+    [0, 0.28, 0.56, 1.1, 1.38, 1.66].forEach((d) => noise(0.07, { gain: 0.22, freq: 1700, q: 0.9, delay: d }));
+    noise(2.2, { gain: 0.14, freq: 420, q: 0.6, attack: 0.3, sweep: 120 });
+  },
   step: () => noise(0.05, { gain: 0.08, freq: 400, type: 'lowpass' }),
   tick: () => tone(1200, 0.03, { type: 'square', gain: 0.04 }),
   engine: () => { tone(62, 1.1, { type: 'sawtooth', gain: 0.13, slide: 150, attack: 0.05 }); tone(124, 1.1, { type: 'square', gain: 0.04, slide: 260, attack: 0.05 }); noise(1.1, { gain: 0.16, freq: 260, type: 'lowpass', sweep: 380, attack: 0.05 }); },

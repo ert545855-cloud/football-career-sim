@@ -33,7 +33,7 @@ export async function playAttack(host, common, o = {}) {
     // Zincir ilerledikçe tempo hafif artar (kontra atağın heyecanı)
     const tempo = (common.tempo || 1) * (1 + i * 0.05);
     let r;
-    if (step === 'pass') r = await playDrawPass(stageHost, { ...common, tempo, context: 'final', offside: true });
+    if (step === 'pass') r = await playDrawPass(stageHost, { ...common, tempo, context: 'final', offside: true, finish: false });
     else if (step === 'dribble') r = await playDribble(stageHost, { ...common, tempo, rows: 3, warmup: false, attack: true, passRatio: 0.6 });
     else r = await playShot(stageHost, { ...common, tempo, context: 'box', keeper: o.keeper });
     stageHost.remove();

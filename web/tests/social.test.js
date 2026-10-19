@@ -166,3 +166,17 @@ test('ev: daha küçük plana geçince sığmayanlar depoya döner; konfor hafta
   assert.ok(h.owned.some((o) => o.uid === bed.uid), 'sığmayan yatak depoya döner');
   for (const p of h.placed) assert.ok(p.x + 1 <= 5 && p.y + 1 <= 4);
 });
+
+test('sosyal: aynı kişiyle buluşmalar her seferinde farklı sohbetler getirir', async () => {
+  const { newGame } = await import('../src/core/game.js');
+  const so = await import('../src/core/social/index.js');
+  const s = newGame({ name: 'Çeşit Test', position: 'MF' });
+  const p = so.socialContacts(s)[0];
+  const lines = [];
+  for (let i = 0; i < 6; i++) {
+    s.career.money = 1e6; s.player.energy = 100;
+    const r = so.startOuting(s, { venueId: p.venues[i % p.venues.length], companionId: p.id });
+    lines.push(...r.outing.beats.map((b) => b.line));
+  }
+  assert.ok(new Set(lines).size >= lines.length - 2, `${new Set(lines).size}/${lines.length}`);
+});
