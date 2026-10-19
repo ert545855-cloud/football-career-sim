@@ -32,6 +32,8 @@ export const chirpOnEurope = (state, europe) => new FeedEngine(state).europe(eur
 export const chirpWelcome = (state, offer) => new FeedEngine(state).welcome(offer);
 export const chirpNationalSquad = (state, call) => new FeedEngine(state).nationalSquad(call);
 export const chirpFeedSeasonEnd = (state, report) => new FeedEngine(state).seasonEnd(report);
+/** Sanal piyasa: olaylar, rejim değişimi, takım arkadaşı dedikodusu, taraftar tokeni */
+export const chirpOnMarket = (state, inv) => (inv ? new FeedEngine(state).market(inv) : []);
 
 export const chirpOnOffers = (state, offers) => new ChirpTriggerEngine(state).onOffers(offers);
 export const chirpOnTransfer = (state, offer, fromClubId) => new ChirpTriggerEngine(state).onTransferComplete(offer, fromClubId);

@@ -42,6 +42,8 @@ import { showAchievementToasts } from './achievementsView.js';
 import { AGENT_RULES, currentAgent } from '../core/agent.js';
 import { agentAvatar, negotiationSheet } from './agentView.js';
 import { agentScreen } from './screens/agent.js';
+import { investScreen } from './screens/invest.js';
+import { investPct } from '../core/invest.js';
 import { socialScreen } from './screens/social.js';
 import { outingsLeft } from '../core/social/index.js';
 import { homeScreen } from './screens/home.js';
@@ -99,6 +101,7 @@ export function createApp(rootEl) {
     tryouts: tryoutsScreen,
     achievements: achievementsScreen,
     agent: agentScreen,
+    invest: investScreen,
     social: socialScreen,
     home: homeScreen,
     garage: garageScreen,
@@ -189,10 +192,10 @@ export function createApp(rootEl) {
       else this.go(this.state ? 'retired' : 'title');
     },
 
-    confirm(title, text, okLabel = 'Evet') {
+    confirm(title, text, okLabel = 'Evet', tone = 'danger') {
       return sheet({
         center: true,
-        html: `<h3>${esc(title)}</h3><p class="lead">${esc(text)}</p><div class="stack"><button class="btn danger block" data-close="ok">${esc(okLabel)}</button><button class="btn ghost block" data-close="no">Vazgeç</button></div>`,
+        html: `<h3>${esc(title)}</h3><p class="lead">${esc(text)}</p><div class="stack"><button class="btn ${tone === 'primary' ? 'primary' : 'danger'} block" data-close="ok">${esc(okLabel)}</button><button class="btn ghost block" data-close="no">Vazgeç</button></div>`,
       }).then((v) => v === 'ok');
     },
 
@@ -575,6 +578,8 @@ export function createApp(rootEl) {
             <div class="row between small" style="margin-top:6px"><span class="muted">Yaşam gideri</span><b style="color:var(--bad)">−${money(f.living)}</b></div>
             ${f.upkeep ? `<div class="row between small" style="margin-top:6px"><span class="muted">Eşya/abonelik</span><b style="color:var(--bad)">−${money(f.upkeep)}</b></div>` : ''}
             ${f.agent ? `<div class="row between small" style="margin-top:6px"><span class="muted">Menajer komisyonu</span><b style="color:var(--bad)">−${money(f.agent)}</b></div>` : ''}
+            ${we.invest?.weekly?.autoInvested ? `<div class="row between small" style="margin-top:6px"><span class="muted">Otomatik yatırım</span><b>−${money(we.invest.weekly.autoInvested)}</b></div>` : ''}
+            ${we.invest?.weekly?.value ? `<div class="row between small" style="margin-top:6px"><span class="muted">Portföy ${money(we.invest.weekly.value)}</span><b style="color:${we.invest.weekly.change >= 0 ? 'var(--good)' : 'var(--bad)'}">${we.invest.weekly.change >= 0 ? '+' : ''}${money(we.invest.weekly.change)} (${investPct(we.invest.weekly.pct)})</b></div>` : ''}
             <div class="divider" style="margin:10px 0"></div>
             <div class="row between"><span>Kasa</span><b style="color:var(--gold)">${money(s.career.money)}</b></div>
           </div>

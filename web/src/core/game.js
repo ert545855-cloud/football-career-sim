@@ -13,7 +13,7 @@ import { finalizeMatch, planMatch, selection } from './match.js';
 import { pickEvent, resolveEvent } from './events.js';
 import {
   RelationshipService, chirpOnInjury, chirpOnMatch, chirpOnOffers, chirpOnSeasonEnd, chirpOnTransfer, chirpOnWeekEnd, ensureChirp,
-  chirpFeedSeasonEnd, chirpNationalSquad, chirpOnEurope, chirpWeekStart, chirpWelcome,
+  chirpFeedSeasonEnd, chirpNationalSquad, chirpOnEurope, chirpOnMarket, chirpWeekStart, chirpWelcome,
 } from './chirp/index.js';
 import {
   ensureMentor, gainInfluence, mentorBonus, mentorOnAction, mentorOnMatch, mentorOnSeasonEnd, mentorOnSeasonStart, mentorOnTransfer, mentorOnWeekEnd,
@@ -43,6 +43,7 @@ import { applyClauses, clausesOnSeasonEnd } from './clauses.js';
 import { ambitionMorale, characterOnWeek, doDrill, ensureCharacter, potentialSeasonEnd, setAbroad, trainingPersonaMult } from './character.js';
 import { ensureMarket, interestOffers, loanOffer, priceOffers, recordTransfer, rumorsOnWeek } from './market.js';
 import { archiveOnMatch, ensureArchive, monthlyAward, teamOfSeason } from './archive.js';
+import { investOnWeek } from './invest.js';
 import { boardOnMatch, electionDue, ensurePresident, ensureRival, makeElection, rivalOnMatch, rivalSeasonEnd, withheldWage, worldStarsWindow } from './living.js';
 import { offerFor } from './economy.js';
 
@@ -384,6 +385,9 @@ function endWeek(state, ctx) {
   // Mali kriz: maaş bu hafta yatmaz (sonra toplu ödenir)
   const held = withheldWage(state);
   if (held) career.money -= held;
+  // Yatırım: fiyatlar değişir, maaştan otomatik yatırım, menajerin portföy notları
+  const invest = investOnWeek(state, { summary: ctx?.summary, fin: { net: fin.net - (held || 0) } });
+  for (const n of invest.news) addNews(state, n.text, n.kind);
   // Kişilik ve uyum: haftanın alışkanlıkları
   for (const n of characterOnWeek(state, { trainings: calendar.trainings, played: ctx?.summary?.played, rating: ctx?.summary?.rating, yellow: ctx?.yellow || 0 })) addNews(state, n, 'good');
   // Transfer söylentileri (ilgi aşaması)
@@ -416,6 +420,7 @@ function endWeek(state, ctx) {
   if (flags.trainBoostWeeks > 0) flags.trainBoostWeeks -= 1;
   if (flags.campFitWeeks > 0) flags.campFitWeeks -= 1;
   const chirpTweets = [];
+  chirpTweets.push(...chirpOnMarket(state, invest));
   const discipline = chirpOnWeekEnd(state);
   chirpTweets.push(...discipline.tweets);
   if (discipline.outcome === 'ban') addNews(state, 'PFDK: 1 maç men cezası aldın.', 'bad');
@@ -466,7 +471,7 @@ function endWeek(state, ctx) {
     // Chirp: yeni haftanın maç önü kartı, sakatlıklar, dünya futbolu, trendler
     chirpTweets.push(...chirpWeekStart(state));
   }
-  return { finance: fin, changes: diffChanges(before, snapshot(state)), event, offers: state.pending.offers, seasonOver, discipline, chirp: chirpTweets, mentor, national, social, cupTie };
+  return { finance: fin, changes: diffChanges(before, snapshot(state)), event, offers: state.pending.offers, seasonOver, discipline, chirp: chirpTweets, mentor, national, social, cupTie, invest };
 }
 
 // ─────────────────────────────────────────────────────────────

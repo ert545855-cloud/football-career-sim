@@ -18,6 +18,7 @@ export const FLOWS = {
     { title: 'Hoş geldin!', text: 'Ben asistan hocan Selin. Kariyerinin ilk günlerinde yanındayım; oyunu birlikte öğrenelim. İstersen "Geç" ile atlayabilirsin.' },
     { sel: '.topbar', title: 'Bu sensin', text: 'Adın, kulübün, yaşın ve sağda genel gücün (OVR). Antrenman ve maçlarla OVR yükselir.' },
     { sel: '[data-tut="meters"]', title: 'Enerji, moral, form', text: 'Enerji düşükse mini oyunlarda zorlanırsın: dinlen. Moral yüksekse daha iyi oynarsın. Form son 5 maçının ortalamasıdır.' },
+    { sel: '[data-tut="invest"]', title: 'Yatırım', text: 'Kasandaki parayı buradan kurgusal kripto paralara, fona, altına ya da vadeli hesaba yatırabilirsin. Menajerin portföyünü takip eder.' },
     { sel: '[data-tut="fixture"]', title: 'Sıradaki maç', text: 'Rakibin, iç saha/deplasman ve hava durumu. Kupa maçın varsa hemen üstünde ayrı bir kart çıkar ve önce o oynanır.' },
     { sel: '.actions', title: 'Haftalık zamanın', text: 'Her hafta 4 zaman hakkın var (sağ üstteki kutucuklar). Antrenman yap, dinlen, takımla yemeğe çık, Özel Çalışma ile zayıf ayağını ve becerilerini geliştir.' },
     { sel: '[data-act="match"]', title: 'Maç günü', text: 'Hazır olunca maç gününe geç. Maç canlı yayında oynanır; kritik anlarda (şut, pas, savunma) oyunu sen oynarsın.' },
@@ -37,6 +38,11 @@ export const FLOWS = {
   league: [{ title: 'Lig ve kupa', text: 'Puan durumu, fikstür ve Kupa sekmesi burada. Kupa ön eleme ile başlar: son 32, son 16, çeyrek final, yarı final ve final.' }],
   chirp: [{ title: 'Chirp', text: 'Futbol dünyasının sosyal medyası. Maçlarından sonra paylaşım yap, taraftarlarınla etkileş; ün ve taraftar ilişkin buna göre değişir.' }],
   shop: [{ title: 'Mağaza', text: 'Araba, ev, gelişim ürünleri ve dolap (krampon, gol sevinci…). Kişisel antrenör antrenman verimini artırır.' }],
+  invest: [
+    { sel: '.inv-hero', title: 'Yatırım', text: 'Kazandığın parayı burada değerlendirirsin. Toplam servetin nakit ve portföyünden oluşur. Fiyatlar her hafta sonu değişir.' },
+    { sel: '.inv-agent', title: 'Menajerin takipte', text: 'Menajerin portföyünü izler: düşüşte, aşırı riskte ya da kasan azalınca seni uyarır. İstersen "Menajer yönetsin" ile parayı bir plana göre o yönetir (yıllık ~%2 ücret).' },
+    { sel: '.inv-market', title: 'Piyasa', text: 'Vadeli hesap risksizdir; fon ve altın daha dengeli; kripto ve meme coin çok dalgalı. Ünün artınca kendi taraftar tokenin çıkar: fiyatı maçlardaki performansına bağlı. Hepsi oyun içi, kurgusal varlıklardır.' },
+  ],
   career: [{ title: 'Kariyer', text: 'Ödüllerin, rekorların, transfer geçmişin, kariyer rakibin ve kulüp başkanın burada. Başarımları da buradan görebilirsin.' }],
 };
 

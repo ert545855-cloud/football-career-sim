@@ -12,6 +12,7 @@ import { actionArt } from '../spriteMap.js';
 import { monthName, weatherFor } from '../../core/weather.js';
 import { hubLockerCard } from '../lockerView.js';
 import { ROUND_LABEL } from '../../core/cup.js';
+import { portfolioValue } from '../../core/invest.js';
 
 
 export function hubScreen(app) {
@@ -68,7 +69,10 @@ export function hubScreen(app) {
       ${shareCard(s)}
 
       <div class="row between" style="margin-top:14px">
-        <span class="money-pill">${icon('coin')} <span class="tnum">${money(career.money)}</span></span>
+        <div class="row" style="gap:6px;min-width:0">
+          <span class="money-pill">${icon('coin')} <span class="tnum">${money(career.money)}</span></span>
+          <button class="money-pill inv-pill" data-act="invest" data-tut="invest">${icon('chart')} <span class="tnum">${(() => { const pv = portfolioValue(s); return pv > 0 ? money(pv) : 'Yatırım'; })()}</span></button>
+        </div>
         <div class="row" style="gap:6px">${status}<button class="icon-btn" data-act="settings" aria-label="Ayarlar">${icon('gear')}</button></div>
       </div>
 
@@ -157,6 +161,7 @@ export function hubScreen(app) {
         else if (t.dataset.act === 'match' || t.dataset.act === 'cup') app.matchDay();
         else if (t.dataset.act === 'settings') app.go('settings');
         else if (t.dataset.act === 'locker') app.go('locker');
+        else if (t.dataset.act === 'invest') app.go('invest', { from: 'hub' });
       });
     },
   };

@@ -138,6 +138,47 @@ export class FeedEngine {
     return out.filter(Boolean);
   }
 
+  /** Sanal piyasa haberleri (Kripto Tribün parodi hesabı): olaylar, boğa/ayı, soyunma odası dedikodusu, taraftar tokeni */
+  market(inv) {
+    const out = [];
+    const author = { id: 'u:@KriptoTribun', kind: 'user', displayName: 'Kripto Tribün (Parodi)', handle: '@KriptoTribun', avatar: { color: '#b45309', initials: '📈' } };
+    const pct = (x) => `${x >= 0 ? '+' : '−'}%${Math.abs(Math.round((x || 0) * 100))}`;
+    const LINES = {
+      crash: ['📉 Kara hafta! Endeks {ENDX}, GolCoin {GOLC}. Soyunma odasında telefonlar kapalı. #Piyasa', '📉 Piyasalar çöktü: GolCoin {GOLC}. Futbolcular bugün antrenmanda ekrana bakmadı. #KaraHafta'],
+      etf: ['🚀 GolCoin {GOLC}! Fon onayı geldi, tribünler bayram yapıyor. #GolCoin'],
+      regul: ['⚠️ Kripto düzenlemesi kapıda: GolCoin {GOLC}. #Regülasyon'],
+      listing: ['📈 PixelChain büyük borsada: {PXC}! Oyuncu kartı koleksiyoncuları sevinçten havalara uçtu. #PixelChain'],
+      hack: ['🔓 PixelChain köprüsü hacklendi, fiyat {PXC}. Yatırımcılar şokta. #PixelChain'],
+      pump: ['🐱🚀 Kale Kedisi bu hafta {KEDI}! Mahalle maçında bile kedi coin konuşuluyor. #KaleKedisi'],
+      rug: ['🙀 Kale Kedisi geliştiricileri kayıp, fiyat {KEDI}. Tribün sessiz. #KaleKedisi', '🙀 "Kedi kaçtı": Kale Kedisi {KEDI}. Şakadan çıkan para şakayla gitti. #KaleKedisi'],
+    };
+    const MATE = {
+      pump: ['Duyumlarımıza göre {club} oyuncusu {mate} Kale Kedisi\'nden köşeyi döndü 😎 Soyunma odasında baklava dağıtmış.'],
+      rug: ['{club}\'de {mate}\'in Kale Kedisi\'nde ciddi para kaybettiği konuşuluyor. Antrenmanda pek konuşmamış 😶'],
+      etf: ['{club} soyunma odasında {mate} herkese GolCoin anlatıyormuş. Hoca telefonları topladı 📵'],
+      crash: ['{club} kaptanı {mate}: "Kardeşler, maaşın hepsini kriptoya koymayın." 🧓'],
+    };
+    for (const ev of inv.events || []) {
+      const vars = Object.fromEntries(Object.entries(inv.chg || {}).map(([k, x]) => [k, pct(x)]));
+      const line = LINES[ev.id];
+      if (!line) continue;
+      out.push(this.publish({ author, text: this.pick(line).replace(/\{(\w+)\}/g, (_m, k) => vars[k] ?? ''), topic: 'user', vars: this.vars(), ctx: 'user', count: 2, likes: [800, 9000] }));
+      const mate = this.mates(3)[0];
+      if (MATE[ev.id] && mate && this.chance(0.35)) {
+        out.push(this.publish({ author, text: this.pick(MATE[ev.id]).replace('{club}', this.club.short).replace('{mate}', mate), topic: 'user', vars: this.vars(), ctx: 'user', count: 2, likes: [400, 5000] }));
+      }
+    }
+    if (inv.regimeChanged === 'bull') out.push(this.publish({ author, text: '🐂 Boğa sezonu açıldı! Kripto piyasası yeşile boyandı. Unutmayın: yükselen her şey bir gün iner. #BoğaSezonu', topic: 'user', vars: this.vars(), ctx: 'user', count: 2, likes: [600, 7000] }));
+    if (inv.regimeChanged === 'bear') out.push(this.publish({ author, text: '🐻 Ayı piyasası geldi. Kripto kırmızı, yatırımcılar temkinli. #AyıPiyasası', topic: 'user', vars: this.vars(), ctx: 'user', count: 2, likes: [600, 7000] }));
+    if (inv.fanLaunch) {
+      out.push(this.publish({ author, text: `🪙 {player} adına taraftar tokeni piyasada! Fiyatı sahadaki performansına bağlı. Taraftarlar ilk gün kapıştı. #{first}Token`, topic: 'user', vars: this.vars(), ctx: 'user', count: 3, likes: [1500, 12000] }));
+    } else if (Math.abs(inv.chg?.FAN || 0) >= 0.18) {
+      const up = inv.chg.FAN > 0;
+      out.push(this.publish({ author, text: `${up ? '📈' : '📉'} {first} Token bu hafta ${pct(inv.chg.FAN)}! ${up ? 'Sahada ne görüyorsak tokende de onu görüyoruz.' : 'Taraftar tokeni de formla birlikte düştü.'} #{first}Token`, topic: 'user', vars: this.vars(), ctx: 'user', count: 2, likes: [700, 8000] }));
+    }
+    return out;
+  }
+
   /** Kadrodaki sakatlıklar: iyileşenler çıkar, bazen yeni sakatlık + resmi açıklama */
   squadInjuries() {
     const data = this.tl.data;

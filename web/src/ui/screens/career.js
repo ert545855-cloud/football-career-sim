@@ -6,6 +6,7 @@ import { crestSVG, icon } from '../art.js';
 import { animateBars, esc } from '../dom.js';
 import { achievementsCard } from '../achievementsView.js';
 import { currentAgent } from '../../core/agent.js';
+import { portfolioValue } from '../../core/invest.js';
 import { money } from '../../core/economy.js';
 import { agentAvatar } from '../agentView.js';
 import { nationalCrest } from '../nationalView.js';
@@ -47,6 +48,7 @@ export function careerScreen(app) {
         <button class="card cl-tile" data-act="national">${nationalCrest('crest sm', ensureNational(s).current || 'A')}<b>Milli takım</b><span>${(() => { const n = ensureNational(s); return n.caps.A ? `A milli ${n.caps.A}` : n.caps.U21 + n.caps.U19 ? `Genç milli ${n.caps.U21 + n.caps.U19}` : 'Çağrı yok'; })()}</span></button>
         <button class="card cl-tile" data-act="ballon">${golden(34)}<b>Altın Top</b><span>${(() => { const b = ballonSummary(s); return b.rank <= 30 ? `${b.rank}. sıra` : b.best ? `En iyi ${b.best}.` : 'Aday değil'; })()}</span></button>
         <button class="card cl-tile" data-act="agent">${agentAvatar(currentAgent(s), 34)}<b>Menajer</b><span>${esc(currentAgent(s).id === 'self' ? 'Ajansız' : currentAgent(s).name.split(' ')[0])} · ${c.contract.yearsLeft} yıl</span></button>
+        <button class="card cl-tile" data-act="invest"><span class="cl-inv">${icon('chart')}</span><b>Yatırım</b><span>${(() => { const pv = portfolioValue(s); return pv > 0 ? money(pv) : 'Portföy boş'; })()}</span></button>
       </div>
 
       <div class="h-sec">Bu sezon</div>
@@ -89,6 +91,9 @@ export function careerScreen(app) {
         } else if (e.target.closest('[data-act="agent"]')) {
           app.click();
           app.go('agent');
+        } else if (e.target.closest('[data-act="invest"]')) {
+          app.click();
+          app.go('invest', { from: 'career' });
         } else if (e.target.closest('[data-act="national"]')) {
           app.click();
           app.go('national');

@@ -8,6 +8,7 @@ import { buzz, sfx } from '../../audio.js';
 import { crestSVG, icon } from '../art.js';
 import { animateBars, esc, sheet, toast } from '../dom.js';
 import { agentAvatar } from '../agentView.js';
+import { ensureInvest, investPct, portfolioSummary } from '../../core/invest.js';
 
 const statBar = (label, v, c) => `<div class="ag-stat"><span>${label}</span><div class="bar"><i style="--c:${c}" data-w="${Math.round(v * 100)}"></i></div></div>`;
 
@@ -32,6 +33,9 @@ export function agentScreen(app) {
     </article>`;
   }).join('');
 
+  const inv = ensureInvest(s);
+  const pf = portfolioSummary(s);
+  const lastNote = inv.log[0];
   const log = (a.log || []).slice(0, 6).map((l) => `<div class="li"><span class="news-dot info"></span><div class="grow small">${esc(l.text)}</div><span class="muted small">S${l.s}·H${l.w}</span></div>`).join('');
 
   return {
@@ -53,6 +57,13 @@ export function agentScreen(app) {
           ${ag.sponsor && ag.sponsor > 1 ? `<span class="chip accent">Reklam geliri +%${Math.round((ag.sponsor - 1) * 100)}</span>` : ''}
         </div>
       </div>
+
+      <div class="h-sec">Portföy takibi</div>
+      <button class="card ag-inv" data-act="invest">
+        <div class="row between"><span class="muted small">${inv.mode === 'managed' ? 'Yönettiği portföy' : 'Takip ettiği portföy'}</span><b class="tnum">${money(pf.value)}${pf.weekly?.value ? ` <em style="color:${pf.weekly.change >= 0 ? 'var(--good)' : 'var(--bad)'};font-style:normal">${investPct(pf.weekly.pct)}</em>` : ''}</b></div>
+        <p class="small" style="margin:6px 0 0">${esc(lastNote?.text || (ag.id === 'self' ? 'Yatırımlarını kendin takip ediyorsun.' : 'Henüz bir yatırımın yok. Kazandıklarını değerlendirmek istersen konuşalım.'))}</p>
+        <span class="small" style="color:var(--accent);font-weight:800">${icon('chart', 'ico xs')} Yatırım ekranına git</span>
+      </button>
 
       <div class="h-sec">Sözleşmen</div>
       <div class="card" style="display:grid;gap:8px">
@@ -77,6 +88,7 @@ export function agentScreen(app) {
         if (!t || t.disabled) return;
         app.click();
         if (t.dataset.act === 'back') return app.go('career');
+        if (t.dataset.act === 'invest') return app.go('invest', { from: 'agent' });
         if (t.dataset.act === 'raise') {
           const r = askRaise(s);
           app.save();
