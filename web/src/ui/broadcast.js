@@ -151,7 +151,7 @@ export function createBroadcast(root, o) {
     script: null, restart: null, wipe: null, celebrate: null, bulge: null, confetti: [],
     boardShift: 0, boardT: 0, tag: '', freeze: false, flash: 0,
   };
-  const rateNow = () => (o.auto ? 5 : ({ 1: 1, 2: 1.7, 4: 2.8 }[o.speed?.() || 1] || 1));
+  const rateNow = () => (o.auto ? 5 : ({ 1: 0.85, 2: 1.3, 4: 2 }[o.speed?.() || 1] || 0.85));
 
   // ── Projeksiyon ──
   // yatay tam ekranda daha geniş açı (yayın kamerası), dikeyde daha yakın plan
@@ -464,7 +464,7 @@ export function createBroadcast(root, o) {
     }
     if (!best) return false;
     const dist = Math.hypot(best.x - p.x, best.y - p.y);
-    const v = 12 + Math.random() * 5;
+    const v = 10 + Math.random() * 4;
     const T = dist / v;
     const lx = clamp(best.x + best.vx * T * 0.8, 2, PL - 2);
     const ly = clamp(best.y + best.vy * T * 0.8, 2, PWm - 2);
@@ -535,12 +535,12 @@ export function createBroadcast(root, o) {
         const dd = dirOf(p.side);
         p.tx = b.x - dd * 0.6;
         p.ty = b.y;
-        p.sp = 6.2;
+        p.sp = 5.2;
       } else {
         const [tx, ty] = formationTarget(p);
         p.tx = tx;
         p.ty = ty;
-        p.sp = 4.6;
+        p.sp = 3.8;
       }
     }
     if (loose) {
@@ -553,17 +553,17 @@ export function createBroadcast(root, o) {
       const gx = d > 0 ? PL : 0;
       o2.tx = clamp(o2.x + d * 5, 2, PL - 2);
       o2.ty = clamp(o2.y + Math.sin(S.time * 0.8 + o2.slot) * 2.5 + (34 - o2.y) * 0.05, 3, PWm - 3);
-      o2.sp = o2.pos === 'GK' ? 2 : 5.2;
+      o2.sp = o2.pos === 'GK' ? 2 : 4.4;
       o2.decideT = (o2.decideT ?? 1) - dt;
       if (o2.decideT <= 0) {
-        o2.decideT = 0.8 + Math.random() * 1.3;
+        o2.decideT = 1.3 + Math.random() * 1.6;
         const dg = Math.abs(gx - o2.x);
         if (o2.pos !== 'GK' && dg < 22 && Math.abs(o2.y - 34) < 15 && Math.random() < 0.38) ambientShot(o2);
         else if (o2.pos === 'GK' || Math.random() < 0.78) passFrom(o2);
       }
       // top kapma
       const n = nearestTo(team(other(o2.side)), b.x, b.y);
-      if (n && n.d < 1.15 && o2.pos !== 'GK' && Math.random() < dt * 1.3) {
+      if (n && n.d < 1.15 && o2.pos !== 'GK' && Math.random() < dt * 0.9) {
         n.p.pose = 'lunge'; n.p.poseT = 0.35;
         giveBall(n.p);
         n.p.decideT = 0.4;
@@ -797,7 +797,7 @@ export function createBroadcast(root, o) {
       });
       celebT = T;
     });
-    const total = tShot + 0.6 + (outcome === 'goal' ? 2.6 : 1.2);
+    const total = tShot + 0.7 + (outcome === 'goal' ? 2.9 : 1.4);
     return { events: ev2, total, scorer, assister, tShot, getCelebT: () => celebT };
   }
 
@@ -836,7 +836,7 @@ export function createBroadcast(root, o) {
     void banner.offsetWidth;
     banner.classList.add('on');
     clearTimeout(showBanner.tm);
-    showBanner.tm = setTimeout(() => banner.classList.remove('on'), 2300 / Math.max(1, S.rate));
+    showBanner.tm = setTimeout(() => banner.classList.remove('on'), 2800 / Math.max(1, S.rate));
   }
 
   function setTag(text, cls = '') {
@@ -1296,7 +1296,7 @@ export function createBroadcast(root, o) {
     if (!root.isConnected) { stop(); return; }
     const dt0 = Math.min(0.05, (now - (last || now)) / 1000);
     last = now;
-    S.rate = rateNow() * (S.replaying ? 0.5 : 1);
+    S.rate = rateNow() * (S.replaying ? 0.45 : 1);
     if (!S.paused) {
       resize();
       // sabit adımlar (yüksek hızda da kararlı)
@@ -1335,9 +1335,9 @@ export function createBroadcast(root, o) {
         S.camFocus = { x: 52.5, y: 44 };
         S.crowdMode = 'home'; S.crowdT = 3.2;
       };
-      await wipe(line, 0.6);
+      await wipe(line, 0.7);
       setTag('TAKIMLAR SAHADA', 'live');
-      await startScript([], 1.7);
+      await startScript([], 1.5);
       // yerlerine koşu
       for (const p of players) {
         const [bx, by] = baseOf(p);
@@ -1348,7 +1348,7 @@ export function createBroadcast(root, o) {
         p.sp = 6;
       }
       S.camFocus = null;
-      await startScript([], 1.6);
+      await startScript([], 1.3);
       setTag('CANLI', 'live');
       kickoffShape(o.homeIsMy ? 'my' : 'opp');
     },
@@ -1361,12 +1361,12 @@ export function createBroadcast(root, o) {
       const seed = (Math.random() * 1e9) >>> 0;
       let scn = null;
       setTag(ev.outcome === 'goal' ? 'CANLI' : 'POZİSYON', 'live');
-      await wipe(() => { scn = buildScenario(ev, seed); S.camFocus = null; }, o.auto ? 0.12 : 0.5);
+      await wipe(() => { scn = buildScenario(ev, seed); S.camFocus = null; }, o.auto ? 0.12 : 0.6);
       await startScript(scn.events, scn.total);
       if (ev.outcome === 'goal' && ev.replay && !o.auto && (o.speed?.() || 1) === 1) {
         // yavaş çekim tekrar (aynı tohum → aynı hareket)
-        await wipe(() => { S.replaying = true; setTag('↺ TEKRAR', 'replay'); const r = buildScenario(ev, seed); scn = r; }, 0.45);
-        await startScript(scn.events, scn.tShot + 1.4);
+        await wipe(() => { S.replaying = true; setTag('↺ TEKRAR', 'replay'); const r = buildScenario(ev, seed); scn = r; }, 0.65);
+        await startScript(scn.events, scn.tShot + 1.8);
         S.replaying = false;
       }
       for (const p of players) { p.celebrate = false; p.holdPose = false; p.pose = null; p.rot = 0; p.lift = 0; p.scripted = false; p.mark = null; p.face = null; p.waitT = 0; }
@@ -1377,7 +1377,7 @@ export function createBroadcast(root, o) {
           S.bulge = null;
           kickoffShape(other(ev.side));
           setTag('CANLI', 'live');
-        }, o.auto ? 0.12 : 0.45);
+        }, o.auto ? 0.12 : 0.55);
       } else {
         S.netLock = null;
         if (ev.outcome === 'miss') S.restart = { t: 0.5, kind: 'gk', team: other(ev.side) };
@@ -1387,7 +1387,7 @@ export function createBroadcast(root, o) {
     /** Devre arası: perde + ikinci yarı başlama vuruşu */
     async halfTime() {
       setTag('DEVRE ARASI', 'live');
-      await wipe(() => kickoffShape(o.homeIsMy ? 'opp' : 'my'), o.auto ? 0.1 : 0.8);
+      await wipe(() => kickoffShape(o.homeIsMy ? 'opp' : 'my'), o.auto ? 0.1 : 1.2);
       setTag('CANLI', 'live');
     },
     fullTime(res) {

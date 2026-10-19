@@ -673,7 +673,7 @@
 @keyframes bcBlink { 50% { opacity: 0.2; } }
 .bc-mini { position: absolute; left: 50%; bottom: 6px; width: 86px; height: 55px; opacity: 0.88; transform: translateX(-50%); border-radius: 3px; border: 1px solid rgba(255, 255, 255, 0.35); box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4); }
 .bc-goal { position: absolute; left: 0; right: 0; top: 38%; display: grid; place-items: center; pointer-events: none; opacity: 0; }
-.bc-goal.on { animation: bcGoal 2.3s ease forwards; }
+.bc-goal.on { animation: bcGoal 2.8s ease forwards; }
 .bcg { display: flex; flex-direction: column; align-items: center; min-width: 72%; padding: 5px 20px 7px; color: #fff; text-shadow: 0 2px 0 rgba(0, 0, 0, 0.55); background: linear-gradient(90deg, transparent, var(--c1) 16%, var(--c1) 84%, transparent); border-top: 3px solid var(--c2); border-bottom: 3px solid var(--c2); }
 .bcg b { font-size: 34px; line-height: 1; font-weight: 900; font-style: italic; letter-spacing: 0.05em; }
 .bcg span { font-size: 14px; font-weight: 900; letter-spacing: 0.04em; }

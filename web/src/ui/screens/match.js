@@ -44,6 +44,11 @@ function drawFace(cnv, look) {
 }
 
 const pickLine = (a) => a[Math.floor(Math.random() * a.length)];
+/** 1x hızda bir maçın hedef gerçek süresi (saniye): saat + gol/pozisyon canlandırmaları birlikte */
+const MATCH_SECONDS = 60;
+const GOAL_ANIM_SECS = 7.5;
+const CHANCE_ANIM_SECS = 4.5;
+const INTRO_SECS = 4;
 const WX_KICKOFF = {
   rain: (w) => `Yağmur altında oynanıyor (${w.temp}°C). Zemin ıslak, top hızlı kayıyor.`,
   storm: (w) => `Sağanak yağış ve sert rüzgâr (${w.windKmh} km/sa)! Uzun toplar sürüklenecek.`,
@@ -86,6 +91,11 @@ export function matchScreen(app, { match }) {
   [8 + Math.floor(Math.random() * 12), 30 + Math.floor(Math.random() * 12), 58 + Math.floor(Math.random() * 12), 80 + Math.floor(Math.random() * 6)].forEach((m) => timeline.push({ minute: m, order: 1, kind: 'chant' }));
   timeline.push({ minute: 90 + match.stoppage, order: 9, kind: 'ft' });
   timeline.sort((a, b) => a.minute - b.minute || a.order - b.order);
+
+  // Saat hızı: bilinen gol ve pozisyon canlandırmalarının süresi düşülür → maç toplamda ~1 dakika
+  const aiGoals = match.events.filter((e) => e.kind === 'goal').length;
+  const chances = Math.min(1, match.events.filter((e) => ['save', 'post', 'chance'].includes(e.kind)).length);
+  const clockSecs = Math.max(32, MATCH_SECONDS - aiGoals * GOAL_ANIM_SECS - chances * CHANCE_ANIM_SECS - INTRO_SECS);
 
   const roleText = match.role === 'starter' ? 'İlk 11\'desin' : match.role === 'out' ? (match.reason === 'suspended' ? 'Cezalısın, tribündesin' : 'Sakatsın, tribündesin') : 'Yedek kulübesindesin';
 
@@ -190,7 +200,7 @@ export function matchScreen(app, { match }) {
             assistLabel: meAssist ? shortName : g?.assist ? shortOf(g.assist) : '',
             replay: me || meAssist,
           });
-        } else if (ln.ai && ['save', 'post', 'chance'].includes(ln.kind) && (app.settings.speed || 1) === 1 && chanceAnims < 4) {
+        } else if (ln.ai && ['save', 'post', 'chance'].includes(ln.kind) && (app.settings.speed || 1) === 1 && chanceAnims < 1) {
           chanceAnims++;
           await bc.play({ side: ln.side || 'my', outcome: ln.kind === 'save' ? 'save' : ln.kind === 'post' ? 'post' : 'miss', kind: Math.random() < 0.5 ? 'open' : 'long' });
         }
@@ -352,7 +362,8 @@ export function matchScreen(app, { match }) {
         last = now;
         if (!busy && !finished) {
           const speed = app.settings.speed || 1;
-          minute += dt * 4.2 * speed;
+          // 1x hızda maç saati ~1 dakika sürer (goller ve pozisyonların canlandırması saati durdurur)
+          minute += dt * ((90 + match.stoppage) / clockSecs) * speed;
           if (skipTo !== null) minute = Math.max(minute, skipTo);
           minEl.textContent = clock(Math.min(90 + match.stoppage, minute));
           updateCond();
