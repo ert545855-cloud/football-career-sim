@@ -46,8 +46,12 @@ export function createDefense({ context = 'duel', skill = 0.3, rnd = Math.random
   const tired = 1 - Math.max(0, Math.min(0.65, fatigue)) * 0.22;
   const me = applyGrip(createBody(Wm / 2, Hm * 0.5, { maxSpeed: sk.defSpeed * tired, accel: sk.defAccel * tired, turn: 16, mass: 80 }), env);
   const ball = createBall(att[0].body.x, att[0].body.y + 0.6);
+  // Takım savunması: yanında bir stoper arkadaşın var; en tehlikeli boştaki rakibi gölgeler
+  const mate = applyGrip(createBody(Wm * (att[0].body.x < Wm / 2 ? 0.72 : 0.28), Hm * 0.62, { maxSpeed: 6.6, accel: 6.8, mass: 80 }), env);
   const D = {
-    Wm, Hm, sk, rnd, context, threat, att, me, ball, env,
+    Wm, Hm, sk, rnd, context, threat, att, me, ball, env, mate,
+    slide: null, // kayarak müdahale {dx, dy, t}
+    down: 0, // kayıştan sonra yerde kalma süresi
     carrier: 0,
     t: 0,
     passes: 0,
@@ -91,6 +95,51 @@ export function defLunge(D) {
     }
   }
   return true;
+}
+
+/**
+ * Hızlı kaydırma: kayarak müdahale (dx, dy yön). Topa değerse kazanırsın; adama değerse faul (kart riski).
+ * Iskalarsan bir süre yerde kalırsın.
+ */
+export function defSlide(D, dx, dy) {
+  if (D.result || D.slide || D.down > 0 || D.lungeCd > 0) return false;
+  const l = hyp(dx, dy) || 1;
+  D.slide = { dx: dx / l, dy: dy / l, t: 0 };
+  D.me.vx = (dx / l) * 9.5;
+  D.me.vy = (dy / l) * 9.5;
+  D.lungeCd = 1.2;
+  D.events.push({ type: 'slide' });
+  return true;
+}
+
+function slideStep(D, h) {
+  const sl = D.slide;
+  sl.t += h;
+  D.me.x += D.me.vx * h;
+  D.me.y += D.me.vy * h;
+  const k = Math.exp(-3.2 * h);
+  D.me.vx *= k;
+  D.me.vy *= k;
+  const c = D.att[D.carrier].body;
+  const ballD = hyp(D.ball.x - D.me.x, D.ball.y - D.me.y);
+  const manD = hyp(c.x - D.me.x, c.y - D.me.y);
+  if (ballD < 1.05 && (D.phase !== 'pass' || D.pass.t >= D.pass.immune)) {
+    end(D, 'won', { method: 'slide', acc: 0.85 });
+    D.ball.vx = D.me.vx * 0.6; D.ball.vy = D.me.vy * 0.6;
+    return;
+  }
+  if (D.phase !== 'pass' && manD < 1.2 && ballD > manD + 0.15) {
+    // topa değil adama: faul — arkadan ya da geç girersen kart
+    const fromBehind = D.me.y < c.y - 0.2; // rakipler +y yönüne (kaleye) hücum eder
+    const card = D.rnd() < (fromBehind ? 0.7 : 0.32);
+    end(D, 'foul', { method: 'slide', card, acc: 0 });
+    return;
+  }
+  if (sl.t > 0.5) {
+    D.slide = null;
+    D.down = 0.85; // ıskaladın: yerdesin
+    D.me.vx = D.me.vy = 0;
+  }
 }
 
 function end(D, outcome, extra = {}) {
@@ -187,9 +236,17 @@ function attackersStep(D, h) {
       D.ball.y = b.y + 0.55;
       D.ball.vx = D.ball.vy = 0;
     } else {
-      // pas seçeneği olmak için boşa kaç: savunmacıdan uzaklaş
-      const away = D.me.x < a.hx ? 1.5 : -1.5;
-      steer(b, clamp(a.hx + away, 1.5, D.Wm - 1.5), a.hy, h, { speed: 4 });
+      // top dışı koşular: boşa çıkma, çapraz koşu ve kısa gelme; savunmacılardan uzaklaşır
+      a.runT = (a.runT ?? D.rnd() * 1.2) - h;
+      if (a.runT <= 0 || !a.run) {
+        a.runT = lerp(1.2, 2.2, D.rnd());
+        const kind = D.rnd();
+        const away = D.me.x < a.hx ? 1 : -1;
+        if (kind < 0.4) a.run = { x: a.hx + away * lerp(1.5, 3.5, D.rnd()), y: a.hy + lerp(0.5, 3, D.rnd()), sp: 5.6 }; // derine koşu
+        else if (kind < 0.7) a.run = { x: a.hx - away * lerp(2, 4, D.rnd()), y: a.hy + lerp(-1, 1.5, D.rnd()), sp: 6.2 }; // çapraz
+        else a.run = { x: a.hx + away * 1, y: a.hy - lerp(1.5, 3, D.rnd()), sp: 4.6 }; // kısa gel
+      }
+      steer(b, clamp(a.run.x, 1.5, D.Wm - 1.5), clamp(a.run.y, 2, D.boxY - 1.5), h, { speed: a.run.sp, arrive: 0.6 });
     }
     stepBody(b, h);
   });
@@ -204,14 +261,32 @@ export function defenseStep(D, h) {
   D.t += h;
   D.lunge = Math.max(0, D.lunge - h);
   D.lungeCd = Math.max(0, D.lungeCd - h);
-  // savunmacı
-  if (D.target) steer(D.me, D.target.x, D.target.y, h, { arrive: 0.5 });
-  else steer(D.me, D.me.x, D.me.y, h);
-  stepBody(D.me, h);
+  // savunmacı (kayış / yerde kalma / normal)
+  D.down = Math.max(0, D.down - h);
+  if (D.slide) slideStep(D, h);
+  else if (D.down > 0) { D.me.vx *= 0.8; D.me.vy *= 0.8; }
+  else {
+    if (D.target) steer(D.me, D.target.x, D.target.y, h, { arrive: 0.5 });
+    else steer(D.me, D.me.x, D.me.y, h);
+    stepBody(D.me, h);
+  }
+  if (D.result) return;
   D.me.x = clamp(D.me.x, 0.5, D.Wm - 0.5);
   D.me.y = clamp(D.me.y, D.Hm * 0.2, D.Hm - 0.5);
   attackersStep(D, h);
   for (const a of D.att) collideBodies(D.me, a.body, 0.1);
+  // takım arkadaşın: senden uzak taraftaki boştaki rakibi gölgeler (pas koridorunu keser)
+  const mt = D.mate;
+  const free = D.att.map((a, i) => ({ a, i })).filter((o) => o.i !== D.carrier).sort((p, q) => hyp(q.a.body.x - D.me.x, q.a.body.y - D.me.y) - hyp(p.a.body.x - D.me.x, p.a.body.y - D.me.y))[0];
+  if (free) {
+    const cb = D.att[D.carrier].body;
+    const fx = free.a.body.x;
+    const fy = free.a.body.y;
+    steer(mt, lerp(fx, cb.x, 0.28), lerp(fy, cb.y, 0.28) + 1.2, h, { speed: 5.4, arrive: 0.5 });
+  }
+  stepBody(mt, h);
+  collideBodies(mt, D.me, 0.1);
+  for (const a of D.att) collideBodies(mt, a.body, 0.1);
 
   const c = D.att[D.carrier].body;
   if (D.phase === 'hold') {
@@ -230,6 +305,12 @@ export function defenseStep(D, h) {
     if (db <= reach && D.pass.t >= D.pass.immune) {
       end(D, 'won', { method: D.lunge > 0 ? 'lunge' : 'intercept', acc: clamp(0.95 - D.passes * 0.12 - (D.lunge > 0 ? 0.1 : 0), 0.4, 1) });
       // top savunmacının ayağında
+      D.ball.vx = D.ball.vy = 0;
+      return;
+    }
+    // arkadaşın araya girerse: takım savunması (senin payın daha az)
+    if (!D.pass.mateRolled && D.pass.t >= D.pass.immune && hyp(D.ball.x - mt.x, D.ball.y - mt.y) <= 0.8 && (D.pass.mateRolled = true) && D.rnd() < 0.1 + 0.1 * D.sk.e) {
+      end(D, 'won', { method: 'cover', acc: 0.45 });
       D.ball.vx = D.ball.vy = 0;
       return;
     }

@@ -14,6 +14,7 @@ import { sprite } from '../../assets/sprites.js';
 import { FEED_SPRITES } from '../spriteMap.js';
 import { nationalCrest } from '../nationalView.js';
 import { createBroadcast } from '../broadcast.js';
+import { runTutorial } from '../tutorial.js';
 import { playerCanvas } from '../../games/pixel/sprites.js';
 import { shortName as shortOf } from '../../core/lineups.js';
 
@@ -44,11 +45,8 @@ function drawFace(cnv, look) {
 }
 
 const pickLine = (a) => a[Math.floor(Math.random() * a.length)];
-/** 1x hızda bir maçın hedef gerçek süresi (saniye): saat + gol/pozisyon canlandırmaları birlikte */
-const MATCH_SECONDS = 60;
-const GOAL_ANIM_SECS = 7.5;
-const CHANCE_ANIM_SECS = 4.5;
-const INTRO_SECS = 4;
+/** 1x hızda maç saati: 90 dakika = 90 saniye. Gol/pozisyon canlandırmaları ve tekrarlar bu süreye dahil değildir. */
+const MATCH_SECONDS = 90;
 const WX_KICKOFF = {
   rain: (w) => `Yağmur altında oynanıyor (${w.temp}°C). Zemin ıslak, top hızlı kayıyor.`,
   storm: (w) => `Sağanak yağış ve sert rüzgâr (${w.windKmh} km/sa)! Uzun toplar sürüklenecek.`,
@@ -89,13 +87,11 @@ export function matchScreen(app, { match }) {
   timeline.push({ minute: 45, order: 4, kind: 'ht' });
   // Tribün tezahüratları
   [8 + Math.floor(Math.random() * 12), 30 + Math.floor(Math.random() * 12), 58 + Math.floor(Math.random() * 12), 80 + Math.floor(Math.random() * 6)].forEach((m) => timeline.push({ minute: m, order: 1, kind: 'chant' }));
-  timeline.push({ minute: 90 + match.stoppage, order: 9, kind: 'ft' });
+  timeline.push({ minute: 90, order: 9, kind: 'ft' });
   timeline.sort((a, b) => a.minute - b.minute || a.order - b.order);
 
-  // Saat hızı: bilinen gol ve pozisyon canlandırmalarının süresi düşülür → maç toplamda ~1 dakika
-  const aiGoals = match.events.filter((e) => e.kind === 'goal').length;
-  const chances = Math.min(1, match.events.filter((e) => ['save', 'post', 'chance'].includes(e.kind)).length);
-  const clockSecs = Math.max(32, MATCH_SECONDS - aiGoals * GOAL_ANIM_SECS - chances * CHANCE_ANIM_SECS - INTRO_SECS);
+  // İlk yarının uzatması (ikinci yarınınki match.stoppage)
+  const stop1 = 1 + Math.floor(Math.random() * 3);
 
   const roleText = match.role === 'starter' ? 'İlk 11\'desin' : match.role === 'out' ? (match.reason === 'suspended' ? 'Cezalısın, tribündesin' : 'Sakatsın, tribündesin') : 'Yedek kulübesindesin';
 
@@ -173,6 +169,7 @@ export function matchScreen(app, { match }) {
         speed: () => app.settings.speed || 1,
         auto: app.autoplay,
         names: { home: home.name, away: away.name, homeShort: hs, awayShort: as, city: CLUB_BY_ID[match.homeId]?.city || '' },
+        coach: { name: match.national ? 'Milli Takım T.D.' : s.coach?.clubId === match.myId && s.coach?.name ? `T.D. ${s.coach.name}` : 'Teknik Direktör' },
       });
       bc.onSfx((n) => sfx(n));
       if (import.meta.env?.DEV) window.__bc = bc;
@@ -186,8 +183,11 @@ export function matchScreen(app, { match }) {
         glA.innerHTML = (match.goals || []).filter((g) => g.side !== homeSide).map(fmt).join('');
       };
       let chanceAnims = 0;
+      // Canlandırma: gol satırı, skor ve tribün sesi topun ağlara girdiği anda gelir (önceden skor değişmez)
       const animate = async (ln, g) => {
-        if (skipTo !== null || app.autoplay) return;
+        let pushed = false;
+        const doPush = () => { if (!pushed) { pushed = true; push(ln); } };
+        if (skipTo !== null || app.autoplay) { doPush(); return; }
         const goal = ln.kind === 'goal-my' || ln.kind === 'goal-me' || ln.kind === 'goal-opp';
         if (goal) {
           const side = ln.kind === 'goal-opp' ? 'opp' : 'my';
@@ -199,11 +199,13 @@ export function matchScreen(app, { match }) {
             assist: meAssist ? shortName : g?.assist ?? undefined, meAssist,
             assistLabel: meAssist ? shortName : g?.assist ? shortOf(g.assist) : '',
             replay: me || meAssist,
+            onGoal: doPush,
           });
-        } else if (ln.ai && ['save', 'post', 'chance'].includes(ln.kind) && (app.settings.speed || 1) === 1 && chanceAnims < 1) {
+        } else if (ln.ai && ['save', 'post', 'chance'].includes(ln.kind) && (app.settings.speed || 1) === 1 && chanceAnims < 2) {
           chanceAnims++;
-          await bc.play({ side: ln.side || 'my', outcome: ln.kind === 'save' ? 'save' : ln.kind === 'post' ? 'post' : 'miss', kind: Math.random() < 0.5 ? 'open' : 'long' });
+          await bc.play({ side: ln.side || 'my', outcome: ln.kind === 'save' ? 'save' : ln.kind === 'post' ? 'post' : 'miss', kind: Math.random() < 0.5 ? 'open' : 'long', onGoal: doPush });
         }
+        doPush();
       };
       let last = performance.now();
       let raf = 0;
@@ -219,10 +221,14 @@ export function matchScreen(app, { match }) {
         void scoreEl.offsetWidth;
         scoreEl.classList.add('score-pop');
       };
-      const clock = (mm) => {
-        const m0 = Math.floor(mm);
-        if (m0 >= 90) return `90+${Math.max(1, m0 - 89)}`;
-        return `${String(m0).padStart(2, '0')}:${String(Math.floor((mm % 1) * 60)).padStart(2, '0')}`;
+      const clock = (mm) => `${String(Math.floor(mm)).padStart(2, '0')}:${String(Math.floor((mm % 1) * 60)).padStart(2, '0')}`;
+      // Maç saati evreleri: ilk yarı → ilk yarı uzatması → devre arası → ikinci yarı → uzatma → bitiş
+      let phase = 'h1';
+      let stopT = 0;
+      const board = () => {
+        if (phase === 'st1' || phase === 'htReady') return `45+${Math.min(stop1, Math.floor(stopT) + 1)}`;
+        if (phase === 'st2' || phase === 'ftReady') return `90+${Math.min(match.stoppage, Math.floor(stopT) + 1)}`;
+        return clock(minute);
       };
       const line = (minuteN, text, kind = '') => {
         const n = el(`<div class="ln ${kind}"><span class="m">${minuteN}'</span><span class="ln-ic">${FEED_SPRITES[kind] ? sprite(FEED_SPRITES[kind], { size: 22 }) : ''}</span><span class="tx"></span></div>`);
@@ -292,8 +298,8 @@ export function matchScreen(app, { match }) {
         const newGoals = (match.goals || []).slice(g0);
         if (lines.some((l) => l.kind === 'goal-me')) confetti();
         for (const ln of lines) {
-          push(ln);
           if (ln.kind?.startsWith('goal')) await animate(ln, newGoals.shift());
+          else push(ln);
         }
         busy = false;
         last = performance.now();
@@ -301,7 +307,17 @@ export function matchScreen(app, { match }) {
 
       async function process(item) {
         if (item.kind === 'kickoff') return;
-        if (item.kind === 'ht') { line(45, `İlk yarı sona erdi. ${scoreText()}`, 'whistle'); sfx('shortWhistle'); if (skipTo === null) await bc.halfTime(); return; }
+        if (item.kind === 'ht') {
+          minEl.textContent = 'İY';
+          line(45, `İlk yarı sona erdi. ${scoreText()}`, 'whistle');
+          sfx('shortWhistle');
+          if (skipTo === null) await bc.halfTime();
+          phase = 'h2';
+          minute = 45;
+          minEl.textContent = '45:00';
+          line(45, 'İkinci yarı başladı!', 'whistle');
+          return;
+        }
         if (item.kind === 'chant') {
           const awayEnd = Math.random() < 0.3;
           line(item.minute, `📣 ${awayEnd ? 'Deplasman tribünü' : 'Tribünler'}: "${pickLine(CHANTS)(awayEnd ? as : hs)}"`, 'chant');
@@ -330,7 +346,8 @@ export function matchScreen(app, { match }) {
         }
         if (item.kind === 'ft') {
           finished = true;
-          line(item.minute, `Maç sona erdi! ${scoreText()}`, 'whistle');
+          minEl.textContent = 'MS';
+          line(`90+${match.stoppage}`, `Maç sona erdi! ${scoreText()}`, 'whistle');
           const hg = match.isHome ? match.score.my : match.score.opp;
           const ag = match.isHome ? match.score.opp : match.score.my;
           bc.fullTime(hg > ag ? 'home' : ag > hg ? 'away' : null);
@@ -346,7 +363,6 @@ export function matchScreen(app, { match }) {
         if (item.ev) {
           const g0 = (match.goals || []).length;
           const ln = applyAiEvent(match, item.ev);
-          push(ln);
           await animate({ ...ln, ai: true, side: item.ev.side }, (match.goals || [])[g0]);
           return;
         }
@@ -362,14 +378,28 @@ export function matchScreen(app, { match }) {
         last = now;
         if (!busy && !finished) {
           const speed = app.settings.speed || 1;
-          // 1x hızda maç saati ~1 dakika sürer (goller ve pozisyonların canlandırması saati durdurur)
-          minute += dt * ((90 + match.stoppage) / clockSecs) * speed;
-          if (skipTo !== null) minute = Math.max(minute, skipTo);
-          minEl.textContent = clock(Math.min(90 + match.stoppage, minute));
+          // 1x hızda maç saati 90 saniye (1 sn = 1 dk); canlandırmalar sırasında saat durur ve ayrı sürer
+          const adv = dt * (90 / MATCH_SECONDS) * speed * (app.autoplay ? 6 : 1); // test modunda hızlı
+          if (phase === 'h1') { minute += adv; if (minute >= 45) { minute = 45; phase = 'st1'; stopT = 0; } }
+          else if (phase === 'st1') { stopT += adv; if (stopT >= stop1) phase = 'htReady'; }
+          else if (phase === 'h2') { minute += adv; if (minute >= 90) { minute = 90; phase = 'st2'; stopT = 0; } }
+          else if (phase === 'st2') { stopT += adv; if (stopT >= match.stoppage) phase = 'ftReady'; }
+          if (skipTo !== null) {
+            if (phase === 'h1' || phase === 'st1') {
+              if (skipTo > 45) { minute = 45; phase = 'htReady'; } else minute = Math.max(minute, skipTo);
+            } else if (phase === 'h2' || phase === 'st2') {
+              if (skipTo >= 90) { minute = 90; phase = 'ftReady'; } else minute = Math.max(minute, skipTo);
+            }
+          }
+          minEl.textContent = board();
           updateCond();
           if (Math.random() < 0.1) setMom();
           while (idx < timeline.length && timeline[idx].minute <= minute && !busy && !finished) {
-            const item = timeline[idx++];
+            const item = timeline[idx];
+            // devre arası ve bitiş düdüğü uzatma dakikaları bitince çalar
+            if (item.kind === 'ht' && phase !== 'htReady') break;
+            if (item.kind === 'ft' && phase !== 'ftReady') break;
+            idx++;
             if (item.m) minEl.textContent = clock(item.minute);
             await process(item);
           }
@@ -377,9 +407,9 @@ export function matchScreen(app, { match }) {
         if (!finished) raf = requestAnimationFrame(tick);
       };
       bc.start();
-      // Tünel çıkışı → başlama vuruşu
+      // (ilk maçta) eğitici asistan → tünel çıkışı → başlama vuruşu
       busy = true;
-      bc.intro().catch(() => {}).finally(() => { busy = false; last = performance.now(); raf = requestAnimationFrame(tick); });
+      runTutorial(app, 'match').catch(() => {}).then(() => bc.intro()).catch(() => {}).finally(() => { busy = false; last = performance.now(); raf = requestAnimationFrame(tick); });
 
       // Tam ekran yatay yayın (dikey telefonda 90° döner)
       const fsBtn = el0.querySelector('[data-fs]');
@@ -400,7 +430,7 @@ export function matchScreen(app, { match }) {
       skipBtn.addEventListener('click', () => {
         app.click();
         const rest = timeline.slice(idx).filter((t) => t.m);
-        skipTo = rest.length ? rest[0].minute : 90 + match.stoppage;
+        skipTo = rest.length ? rest[0].minute : 90;
         if (rest.length <= 1) skipBtn.innerHTML = `${icon('chev')} Sona atla`;
       });
     },

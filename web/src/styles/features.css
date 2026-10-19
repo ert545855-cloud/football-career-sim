@@ -722,3 +722,33 @@
 .perk { display: flex; flex-direction: column; gap: 4px; text-align: left; color: inherit; font: inherit; cursor: pointer; padding: 10px; }
 .perk.on { border-color: var(--accent); background: rgba(198, 255, 61, 0.08); opacity: 1; }
 .perk[disabled]:not(.on) { opacity: 0.55; }
+
+/* Saha kenarı: teknik direktör kamerası */
+.bc-coach { position: absolute; left: 7px; bottom: 7px; width: 98px; height: 86px; border-radius: 6px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.28); background: #0b1220; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5); transform: translateX(-130%); transition: transform 0.45s cubic-bezier(0.2, 0.9, 0.3, 1); pointer-events: none; }
+.bc-coach.on { transform: none; }
+.bc-coach canvas { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+.bc-coach > span { position: absolute; left: 0; right: 0; bottom: 0; padding: 2px 4px; font-size: 8.5px; font-weight: 800; letter-spacing: 0.03em; color: #fff; background: rgba(7, 12, 26, 0.85); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bc-cbub { position: absolute; left: 4px; right: 4px; top: 3px; padding: 2px 5px; border-radius: 5px; font-size: 9.5px; font-weight: 900; text-align: center; color: #111827; background: #fff; opacity: 0; transition: opacity 0.2s; }
+.bc-cbub:not(:empty) { opacity: 1; }
+.bc-cbub.cheer { background: #c6ff3d; }
+.bc-cbub.concede, .bc-cbub.miss { background: #ff5d6c; color: #fff; }
+.bc-cbub.save { background: #7dd3fc; }
+.bc.bc-full .bc-coach { width: 150px; height: 128px; left: calc(env(safe-area-inset-top, 0px) + 10px); bottom: 12px; }
+.bc.bc-full .bc-cbub { font-size: 12px; }
+.bc.bc-full .bc-coach > span { font-size: 11px; }
+
+/* Eğitici asistan */
+.tut-layer { position: fixed; inset: 0; z-index: 120; animation: fade 0.2s ease; }
+.tut-layer.out { opacity: 0; transition: opacity 0.18s; }
+.tut-hole { position: fixed; border-radius: 12px; box-shadow: 0 0 0 200vmax rgba(2, 6, 4, 0.66); outline: 2px solid var(--accent); outline-offset: 2px; animation: tutPulse 1.4s ease-in-out infinite; pointer-events: none; transition: all 0.25s ease; }
+.tut-hole.none { left: 50%; top: 50%; width: 0; height: 0; outline: none; }
+@keyframes tutPulse { 50% { outline-color: rgba(198, 255, 61, 0.35); } }
+.tut-card { position: fixed; left: 50%; width: min(92vw, 380px); transform: translateX(-50%); padding: 12px 14px; border-radius: 16px; background: linear-gradient(180deg, #13261d, #0c1914); border: 1px solid rgba(198, 255, 61, 0.35); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55); }
+.tut-head { display: flex; align-items: center; gap: 10px; }
+.tut-head b { display: block; font-size: 15px; }
+.tut-head span { font-size: 11.5px; color: var(--muted); }
+.tut-face { width: 52px; height: 52px; border-radius: 12px; overflow: hidden; background: linear-gradient(180deg, #24406e, #102040); flex: none; display: grid; place-items: center; image-rendering: pixelated; }
+.tut-card p { margin: 10px 0 12px; font-size: 14px; line-height: 1.45; }
+.tut-btns { display: flex; justify-content: flex-end; gap: 8px; }
+.tut-tip { display: grid; gap: 3px; margin: -2px 0 12px; padding: 9px 11px; border-radius: 12px; background: rgba(198, 255, 61, 0.08); border: 1px solid rgba(198, 255, 61, 0.3); font-size: 13px; line-height: 1.4; }
+.tut-tip b { font-size: 12px; color: var(--accent); }

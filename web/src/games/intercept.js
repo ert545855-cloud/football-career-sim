@@ -4,7 +4,7 @@
 import { createStage, Particles, BigText, drawPitchTop, roundRect, clamp } from './engine.js';
 import { FixedStep, bodySpeed, envFor } from './physics.js';
 import { weatherFx } from './weatherFx.js';
-import { createDefense, defenseStep, defMoveTo, defLunge } from './interceptLogic.js';
+import { createDefense, defenseStep, defMoveTo, defLunge, defSlide } from './interceptLogic.js';
 import { drawPixelPlayer, drawMovingPlayer, drawPixelBall } from './pixel/sprites.js';
 import { npcLook, keeperLook, lookFromAvatar } from './pixel/looks.js';
 import { sfx, buzz } from '../audio.js';
@@ -47,6 +47,8 @@ export function playIntercept(host, opts = {}) {
       fit(W, H);
       D = createDefense({ context, skill, Wm: WM, Hm: HM, env, fatigue: opts.fatigue || 0 });
       D.att.forEach((a, i) => { a.look = npcLook(oppClub, 500 + i * 17, [9, 7, 11][i]); });
+      D.mateLook = npcLook(myClub, 640, 5);
+      S.mateSt = { ph: 0, last: 'up' };
       S.sts = D.att.map(() => ({ ph: Math.random() * 4, last: 'down' }));
       if (opts.expose) Object.assign(opts.expose, { D, get ppm() { return ppm; }, get ox() { return ox; }, get oy() { return oy; } });
     }
@@ -57,6 +59,7 @@ export function playIntercept(host, opts = {}) {
         else if (e.type === 'pass') { sfx('kick'); buzz('kick'); if (e.through) big.show('ARA PASI!', '#ff9e26', 34); }
         else if (e.type === 'received') buzz('step');
         else if (e.type === 'lunge') { sfx('swish'); buzz('kick'); S.hint = 0; }
+        else if (e.type === 'slide') { sfx('tackle'); buzz('tackle'); S.hint = 0; stage.shake(4); }
         else if (e.type === 'shrug') { big.show('SIYRILDI!', '#ff9e26', 34); buzz('bump'); }
         else if (e.type === 'end') endFx(e);
       }
@@ -68,12 +71,16 @@ export function playIntercept(host, opts = {}) {
       const bx = ox + D.ball.x * ppm;
       const by = oy + D.ball.y * ppm;
       if (r.outcome === 'won') {
-        const label = { lunge: 'PAS ARASI!', intercept: 'PAS ARASI!', tackle: 'TOPU KAPTIN!', loose: 'PAS BOŞA GİTTİ', time: 'OYALADIN!' }[r.method] || 'TOPU KAPTIN!';
+        const label = { lunge: 'PAS ARASI!', intercept: 'PAS ARASI!', tackle: 'TOPU KAPTIN!', loose: 'PAS BOŞA GİTTİ', time: 'OYALADIN!', slide: 'KAYARAK ALDIN!', cover: 'ARKADAŞIN KESTİ!' }[r.method] || 'TOPU KAPTIN!';
         big.show(label, '#c6ff3d', 52);
         particles.burst(bx, by, { n: 30, colors: ['#c6ff3d', '#fff'], speed: 240, life: 0.9 });
         sfx('tackle');
         buzz('tackle');
         stage.shake(8);
+      } else if (r.outcome === 'foul') {
+        big.show(r.card ? 'FAUL · SARI KART!' : 'FAUL!', '#facc15', 46);
+        sfx('whistle');
+        buzz('tackleLost');
       } else {
         big.show(r.method === 'dribble' ? 'CEZA SAHASINA GİRDİ!' : 'GEÇİLDİN!', '#ff5d6c', 48);
         sfx('miss');
@@ -87,7 +94,7 @@ export function playIntercept(host, opts = {}) {
       const r = D.result;
       setTimeout(() => {
         stage.stop();
-        resolve({ success: r.outcome === 'won', accuracy: r.acc || 0, outcome: r.outcome, method: r.method, passes: r.passes });
+        resolve({ success: r.outcome === 'won', accuracy: r.acc || 0, outcome: r.outcome, method: r.method, passes: r.passes, card: !!r.card });
       }, 50);
     }
 
@@ -103,6 +110,7 @@ export function playIntercept(host, opts = {}) {
         fixed.run(dt * TS, (h) => { defenseStep(D, h); });
         D.att.forEach((a, i) => { S.sts[i].ph += bodySpeed(a.body) * dt * TS * 1.1; });
         S.meSt.ph += bodySpeed(D.me) * dt * TS * 1.1;
+        S.mateSt.ph += bodySpeed(D.mate) * dt * TS * 1.1;
         onEvents();
         if (D.result) {
           S.afterT += dt;
@@ -174,10 +182,13 @@ export function playIntercept(host, opts = {}) {
           const p = P(a.body);
           items.push({ y: p.y, fn: () => drawMovingPlayer(ctx, p.x, p.y, ph, a.look, a.body.vx, a.body.vy, S.sts[i], { face: 'down', ring: i === D.carrier && D.phase !== 'pass' ? '#ff9e26' : 'rgba(255,93,108,.55)' }) });
         });
+        const mp = P(D.mate);
+        items.push({ y: mp.y, fn: () => drawMovingPlayer(ctx, mp.x, mp.y, ph, D.mateLook, D.mate.vx, D.mate.vy, S.mateSt, { face: 'up', ring: 'rgba(56,189,248,.6)' }) });
         const m = P(D.me);
         const lunging = D.lunge > 0;
         items.push({ y: m.y, fn: () => {
-          if (lunging) drawPixelPlayer(ctx, m.x, m.y, ph * 1.05, meLook, { dir: 'side', frame: 'lunge', flip: D.ball.x < D.me.x, marker: '#c6ff3d' });
+          if (D.slide || D.down > 0) drawPixelPlayer(ctx, m.x, m.y, ph * 1.05, meLook, { dir: 'side', frame: 'lunge', flip: (D.slide?.dx ?? D.me.vx) < 0, marker: '#c6ff3d', rot: D.down > 0 ? ((D.slide?.dx ?? 1) < 0 ? -1.1 : 1.1) : (D.slide?.dx < 0 ? -0.5 : 0.5) });
+          else if (lunging) drawPixelPlayer(ctx, m.x, m.y, ph * 1.05, meLook, { dir: 'side', frame: 'lunge', flip: D.ball.x < D.me.x, marker: '#c6ff3d' });
           else drawMovingPlayer(ctx, m.x, m.y, ph * 1.05, meLook, D.me.vx, D.me.vy, S.meSt, { face: 'up', marker: '#c6ff3d', rot: D.me.stun > 0 ? 0.3 : 0 });
         } });
         items.sort((a, b) => a.y - b.y).forEach((it) => it.fn());
@@ -205,12 +216,14 @@ export function playIntercept(host, opts = {}) {
           ctx.font = '800 13px system-ui, sans-serif';
           ctx.textAlign = 'center';
           ctx.fillStyle = 'rgba(4,10,8,.6)';
-          roundRect(ctx, W / 2 - 170, H * 0.8 - 22, 340, 50, 10);
+          roundRect(ctx, W / 2 - 175, H * 0.8 - 24, 350, 70, 10);
           ctx.fill();
           ctx.fillStyle = 'rgba(255,255,255,.95)';
-          ctx.fillText('Sürükle: pas koridorunu kapat', W / 2, H * 0.8 - 2);
+          ctx.fillText('Sürükle: pas koridorunu kapat', W / 2, H * 0.8 - 4);
           ctx.fillStyle = 'rgba(198,255,61,.95)';
-          ctx.fillText('Dokun: top yanından geçerken ayağını uzat', W / 2, H * 0.8 + 18);
+          ctx.fillText('Dokun: top yanından geçerken ayağını uzat', W / 2, H * 0.8 + 16);
+          ctx.fillStyle = 'rgba(255,207,61,.95)';
+          ctx.fillText('Hızlı kaydır: kayarak müdahale (adama girersen faul!)', W / 2, H * 0.8 + 36);
         }
         wfx.sky(ctx, W, H, t);
         particles.render(ctx);
@@ -232,7 +245,12 @@ export function playIntercept(host, opts = {}) {
         } else if (kind === 'up' && S.touch) {
           const tc = S.touch;
           S.touch = null;
-          if (!tc.drag && p.time - tc.t0 < 300) defLunge(D);
+          const dtm = Math.max(1, p.time - tc.t0);
+          const dx = p.x - tc.sx;
+          const dy = p.y - tc.sy;
+          const fast = Math.hypot(dx, dy) > 70 * k && dtm < 260;
+          if (fast) defSlide(D, dx / ppm, dy / ppm);
+          else if (!tc.drag && dtm < 300) defLunge(D);
         }
       },
     });

@@ -1,7 +1,8 @@
 // KUPALAR — ülke kupası (Türkiye Kupası vb.) ve Süper Kupa.
-//  • Kupa: ülkenin en güçlü 32 kulübü (alt ligler dahil), tek maç eleme. Turlar lig haftalarının arasında (hafta içi):
-//    Son 32 (3. hafta), Son 16 (7), Çeyrek (11), Yarı (15), Final (19). Berabere biterse penaltılar.
-//  • Senin kulübünün maçı kulüp maçı gibi oynanır (canlı anlatım + kritik anlar). Diğer eşleşmeler simüle edilir.
+//  • Kupa: ülkenin en güçlü 64'e kadar kulübü (alt ligler dahil), tek maç eleme.
+//    Ön Eleme (2. hafta, güçlü kulüpler bay geçer) → Son 32 (4) → Son 16 (8) → Çeyrek final (12) → Yarı final (15) → Final (19).
+//    Turlar lig haftalarının arasında, hafta içi oynanır: lig maçından sonra otomatik başlamaz, ana ekranda ayrı maç olarak bekler.
+//  • Senin kulübünün maçı kulüp maçı gibi oynanır (canlı yayın + kritik anlar). Diğer eşleşmeler simüle edilir.
 //  • Süper Kupa: sezon başında lig şampiyonu ile kupa şampiyonu (aynıysa lig ikincisi) karşılaşır.
 import { CLUB_BY_ID, COUNTRY_BY_ID, LEAGUES } from './data.js';
 import { chance, clamp, poisson, randInt, shuffle } from './rng.js';
@@ -9,9 +10,9 @@ import { clubRating, goalLambda, sortedTable } from './league.js';
 import { changeFame, changeMorale, changeRel } from './player.js';
 import { planMatch, finalizeMatch } from './match.js';
 
-export const CUP_ROUNDS = ['r32', 'r16', 'qf', 'sf', 'f'];
-export const CUP_WEEK = { r32: 3, r16: 7, qf: 11, sf: 15, f: 19 };
-export const ROUND_LABEL = { r32: 'Son 32', r16: 'Son 16', qf: 'Çeyrek final', sf: 'Yarı final', f: 'Final', super: 'Süper Kupa' };
+export const CUP_ROUNDS = ['pre', 'r32', 'r16', 'qf', 'sf', 'f'];
+export const CUP_WEEK = { pre: 2, r32: 4, r16: 8, qf: 12, sf: 15, f: 19 };
+export const ROUND_LABEL = { pre: 'Ön eleme', r32: 'Son 32', r16: 'Son 16', qf: 'Çeyrek final', sf: 'Yarı final', f: 'Final', super: 'Süper Kupa' };
 
 export function cupName(country) {
   if (country === 'tr') return 'Türkiye Kupası';
@@ -23,21 +24,30 @@ const countryClubs = (world, cc) => Object.values(world.leagues)
   .filter((lg) => LEAGUES[lg.id]?.country === cc && !LEAGUES[lg.id]?.youth)
   .flatMap((lg) => sortedTable(lg).map((r) => r.id));
 
-/** Sezonun kupasını kurar (kulübün ülkesinde) */
+/** Sezonun kupasını kurar (kulübün ülkesinde): en güçlüler bay geçer, diğerleri ön elemede eşleşir */
 export function createCup(state) {
   const cc = CLUB_BY_ID[state.career.clubId]?.country || 'tr';
   const ids = [...new Set(countryClubs(state.world, cc))].filter((id) => CLUB_BY_ID[id]);
   if (ids.length < 8) { state.cup = null; return null; }
   const ranked = ids.sort((a, b) => clubRating(state.world, b) - clubRating(state.world, a));
-  const size = ranked.length >= 32 ? 32 : 16;
-  let field = ranked.slice(0, size);
-  // Kendi kulübün her zaman kupada (alt lig takımları da kupaya katılır)
-  if (!field.includes(state.career.clubId) && ids.includes(state.career.clubId)) field[field.length - 1] = state.career.clubId;
-  field = shuffle(field);
-  const first = size === 32 ? 'r32' : 'r16';
-  const ties = [];
-  for (let i = 0; i < field.length; i += 2) ties.push({ h: field[i], a: field[i + 1], hg: null, ag: null, pens: null, w: null });
-  state.cup = { season: state.calendar.season, country: cc, name: cupName(cc), rounds: { [first]: ties }, current: first, out: null, winner: null, myResults: [] };
+  const mk = (list) => { const out = []; for (let i = 0; i < list.length; i += 2) out.push({ h: list[i], a: list[i + 1], hg: null, ag: null, pens: null, w: null }); return out; };
+  // Kendi kulübün her zaman kupada (alt lig takımları da katılır)
+  const ensureMe = (field) => { if (!field.includes(state.career.clubId) && ids.includes(state.career.clubId)) field[field.length - 1] = state.career.clubId; return field; };
+  let cup;
+  if (ranked.length >= 34) {
+    const n = Math.min(64, ranked.length - (ranked.length % 2));
+    const extra = n - 32; // ön elemede elenecek takım sayısı
+    let field = ensureMe(ranked.slice(0, n));
+    const byes = field.slice(0, 32 - extra);
+    const pre = shuffle(field.slice(32 - extra));
+    cup = { rounds: { pre: mk(pre) }, current: 'pre', byes };
+  } else {
+    const size = ranked.length >= 32 ? 32 : 16;
+    const field = shuffle(ensureMe(ranked.slice(0, size)));
+    const first = size === 32 ? 'r32' : 'r16';
+    cup = { rounds: { [first]: mk(field) }, current: first, byes: [] };
+  }
+  state.cup = { season: state.calendar.season, country: cc, name: cupName(cc), ...cup, out: null, winner: null, myResults: [] };
   return state.cup;
 }
 
@@ -93,7 +103,8 @@ function advanceCup(state) {
     return;
   }
   const next = CUP_ROUNDS[CUP_ROUNDS.indexOf(round) + 1];
-  const winners = shuffle(ties.map((t) => t.w));
+  // ön elemeden çıkanlar bay geçen güçlü kulüplerle birleşir
+  const winners = shuffle([...ties.map((t) => t.w), ...(round === 'pre' ? cup.byes || [] : [])]);
   const nt = [];
   for (let i = 0; i < winners.length; i += 2) nt.push({ h: winners[i], a: winners[i + 1], hg: null, ag: null, pens: null, w: null });
   cup.rounds[next] = nt;
@@ -176,7 +187,7 @@ export function cupSeasonEnd(state, leagueChampion, runnerUp) {
   const cup = state.cup;
   if (cup && !cup.winner) {
     let guard = 0;
-    while (!cup.winner && guard++ < 6) {
+    while (!cup.winner && guard++ < 8) {
       for (const t of cup.rounds[cup.current] || []) if (t.w == null) simTie(state.world, t, cup.current === 'f');
       advanceCup(state);
     }
@@ -202,6 +213,10 @@ export const myCupStatus = (state) => {
   if (cup.winner === state.career.clubId) return 'Şampiyon';
   if (cup.out) return `${ROUND_LABEL[cup.out]}'de elendi`;
   if (cup.winner) return 'Kupa bitti';
+  if (cup.current === 'pre' && (cup.byes || []).includes(state.career.clubId)) return `Son 32'den başlıyor (H${CUP_WEEK.r32})`;
   return `${ROUND_LABEL[cup.current]} (H${CUP_WEEK[cup.current]})`;
 };
+
+/** Bekleyen (hafta içi) kupa maçı için kısa etiket */
+export const cupTieLabel = (tie) => (tie?.kind === 'super' ? 'Süper Kupa' : `${tie?.name || 'Kupa'} · ${ROUND_LABEL[tie?.round] || ''}`);
 

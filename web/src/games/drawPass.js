@@ -437,17 +437,33 @@ export function playDrawPass(host, opts) {
           }
         } else {
           if (d.lunge && !flying) d.lunge = null;
-          // bölge savunması: kendi bölgesindeki arkadaşın pas koridorunu gölgeler (topun gideceği yere koşmaz)
+          // bölge savunması: kendi bölgesindeki arkadaşın pas koridorunu gölgeler, sürekli kayar ve topa göre konum alır
           const mate = L.mates[d.zone ?? 0];
           let tx = d.hx / ppm;
           let ty = d.hy / ppm;
           if (mate) {
             const cx = meX + (mate.body.x - meX) * 0.58;
             const cy = meY + (mate.body.y - meY) * 0.58;
-            tx = lerp(tx, cx, 0.35) + Math.sin(d.ph * 0.25) * 0.6;
-            ty = lerp(ty, cy, 0.35) + Math.cos(d.ph * 0.2) * 0.4;
+            tx = lerp(tx, cx, 0.5) + Math.sin(S.t * 0.9 + d.ph) * 1.6;
+            ty = lerp(ty, cy, 0.45) + Math.cos(S.t * 0.7 + d.ph * 1.3) * 1.0;
           }
-          steer(bd, tx, ty, h, { speed: 3.4, arrive: 0.8 });
+          let speed = 4.4;
+          // Pası okuma: sen çizerken çizginin gittiği koridora en yakın rakip araya girmeye çalışır (tepki gecikmeli)
+          if (!tryout && (S.phase === 'draw' || S.phase === 'aim') && S.pts.length > 3) {
+            d.read = (d.read || 0) + h;
+            const end = S.pts[S.pts.length - 1];
+            const ex = end.x / ppm;
+            const ey = end.y / ppm;
+            const mx = lerp(meX, ex, 0.55);
+            const my = lerp(meY, ey, 0.55);
+            const mine = L.defs.filter((q) => q.mode === 'hold').sort((a, b) => Math.hypot(a.body.x - mx, a.body.y - my) - Math.hypot(b.body.x - mx, b.body.y - my))[0];
+            if (mine === d && d.read > lerp(0.55, 0.3, 1 - skill)) {
+              tx = lerp(tx, mx, 0.7);
+              ty = lerp(ty, my, 0.7);
+              speed = sk.defSpeed * 0.62;
+            }
+          } else d.read = 0;
+          steer(bd, tx, ty, h, { speed, arrive: 0.6 });
         }
         stepBody(bd, h);
       }

@@ -14,6 +14,7 @@ import { playUnityMoment, unityBuildAvailable } from './unity3d.js';
 import { setBallVariant } from './pixel/sprites.js';
 import { duckMusic } from '../music/player.js';
 import { windArrow } from '../core/weather.js';
+import { ASSISTANT, gameTip } from '../ui/tutorial.js';
 
 /**
  * @param {{type:'shot'|'pass'|'tackle'|'dribble'|'shuttle', skill:number, context?:string, title:string, text:string, me?:object,
@@ -30,6 +31,7 @@ export async function runMiniGame(o) {
   const fat = Math.max(0, Math.min(0.65, o.fatigue || 0));
   const cond = Math.round(100 - fat * 100);
   const wChip = w ? `<span class="chip wx-chip" title="${esc(w.note)}">${w.emoji} ${w.temp}°${w.windKmh >= 12 ? ` · ${windArrow(w.wind)} ${w.windKmh}` : ''}</span>` : '';
+  const tip = o.auto ? null : gameTip(o.type, o.context);
   const fChip = fat > 0.04 ? `<span class="chip ${cond < 60 ? 'bad' : cond < 78 ? 'warn' : ''} fat-chip">${icon('bolt', 'ico sm')} %${cond}</span>` : '';
   const layer = el(`
     <div class="game-layer ${big ? 'nervous' : ''}" ${big ? `style="--nerves:${big.nerves};--beat:${beat.toFixed(2)}s"` : ''}>
@@ -48,6 +50,7 @@ export async function runMiniGame(o) {
           ${o.minute ? `<span class="minute">${o.minute}'</span>` : ''}
           <h3 style="margin-top:8px">${esc(o.title)}</h3>
           <p class="lead" style="margin:6px 0 12px;color:var(--muted);line-height:1.45">${esc(o.text)}</p>
+          ${tip ? `<div class="tut-tip"><b>💡 ${esc(ASSISTANT)}</b><span>${esc(tip)}</span></div>` : ''}
           ${w && w.id !== 'clear' && w.id !== 'cloudy' ? `<div class="wx-note"><span>${w.emoji}</span><div><b>${esc(w.name)} · ${w.temp}°C${w.windKmh >= 12 ? ` · rüzgâr ${windArrow(w.wind)} ${w.windKmh} km/sa` : ''}</b><span>${esc(w.note)}</span></div></div>` : ''}
           ${fat > 0.12 ? `<div class="wx-note fat"><span>🫁</span><div><b>Kondisyon %${cond}</b><span>${cond < 60 ? 'Bacakların ağırlaştı: nişan sallanıyor, adımların yavaş.' : 'Biraz yoruldun: hareketlerin hafif ağırlaştı.'}</span></div></div>` : ''}
           ${big ? `<div class="nerves-note ${big.cool ? 'cool' : ''}">${icon(big.cool ? 'snow' : 'fire', 'ico sm')}<div><b>${esc(big.title)}: heyecan %${nervesPct}</b><span>${big.cool ? 'Soğukkanlı mentorun sayesinde heyecanın %20 az, nişangah daha yavaş.' : 'Kalbin hızlı atıyor: nişangah titriyor, oyun daha hızlı akıyor.'}</span></div></div>` : ''}

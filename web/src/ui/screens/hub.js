@@ -11,6 +11,7 @@ import { bigMatchChip, hubMentorCard, meetingFlow, requestsSheet, selectionSheet
 import { actionArt } from '../spriteMap.js';
 import { monthName, weatherFor } from '../../core/weather.js';
 import { hubLockerCard } from '../lockerView.js';
+import { ROUND_LABEL } from '../../core/cup.js';
 
 
 export function hubScreen(app) {
@@ -48,6 +49,7 @@ export function hubScreen(app) {
     s.board?.crisis ? `<span class="chip bad">${icon('coin', 'ico sm')} Kulüpte mali kriz</span>` : '',
   ].join('');
 
+  const cupTie = calendar.phase === 'week' ? s.pending.cupTie : null;
   const news = career.news.slice(0, 3).map((n) => `<div class="li"><span class="news-dot ${n.kind}"></span><div class="grow small">${esc(n.text)}</div><span class="muted small">H${n.w}</span></div>`).join('');
 
   return {
@@ -70,14 +72,25 @@ export function hubScreen(app) {
         <div class="row" style="gap:6px">${status}<button class="icon-btn" data-act="settings" aria-label="Ayarlar">${icon('gear')}</button></div>
       </div>
 
-      <div class="card" style="margin-top:12px;display:grid;gap:12px">
+      <div class="card" data-tut="meters" style="margin-top:12px;display:grid;gap:12px">
         ${meter('Enerji', 'bolt', player.energy, 100, energyColor(player.energy))}
         ${meter('Moral', 'smile', player.morale, 100, moraleColor(player.morale))}
         ${meter('Form', 'chart', (ov.form - 3) * 14.3, 100, ratingColor(ov.form), ov.form.toFixed(1).replace('.', ','))}
       </div>
 
-      <div class="h-sec">Sıradaki maç <span>${monthName(calendar.week)} · Hafta ${calendar.week}/${SEASON_WEEKS}</span></div>
-      <div class="card glow">
+      ${cupTie ? `<div class="h-sec">Hafta içi kupa maçı <span>${esc(cupTie.kind === 'super' ? 'Süper Kupa' : ROUND_LABEL[cupTie.round] || '')}</span></div>
+      <div class="card glow cup-next">
+        <div class="fixture">
+          <div class="team">${crestSVG(CLUB_BY_ID[cupTie.h])}<span>${esc(CLUB_BY_ID[cupTie.h].name)}</span></div>
+          <div class="col" style="align-items:center;gap:6px"><span class="vs">VS</span><span class="chip gold">${icon('trophy', 'ico xs')} Kupa</span></div>
+          <div class="team">${crestSVG(CLUB_BY_ID[cupTie.a])}<span>${esc(CLUB_BY_ID[cupTie.a].name)}</span></div>
+        </div>
+        <p class="muted small center" style="margin:10px 0 0">${esc(cupTie.name)} · tek maç eleme, berabere biterse penaltılar. Lig maçından önce oynanır.</p>
+        <button class="btn primary block" style="margin-top:10px" data-act="cup">${icon('whistle')} Kupa Maçına Çık</button>
+      </div>` : ''}
+
+      <div class="h-sec">${cupTie ? 'Hafta sonu lig maçı' : 'Sıradaki maç'} <span>${monthName(calendar.week)} · Hafta ${calendar.week}/${SEASON_WEEKS}</span></div>
+      <div class="card glow" data-tut="fixture">
         <div class="fixture">
           <div class="team">${crestSVG(home)}<span>${esc(home.name)}</span></div>
           <div class="col" style="align-items:center;gap:6px"><span class="vs">VS</span><span class="chip">${isHome ? 'İç saha' : 'Deplasman'}</span></div>
@@ -95,7 +108,7 @@ export function hubScreen(app) {
       <div class="actions">${actionTiles}</div>
       ${hubMentorCard(s)}
       ${hubLockerCard(s)}
-      <button class="btn primary lg block ${calendar.slots === 0 ? 'pulse' : ''}" style="margin-top:12px" data-act="match">${icon('whistle')} Maç Gününe Geç</button>
+      <button class="btn primary lg block ${calendar.slots === 0 ? 'pulse' : ''}" style="margin-top:12px" data-act="match">${icon('whistle')} ${cupTie ? 'Önce Kupa Maçı' : 'Maç Gününe Geç'}</button>
 
       <div class="h-sec">İlişkiler</div>
       <div class="card" style="display:grid;gap:12px">
@@ -141,7 +154,7 @@ export function hubScreen(app) {
         if (!t) return;
         app.click();
         if (t.dataset.action) app.runAction(t.dataset.action);
-        else if (t.dataset.act === 'match') app.matchDay();
+        else if (t.dataset.act === 'match' || t.dataset.act === 'cup') app.matchDay();
         else if (t.dataset.act === 'settings') app.go('settings');
         else if (t.dataset.act === 'locker') app.go('locker');
       });

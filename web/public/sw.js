@@ -1,6 +1,6 @@
 // Çevrimdışı oynama için service worker.
 // Sayfa (index.html) önce ağdan gelir (güncellemeler hemen görünsün), diğer dosyalar önbellekten.
-const CACHE = 'nfstars-v18';
+const CACHE = 'nfstars-v19';
 const CORE = ['./', './index.html', './manifest.webmanifest', './logo.webp', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {

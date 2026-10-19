@@ -55,6 +55,7 @@ import { campMatchFlow, nationalFlow, tournamentFlow } from './nationalView.js';
 import { campScreen } from './screens/camp.js';
 import { coachChangeFlow, lockerFlow, lockerScreen, pressFlow } from './lockerView.js';
 import { cupFlow, finishCupMatch } from './cupView.js';
+import { cupTieLabel } from '../core/cup.js';
 import { injuryFlow } from './injuryView.js';
 import { clauseOptions, negotiateClauses } from '../core/clauses.js';
 import { lastMinuteOffer } from '../core/economy.js';
@@ -63,6 +64,7 @@ import { scheduleCloudSync } from '../cloud.js';
 import { runTryoutStation, heartsHTML } from '../games/tryoutStation.js';
 import { drillSheet, electionSheet, monthAwardSheet, summerCampSheet, testimonialSheet } from './lifeView.js';
 import { summerCampDue } from '../core/summerCamp.js';
+import { FLOWS, registerTutorialApp, runTutorial } from './tutorial.js';
 import { POSITIONS as POS } from '../core/data.js';
 import { createWorld } from '../core/league.js';
 import { MAX_SCORE, TryoutSession, buildStarterOffers, randomAvatar, tryoutStatBonus } from '../core/onboarding/index.js';
@@ -164,6 +166,8 @@ export function createApp(rootEl) {
       if (track === 'keep') keepMusic('career');
       else if (track !== null) playMusic(track || 'career');
       setTimeout(() => this.flushAchievements(), 350);
+      // Eğitici asistan: bölümün ilk ziyaretinde (maç ekranı kendi başlatır)
+      if (name !== 'match' && FLOWS[name] && this.state) setTimeout(() => { if (this.current === name) runTutorial(this, name); }, 700);
     },
 
     /** Kış teması: giriş ekranları ve takvimde kış ayları (Aralık–Şubat) karlı; ayarlardan hep açık / kapalı. */
@@ -619,8 +623,12 @@ export function createApp(rootEl) {
       if (s.pending.offers) await this.offersFlow();
       // Yeni sezon: yaz kampı (2. sezondan itibaren)
       if (summerCampDue(s)) await summerCampSheet(this);
-      // Hafta içi kupa maçı / sezon açılışında Süper Kupa: maç ekranı devralır, bitince runPending yeniden çağrılır
-      if (s.pending.cupTie && s.calendar.phase === 'week' && (await cupFlow(this))) return;
+      // Hafta içi kupa maçı / Süper Kupa: lig maçının hemen ardından başlamaz, ana ekranda ayrı maç olarak bekler
+      if (s.pending.cupTie && s.calendar.phase === 'week' && !s.pending.cupTie.announced) {
+        s.pending.cupTie.announced = true;
+        this.save();
+        setTimeout(() => toast(`Hafta içi ${cupTieLabel(s.pending.cupTie)} maçın var. Ana ekrandan oynayabilirsin.`), 400);
+      }
       this.go('hub');
       await this.mentorFlow();
       this.go('hub');
@@ -841,6 +849,7 @@ export function createApp(rootEl) {
     };
   }
 
+  registerTutorialApp(app);
   return app;
 }
 
