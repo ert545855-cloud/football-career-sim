@@ -43,6 +43,7 @@ import { AGENT_RULES, currentAgent } from '../core/agent.js';
 import { agentAvatar, negotiationSheet } from './agentView.js';
 import { agentScreen } from './screens/agent.js';
 import { investScreen } from './screens/invest.js';
+import { gymScreen } from './screens/gym.js';
 import { investPct } from '../core/invest.js';
 import { socialScreen } from './screens/social.js';
 import { outingsLeft } from '../core/social/index.js';
@@ -102,6 +103,7 @@ export function createApp(rootEl) {
     achievements: achievementsScreen,
     agent: agentScreen,
     invest: investScreen,
+    gym: gymScreen,
     social: socialScreen,
     home: homeScreen,
     garage: garageScreen,
@@ -355,6 +357,11 @@ export function createApp(rootEl) {
     async runAction(id) {
       const s = this.state;
       if (id === 'train') return this.train();
+      if (id === 'gym') {
+        const chk = canDoAction(s, 'gym');
+        if (!chk.ok) { toast(chk.reason, 'bad'); sfx('error'); return; }
+        return this.go('gym');
+      }
       let opt;
       if (id === 'drill') {
         const chk = canDoAction(s, 'drill');

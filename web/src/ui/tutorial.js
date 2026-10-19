@@ -38,6 +38,10 @@ export const FLOWS = {
   league: [{ title: 'Lig ve kupa', text: 'Puan durumu, fikstür ve Kupa sekmesi burada. Kupa ön eleme ile başlar: son 32, son 16, çeyrek final, yarı final ve final.' }],
   chirp: [{ title: 'Chirp', text: 'Futbol dünyasının sosyal medyası. Maçlarından sonra paylaşım yap, taraftarlarınla etkileş; ün ve taraftar ilişkin buna göre değişir.' }],
   shop: [{ title: 'Mağaza', text: 'Araba, ev, gelişim ürünleri ve dolap (krampon, gol sevinci…). Kişisel antrenör antrenman verimini artırır.' }],
+  gym: [
+    { sel: '.gym-scene', title: 'Spor salonu', text: 'Ekipmana dokun: halter ve dambıl gücünü, koşu bandı kondisyonunu artırır. Esneme kas ağrısını alır. Haftada 2 ağırlık/kardiyo seansı yapabilirsin.' },
+    { sel: '.gym-meters', title: 'Maça etkisi', text: 'Kondisyon yüksekse maçta geç yorulursun ve sakatlık riskin düşer. Güç top kapmayı ve kafa toplarını kolaylaştırır. Maç gününe kas ağrısıyla çıkma: dinlen ya da esneme yap.' },
+  ],
   invest: [
     { sel: '.inv-hero', title: 'Yatırım', text: 'Kazandığın parayı burada değerlendirirsin. Toplam servetin nakit ve portföyünden oluşur. Fiyatlar her hafta sonu değişir.' },
     { sel: '.inv-agent', title: 'Menajerin takipte', text: 'Menajerin portföyünü izler: düşüşte, aşırı riskte ya da kasan azalınca seni uyarır. İstersen "Menajer yönetsin" ile parayı bir plana göre o yönetir (yıllık ~%2 ücret).' },

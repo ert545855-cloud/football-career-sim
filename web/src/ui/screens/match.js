@@ -4,6 +4,7 @@ import { applyAiEvent, MOMENT_INTRO, momentFatigue, momentTitle, resolveMoment }
 import { conditionPct, windArrow } from '../../core/weather.js';
 import { effectiveSkill } from '../../core/player.js';
 import { characterSkillMult } from '../../core/character.js';
+import { gymSkillMult } from '../../core/gym.js';
 import { clubRating } from '../../core/league.js';
 import { runMiniGame } from '../../games/index.js';
 import { celebrationOf, playerLook } from '../../core/cosmetics.js';
@@ -272,7 +273,7 @@ export function matchScreen(app, { match }) {
         // Maç içi yorgunluk: dakika ilerledikçe etkin yetenek düşer
         const fatigue = momentFatigue(s, match, m.minute);
         // Oyun tarzı, zayıf ayak, beceri ve yeni kulübe uyum
-        const skill = effectiveSkill(s.player, weights) * (match.big?.skillMult ?? 1) * (1 - fatigue * 0.3) * characterSkillMult(s, type, m.context);
+        const skill = effectiveSkill(s.player, weights) * (match.big?.skillMult ?? 1) * (1 - fatigue * 0.3) * characterSkillMult(s, type, m.context) * gymSkillMult(s, type, m.context);
         await sleep(350);
         const result = await runMiniGame({
           type,

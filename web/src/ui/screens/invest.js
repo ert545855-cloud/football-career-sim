@@ -11,6 +11,7 @@ import { buzz, sfx } from '../../audio.js';
 import { icon } from '../art.js';
 import { esc, sheet, toast } from '../dom.js';
 import { agentAvatar } from '../agentView.js';
+import { questsOn } from '../../core/quests.js';
 
 // ─────────────────────────── Biçimlendirme ───────────────────────────
 export function fmtPrice(p) {
@@ -355,6 +356,7 @@ async function tradeSheet(app, id) {
   });
   if (res !== 'ok') return false;
   const r = st.side === 'buy' ? buy(s, id, st.amount) : sell(s, id, st.frac);
+  if (r.ok && st.side === 'buy') questsOn(s, 'invest', { id });
   app.save();
   if (!r.ok) { toast(r.text, 'bad'); return false; }
   sfx('coin');

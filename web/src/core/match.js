@@ -4,6 +4,7 @@ import { clubRating, fixtureFor, goalLambda, leagueOf, leaguePrestige } from './
 import { addProgress, changeEnergy, changeFame, changeMorale, changeRel, form, ovr } from './player.js';
 import { bigMatchSetup } from './mentor/index.js';
 import { fatigueAt, weatherFor } from './weather.js';
+import { condOf, gymOnMatch, soreFatigue } from './gym.js';
 import { contextWeights, momentWeights, styleGoals } from './coach.js';
 import { matchInjuryRoll } from './injury.js';
 import { goalBonusFor } from './clauses.js';
@@ -140,7 +141,7 @@ export function planMatch(state, o = {}) {
   // Maç içi yorgunluk: ilk 11'de başlayıp kondisyonu çok düşerse hoca oyundan alır
   let subOff = null;
   if (role === 'starter') {
-    const f75 = fatigueAt({ minute: 75, energy: player.energy, stamina: player.stats.stamina, weather });
+    const f75 = fatigueAt({ minute: 75, energy: player.energy, stamina: player.stats.stamina, weather, cond: condOf(state), sore: soreFatigue(state) });
     if (f75 > 0.36 && chance(clamp((f75 - 0.36) * 2.6, 0, 0.8))) subOff = randInt(64, 80);
   }
 
@@ -179,6 +180,7 @@ export function planMatch(state, o = {}) {
     subOff,
     weather,
     energy0: player.energy,
+    sore0: soreFatigue(state), // spor salonundan kalan kas ağrısı
     stoppage: randInt(1, 5),
     /** Derbi / final / zirve / kader maçı: heyecan, etkin yetenek çarpanı ve mini oyun temposu */
     big: o.big || bigMatchSetup(state, { myId, oppId, week }),
@@ -296,7 +298,7 @@ export function applyAiEvent(match, ev) {
 /** Anın oynandığı dakikadaki yorgunluk (0..0.65) */
 export function momentFatigue(state, match, minute) {
   if (!match) return 0;
-  const f = fatigueAt({ minute, energy: match.energy0 ?? state.player.energy, stamina: state.player.stats.stamina, weather: match.weather, from: match.role === 'starter' ? 0 : match.subMinute || 0 });
+  const f = fatigueAt({ minute, energy: match.energy0 ?? state.player.energy, stamina: state.player.stats.stamina, weather: match.weather, from: match.role === 'starter' ? 0 : match.subMinute || 0, cond: condOf(state), sore: match.sore0 ?? soreFatigue(state) });
   return state.player.perks?.includes('engine') ? f * 0.85 : f; // Motor uzmanlığı
 }
 
@@ -538,6 +540,7 @@ export function finalizeMatch(state, match) {
 
   // Sakatlık zarı: yorgunluk, zemin, geçmiş sakatlıklar
   const injury = matchInjuryRoll(state, match, played);
+  gymOnMatch(state, { played }); // maç kondisyonu + kas ağrısı
 
   // Maç içi gelişim
   const gained = {};

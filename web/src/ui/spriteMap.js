@@ -91,7 +91,15 @@ export function awardArt(iconName, size = 40) {
 }
 
 /** Aksiyon kutusu ikonu */
+/** Atlasta olmayan aksiyonlar için piksel ikonlar (aynı piksel dili) */
+const PIXEL_ICONS = {
+  gym: `<svg viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><rect x="4" y="7" width="8" height="2" fill="#c3cad6"/><rect x="4" y="7" width="8" height="1" fill="#e5e9f0"/>
+    <rect x="1" y="4" width="3" height="8" fill="#d33f49"/><rect x="1" y="4" width="1" height="8" fill="#f07a82"/><rect x="12" y="4" width="3" height="8" fill="#d33f49"/><rect x="14" y="4" width="1" height="8" fill="#8f1f27"/>
+    <rect x="0" y="6" width="1" height="4" fill="#2f3542"/><rect x="15" y="6" width="1" height="4" fill="#2f3542"/></svg>`,
+};
+
 export function actionArt(actionId, fallbackIcon, size = 32) {
+  if (PIXEL_ICONS[actionId]) return `<span class="px-ic" style="width:${size}px;height:${size}px">${PIXEL_ICONS[actionId]}</span>`;
   const name = ACTION_SPRITES[actionId];
   return name && FRAMES[name] ? sprite(name, { size }) : icon(fallbackIcon);
 }

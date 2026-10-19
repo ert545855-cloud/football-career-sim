@@ -44,6 +44,8 @@ import { ambitionMorale, characterOnWeek, doDrill, ensureCharacter, potentialSea
 import { ensureMarket, interestOffers, loanOffer, priceOffers, recordTransfer, rumorsOnWeek } from './market.js';
 import { archiveOnMatch, ensureArchive, monthlyAward, teamOfSeason } from './archive.js';
 import { investOnWeek } from './invest.js';
+import { canGym, gymOnRest, gymOnWeek } from './gym.js';
+import { questsOn } from './quests.js';
 import { boardOnMatch, electionDue, ensurePresident, ensureRival, makeElection, rivalOnMatch, rivalSeasonEnd, withheldWage, worldStarsWindow } from './living.js';
 import { offerFor } from './economy.js';
 
@@ -156,6 +158,12 @@ export function canDoAction(state, id) {
       if (flags.injuredWeeks > 0) return { ok: false, reason: 'Sakatsın, özel çalışma yapamazsın.' };
       if (player.energy < 12) return { ok: false, reason: 'Enerjin çok düşük. Önce dinlen.' };
       return { ok: true };
+    case 'gym': {
+      // salon ekranında istasyon seçilir; burada genel uygunluk (zaman, enerji, haftalık sınır)
+      const c = canGym(state, 'dumbbell');
+      if (!c.ok && canGym(state, 'stretch').ok) return { ok: true, note: c.reason };
+      return c;
+    }
     case 'sponsor':
       if (player.fame < 20) return { ok: false, reason: 'Reklam çekimi için ünün 20 olmalı.' };
       if (player.energy < 12) return { ok: false, reason: 'Çok yorgunsun.' };
@@ -191,6 +199,7 @@ export function doAction(state, id, opt) {
     case 'rest':
       changeEnergy(player, 30);
       changeMorale(player, 3);
+      gymOnRest(state); // kas ağrısı azalır
       title = 'Dinlendin';
       text = pick(['Uzun bir uyku ve hafif bir yürüyüş. Bacakların yenilendi.', 'Evde film maratonu yaptın. Kafan dağıldı.', 'Masaj ve havuz: vücudun teşekkür ediyor.']);
       break;
@@ -253,6 +262,7 @@ export function doAction(state, id, opt) {
   }
   mentorOnAction(state, id); // takım yemeği ve hocayla görüşme kulüp nüfuzunu artırır
   state.calendar.slots -= 1;
+  questsOn(state, 'action', { id });
   return { ok: true, title, text, changes: diffChanges(before, snapshot(state)) };
 }
 
@@ -288,6 +298,7 @@ export function finishTraining(state, stat, result, diff = state.training?.diff 
   state.calendar.slots -= 1;
   state.calendar.trainings += 1;
   achievementsOnTraining(state);
+  questsOn(state, 'train', { stat, stars });
   return {
     stat, name: STATS[stat].name, before, after: player.stats[stat], gained, progress: player.progress[stat], progressBefore, success: result.success, mentorMult,
     diff, diffName: DIFFICULTY[diff]?.name || 'Normal', diffMult, fatigue, stars, best: rec.best, newBest: rec.newBest, tip: coachTip(game, result), result,
@@ -312,6 +323,8 @@ export function getMatch(state) {
 /** Maç bittiğinde: sonuçları işler, haftayı kapatır. */
 export function completeMatch(state, match) {
   const summary = finalizeMatch(state, match);
+  state.career.lastRole = match.role;
+  questsOn(state, 'match', summary); // haftalık görevler
   const hg = match.isHome ? match.score.my : match.score.opp;
   const ag = match.isHome ? match.score.opp : match.score.my;
   const results = simulateWeek(state.world, match.week, { h: match.homeId, a: match.awayId, hg, ag });
@@ -385,6 +398,8 @@ function endWeek(state, ctx) {
   // Mali kriz: maaş bu hafta yatmaz (sonra toplu ödenir)
   const held = withheldWage(state);
   if (held) career.money -= held;
+  // Spor salonu: kondisyon/güç çalışılmazsa düşer, kas ağrısı geçer
+  gymOnWeek(state, { trainings: calendar.trainings });
   // Yatırım: fiyatlar değişir, maaştan otomatik yatırım, menajerin portföy notları
   const invest = investOnWeek(state, { summary: ctx?.summary, fin: { net: fin.net - (held || 0) } });
   for (const n of invest.news) addNews(state, n.text, n.kind);

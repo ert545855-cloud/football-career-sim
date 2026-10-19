@@ -3,6 +3,7 @@
 // Akış: mekân + seviye + kişi seç → 3 diyalog anı (açılış + 2 konu), her birinde 4 cevap →
 // karşındakinin kişiliğine göre ilişki puanı değişir → çıkış sonunda para, enerji, moral ve ilişkiler işlenir;
 // rastgele sosyal olaylar (paparazzi, hayran, kavga, yeni biriyle tanışma…) socialEvents.js'ten gelir.
+import { questsOn } from '../quests.js';
 import { CLUB_BY_ID } from '../data.js';
 import { chance, clamp, pick, round1, shuffle } from '../rng.js';
 import { changeEnergy, changeFame, changeMorale, changeRel } from '../player.js';
@@ -298,6 +299,7 @@ export function finishOuting(state, outing) {
   s.week.n += 1;
   s.outings += 1;
   state.calendar.slots -= 1;
+  questsOn(state, 'social', { kind: outing?.kind });
 
   const events = rollSocialEvents(state, outing, t);
   const met = events.find((e) => e.met)?.met || null;

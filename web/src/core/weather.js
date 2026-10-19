@@ -146,10 +146,12 @@ export const weatherLabel = (w) => (w ? `${w.emoji} ${w.name} · ${w.temp}°C` :
  * MAÇ İÇİ YORGUNLUK — dakikaya, maça başlarken enerjiye, dayanıklılığa ve havaya göre 0..0.65.
  * Devre arası biraz toparlar. Yedekten girenler yalnızca oyunda kaldıkları süre kadar yorulur.
  */
-export function fatigueAt({ minute = 0, energy = 80, stamina = 40, weather = null, from = 0 } = {}) {
+export function fatigueAt({ minute = 0, energy = 80, stamina = 40, weather = null, from = 0, cond = 60, sore = 0 } = {}) {
   const played = Math.max(0, minute - from);
-  const rate = (1.25 - Math.min(99, stamina) / 110) * (weather?.fatigue || 1); // 99 dayanıklılık → ~0.35
-  let f = (played / 90) * 0.42 * rate;
+  // kondisyon (spor salonu): 100 → %13 daha yavaş yorulur, 25 → %12 daha hızlı
+  const condMult = Math.max(0.85, Math.min(1.15, 1 + (60 - cond) / 300));
+  const rate = (1.25 - Math.min(99, stamina) / 110) * (weather?.fatigue || 1) * condMult; // 99 dayanıklılık → ~0.35
+  let f = (played / 90) * 0.42 * rate + (played > 0 ? sore : 0);
   if (minute > 45 && from < 45) f -= 0.05; // devre arası
   f += Math.max(0, 70 - energy) / 160; // yorgun başlarsan daha erken düşersin
   return Math.max(0, Math.min(0.65, f));

@@ -831,3 +831,40 @@
 .inv-warn { margin-top: 8px; padding: 9px 12px; border-radius: 12px; font-size: 12.5px; line-height: 1.4; background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.4); color: #fde68a; }
 .ag-inv { display: grid; gap: 4px; width: 100%; text-align: left; color: inherit; font: inherit; cursor: pointer; }
 @media (max-width: 360px) { .inv-row { grid-template-columns: 32px minmax(0, 1fr) 56px auto; gap: 8px; } .inv-row .spark { width: 56px; } .inv-total { font-size: 29px; } }
+
+/* Piksel ikon */
+.px-ic { display: inline-grid; place-items: center; image-rendering: pixelated; }
+.px-ic svg { width: 100%; height: 100%; }
+
+/* Spor salonu */
+.gym-scene { position: relative; padding: 0; overflow: hidden; border-color: rgba(198, 255, 61, 0.25); background: #0b0e14; }
+.gym-scene canvas { display: block; width: 100%; image-rendering: pixelated; cursor: pointer; }
+.gym-hint { position: absolute; right: 8px; top: 8px; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 800; background: rgba(0, 0, 0, 0.55); color: var(--accent); pointer-events: none; }
+.gym-meters { display: grid; gap: 4px; }
+.gym-meters .meter { margin-top: 6px; }
+.gym-fx { margin: 2px 0 2px; }
+.gym-st.off { opacity: 0.7; }
+.gym-st .btn[disabled] { font-size: 12px; white-space: normal; height: auto; min-height: 36px; }
+.gym-layer .game-stage { background: #0b0e14; }
+.gym-btns { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; padding: 14px 14px calc(var(--safe-bottom) + 16px); }
+.gym-btns button { width: 100%; appearance: none; border: 0; height: 96px; border-radius: 20px; font-size: 26px; font-weight: 900; letter-spacing: 0.04em; color: var(--accent-ink); background: var(--accent); box-shadow: 0 8px 0 #6c9d12; touch-action: none; }
+.gym-btns button:active, .gym-btns button.hit { transform: translateY(6px); box-shadow: 0 2px 0 #6c9d12; }
+.gym-done { position: absolute; left: 50%; top: 38%; z-index: 4; transform: translate(-50%, -50%); padding: 16px 22px; border-radius: 18px; text-align: center; background: rgba(6, 17, 13, 0.92); border: 2px solid var(--accent); box-shadow: 0 0 0 4px #000, 0 12px 40px rgba(0, 0, 0, 0.6); animation: popIn 0.3s; min-width: 220px; }
+.gym-done b { display: block; font-size: 26px; font-weight: 900; color: var(--accent); }
+.gym-done span { font-size: 13px; color: var(--muted); font-weight: 700; }
+
+/* Haftalık görevler */
+.quests { display: grid; gap: 2px; }
+.qrow { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); }
+.qrow:first-child { border-top: 0; }
+.qrow b { display: block; font-size: 13.5px; }
+.qic { width: 32px; height: 32px; flex: none; display: grid; place-items: center; border-radius: 9px; background: var(--panel-2); color: var(--accent); }
+.qrow.done .qic { background: rgba(198, 255, 61, 0.18); }
+.qrow.claimed { opacity: 0.6; }
+.qbar { height: 5px; border-radius: 3px; background: rgba(0, 0, 0, 0.35); margin: 5px 0 3px; overflow: hidden; }
+.qbar i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+.qrew { font-size: 11px; font-weight: 800; color: var(--gold); }
+.qchest { display: flex; align-items: center; gap: 10px; margin-top: 6px; padding: 10px; border-radius: 12px; background: rgba(0, 0, 0, 0.22); border: 1px dashed var(--line-2); }
+.qchest b { display: block; font-size: 13.5px; }
+.qchest.ready { border: 1px solid rgba(255, 207, 61, 0.6); background: rgba(255, 207, 61, 0.08); animation: tutPulse 1.4s ease-in-out infinite; }
+.qchest-ic svg { display: block; }

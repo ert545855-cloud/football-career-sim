@@ -221,6 +221,32 @@ function armFront(g, L, side, pose, oy) {
     if (stripe) g.rect(side === 'L' ? 0 : 15, oy, 3, 1, stripe);
     return;
   }
+  if (pose === 'shoulder') {
+    // halter: bar ensede, eller omuz genişliğinde yukarıda
+    g.rect(side === 'L' ? 2 : 14, oy, 2, 2, sleeve);
+    g.rect(side === 'L' ? 2 : 14, oy - 2, 2, 2, fore);
+    g.rect(side === 'L' ? 2 : 14, oy - 3, 2, 1, hand);
+    return;
+  }
+  if (pose === 'curl' || pose === 'dbDown') {
+    // dambıl: kaldırılmış (önkol yukarı katlanmış) ya da aşağıda; L.dumbbell ise ağırlık çizilir
+    const dbc = '#3b4252';
+    const plate = '#1f2430';
+    if (pose === 'curl') {
+      g.rect(sl, oy, 2, 3, sleeve);
+      g.rect(ax, oy + 1, 2, 2, fore);
+      g.rect(ax, oy, 2, 1, hand);
+      if (L.dumbbell) { g.rect(ax - 1, oy - 1, 4, 1, dbc); g.rect(ax - 1, oy - 2, 1, 3, plate); g.rect(ax + 2, oy - 2, 1, 3, plate); }
+    } else {
+      g.rect(sl, oy, 2, 3, sleeve);
+      g.clear(side === 'L' ? 3 : 14, oy);
+      g.rect(ax, oy + 3, 2, 3, fore);
+      g.rect(ax, oy + 6, 2, 1, hand);
+      if (L.dumbbell) { g.rect(ax - 1, oy + 7, 4, 1, dbc); g.rect(ax - 1, oy + 6, 1, 3, plate); g.rect(ax + 2, oy + 6, 1, 3, plate); }
+    }
+    if (stripe && pose === 'curl') g.rect(side === 'L' ? ax : ax + 1, oy, 1, 3, stripe);
+    return;
+  }
   if (pose === 'up') {
     g.rect(sl, oy - 1, 2, 3, sleeve);
     g.rect(side === 'L' ? 2 : 14, oy - 5, 2, 4, fore);
@@ -321,12 +347,15 @@ function legFront(g, L, side, lift, oy, { kick = false, spread = 0 } = {}) {
   }
 }
 
+const GYM_FRAMES = { barUp: ['shoulder', 'shoulder'], barDown: ['shoulder', 'shoulder'], curlL: ['curl', 'dbDown'], curlR: ['dbDown', 'curl'], curl0: ['dbDown', 'dbDown'] };
+const frontBob = (frame, run) => (run === 1 || run === 3 ? -1 : frame === 'lunge' ? 2 : frame === 'barDown' ? 4 : 0);
+
 function frontBody(g, L, frame, dir) {
   const run = frame.startsWith('run') ? Number(frame.slice(3)) : -1;
-  const bob = run === 1 || run === 3 ? -1 : frame === 'lunge' ? 2 : 0;
+  const bob = frontBob(frame, run);
   const oy = 9 + bob; // gövde başlangıcı
   const COACH = { cheer: ['fist', 'fist'], angry: ['head', 'head'], point: ['down', 'point'], pointL: ['point', 'down'], sad: ['down', 'down'], cross: null, clap: null, clip: null, clipW: null, clipPt: [null, 'point'] };
-  const armPose = frame in COACH ? COACH[frame] : frame === 'ready' ? ['up', 'up'] : frame === 'lunge' ? ['out', 'out'] : run === 0 ? ['back', 'fwd'] : run === 2 ? ['fwd', 'back'] : ['down', 'down'];
+  const armPose = frame in GYM_FRAMES ? GYM_FRAMES[frame] : frame in COACH ? COACH[frame] : frame === 'ready' ? ['up', 'up'] : frame === 'lunge' ? ['out', 'out'] : run === 0 ? ['back', 'fwd'] : run === 2 ? ['fwd', 'back'] : ['down', 'down'];
   // arka plan: uzak kol (sağ) önce
   if (armPose) {
     if (armPose[1]) armFront(g, L, 'R', armPose[1], oy);
@@ -343,7 +372,7 @@ function frontBody(g, L, frame, dir) {
   }
   if (lum(sh) > 0.6) { g.set(6, oy + 10, L.kit.body); } // şort kenarında küçük şerit
   const legTop = oy + 12;
-  const spread = frame === 'lunge' ? 3 : 0;
+  const spread = frame === 'lunge' ? 3 : frame === 'barDown' ? 2 : 0;
   const liftL = run === 0 ? 2 : 0;
   const liftR = run === 2 ? 2 : 0;
   legFront(g, L, 'R', liftR, legTop, { kick: frame === 'kick', spread });
@@ -510,9 +539,10 @@ export function buildPlayerTall(look, dir = 'down', frame = 'idle') {
   } else {
     frontBody(g, L, frame, dir);
     const run = frame.startsWith('run') ? Number(frame.slice(3)) : -1;
-    const bob = run === 1 || run === 3 ? -1 : frame === 'lunge' ? 2 : 0;
+    const bob = frontBob(frame, run);
     g.rect(8, 8 + bob, 2, 1, shade(L.skin, -0.14));
-    const expr = frame === 'cheer' || frame === 'angry' ? 'shout' : frame === 'sad' ? 'sad' : L.expr;
+    const strain = frame === 'barDown' || frame === 'curlL' || frame === 'curlR';
+    const expr = frame === 'cheer' || frame === 'angry' || strain ? 'shout' : frame === 'sad' ? 'sad' : L.expr;
     head(g, { ...L, expr: frame === 'angry' && L.expr !== 'shout' ? 'shout' : expr }, dir, 2 + bob + (frame === 'sad' ? 1 : 0));
     if (frame === 'angry') { const hc = shade(L.hairColor, -0.2); g.set(6, 3 + bob, hc); g.set(11, 3 + bob, hc); }
   }

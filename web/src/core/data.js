@@ -152,6 +152,7 @@ export const ACTIONS = [
   { id: 'manager', name: 'Hocayla Görüş', icon: 'clipboard', desc: 'Forma durumunu öğren, ilişkini güçlendir', cost: '−3 enerji' },
   { id: 'sponsor', name: 'Reklam Çekimi', icon: 'camera', desc: 'Ün 20+ gerekir; para kazandırır', cost: '−12 enerji', minFame: 20 },
   { id: 'drill', name: 'Özel Çalışma', icon: 'target', desc: 'Zayıf ayak ya da beceri hareketleri (yıldız kazan)', cost: '−10 enerji' },
+  { id: 'gym', name: 'Spor Salonu', icon: 'dumbbell', desc: 'Halter, dambıl, koşu bandı: kondisyon ve güç', cost: 'Kondisyon · Güç' },
 ];
 
 export const MAX_TRAININGS_PER_WEEK = 3;

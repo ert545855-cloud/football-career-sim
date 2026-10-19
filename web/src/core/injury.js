@@ -4,6 +4,7 @@
 import { clamp, chance, randInt, weightedPick } from './rng.js';
 import { changeEnergy, changeMorale, changeRel } from './player.js';
 import { injuryPersonaMult } from './character.js';
+import { gymInjuryMult } from './gym.js';
 
 export const INJURIES = {
   knock: { name: 'Darbe', part: 'Kaval kemiği', weeks: [0, 1], w: 0.26, minor: true },
@@ -36,6 +37,7 @@ export function injuryRisk(state, match) {
   // Profesyonellik: vücuduna iyi bakan oyuncu daha az sakatlanır
   p *= injuryPersonaMult(state);
   if (state.flags?.campFitWeeks > 0) p *= 0.75; // yaz kampında kondisyon çalıştın
+  p *= gymInjuryMult(state); // kondisyon, kas ağrısı, esneme
   return clamp(p, 0, 0.3);
 }
 

@@ -1,5 +1,6 @@
 // YAZ KAMPI — yeni sezon başında (2. sezondan itibaren) kulüp kampı: odak seç (kondisyon / taktik / teknik),
 // kamp boyunca hazırlık maçı oynanır. Etkiler sezonun ilk haftalarına taşınır.
+import { gymOnCamp } from './gym.js';
 import { CLUBS, CLUB_BY_ID, POSITIONS } from './data.js';
 import { chance, pick, randInt } from './rng.js';
 import { addProgress, changeEnergy, changeMorale, changeRel } from './player.js';
@@ -27,6 +28,7 @@ export function runSummerCamp(state, focusId) {
   const focus = CAMP_FOCUS.find((f) => f.id === focusId) || CAMP_FOCUS[0];
   const place = pick(CAMP_PLACES);
   const notes = [];
+  gymOnCamp(state, focus.id);
   if (focus.id === 'fitness') {
     addProgress(p, 'stamina', 1.3);
     addProgress(p, 'speed', 0.9);

@@ -13,6 +13,8 @@ import { monthName, weatherFor } from '../../core/weather.js';
 import { hubLockerCard } from '../lockerView.js';
 import { ROUND_LABEL } from '../../core/cup.js';
 import { portfolioValue } from '../../core/invest.js';
+import { GYM_RULES, ensureGym } from '../../core/gym.js';
+import { questsCard, questsClick } from '../questsView.js';
 
 
 export function hubScreen(app) {
@@ -31,6 +33,7 @@ export function hubScreen(app) {
     const c = canDoAction(s, act.id);
     let sub = act.cost;
     if (act.id === 'train') sub = `${calendar.trainings}/${MAX_TRAININGS_PER_WEEK} · −18 enerji`;
+    if (act.id === 'gym') sub = `${ensureGym(s).week}/${GYM_RULES.maxPerWeek} seans · K${Math.round(ensureGym(s).cond)}`;
     return `<button class="action ${c.ok ? '' : 'off'}" data-action="${act.id}" title="${esc(c.reason || act.desc)}">
       <span class="ic spr-ic">${actionArt(act.id, act.icon)}</span><b>${act.name}</b><span>${sub}</span></button>`;
   }).join('');
@@ -80,6 +83,7 @@ export function hubScreen(app) {
         ${meter('Enerji', 'bolt', player.energy, 100, energyColor(player.energy))}
         ${meter('Moral', 'smile', player.morale, 100, moraleColor(player.morale))}
         ${meter('Form', 'chart', (ov.form - 3) * 14.3, 100, ratingColor(ov.form), ov.form.toFixed(1).replace('.', ','))}
+        ${meter('Kondisyon', 'run', ensureGym(s).cond, 100, ensureGym(s).cond < 45 ? 'var(--bad)' : ensureGym(s).cond < 60 ? 'var(--warn)' : '#4ade80', Math.round(ensureGym(s).cond))}
       </div>
 
       ${cupTie ? `<div class="h-sec">Hafta içi kupa maçı <span>${esc(cupTie.kind === 'super' ? 'Süper Kupa' : ROUND_LABEL[cupTie.round] || '')}</span></div>
@@ -112,6 +116,7 @@ export function hubScreen(app) {
       <div class="actions">${actionTiles}</div>
       ${hubMentorCard(s)}
       ${hubLockerCard(s)}
+      ${questsCard(s)}
       <button class="btn primary lg block ${calendar.slots === 0 ? 'pulse' : ''}" style="margin-top:12px" data-act="match">${icon('whistle')} ${cupTie ? 'Önce Kupa Maçı' : 'Maç Gününe Geç'}</button>
 
       <div class="h-sec">İlişkiler</div>
@@ -126,6 +131,7 @@ export function hubScreen(app) {
     mount(el) {
       animateBars(el);
       el.addEventListener('click', async (e) => {
+        if (await questsClick(app, e)) { app.go('hub'); return; }
         const st = e.target.closest('[data-chirp-style]');
         if (st) {
           app.click();
