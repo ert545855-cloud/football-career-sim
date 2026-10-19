@@ -1,6 +1,7 @@
 // GERÇEKÇİ ORANLI PİKSEL OYUNCU — 18×34 ızgara (yayın açısı tarzı): küçük kafa, uzun bacak, kol/omuz ayrımı,
 // formada yaka + arma, şortta gölge, tozlukta bant, kramponda şerit. Saf ızgara üretici (Node'da test edilir).
-// API ve kareler eski (chibi) üreticiyle aynı: yön 'down' | 'up' | 'side', kare idle | run0–3 | lunge | ready | kick.
+// API ve kareler eski (chibi) üreticiyle aynı: yön 'down' | 'up' | 'side', kare idle | run0–3 | lunge | ready | kick;
+// teknik direktör için: cheer | angry | sad | point | pointL | cross | clap | clip | clipW | clipPt (önden), walk0–3 | walkC0–3 (yandan).
 import { defaultLook, HAIR_STYLES, OUTLINE, shade } from './playerPixels.js';
 
 export const TW = 18;
@@ -101,6 +102,7 @@ function head(g, L, dir, oy) {
     else if (style === 'mohawk') { row(-2, 7, 10); row(-1, 6, 10); for (let r = 0; r <= 2; r++) for (let x = 6; x <= 8; x++) if ((x + r) % 2 === 1) H(x, r, shade(skin, -0.25)); H(8, -2, hl); }
     else { H(8, 0, shade(skin, 0.28)); }
     if (L.band) row(1, 6, 11, L.band);
+    if (L.beard) { const bc = shade(hc, 0.05); for (const [x, r] of [[9, 3], [8, 4], [9, 4], [11, 4], [7, 5], [8, 5], [9, 5], [10, 5], [11, 5]]) H(x, r, bc); }
     return;
   }
 
@@ -255,6 +257,36 @@ function armsOverTorso(g, L, pose, oy) {
     g.rect(3, oy, 2, 3, sleeve); g.rect(13, oy, 2, 3, sleeveD);
     g.line(4, oy + 3, 7, oy + 2, fore, 1); g.line(13, oy + 3, 10, oy + 2, fore, 1);
     g.rect(8, oy + 1, 2, 2, skin);
+  } else if (pose.startsWith('clip')) {
+    // not panosu göğüs hizasında: sol el alttan tutar; clip → iki elle okur, clipW → kalemle yazar,
+    // clipPt → pano sol kolda, sağ kol (armFront) talimat verir
+    const both = pose !== 'clipPt';
+    g.rect(3, oy, 2, 3, sleeve);
+    if (both) g.rect(13, oy, 2, 3, sleeveD);
+    g.rect(3, oy + 3, 2, 3, fore);
+    g.rect(4, oy + 6, 2, 1, fore);
+    const bx = 5;
+    g.rect(bx, oy + 2, 7, 6, '#7a4b22'); // pano
+    g.rect(bx + 6, oy + 2, 1, 6, '#5f3a1a');
+    g.rect(bx + 1, oy + 3, 5, 4, '#f4f1e8'); // kağıt
+    g.rect(bx + 2, oy + 4, 3, 1, '#94a3b8');
+    g.rect(bx + 2, oy + 6, 2, 1, '#94a3b8');
+    if (pose === 'clipW') g.set(bx + 4, oy + 6, '#2563eb'); // taktik çizgisi
+    g.rect(bx + 2, oy + 1, 3, 2, '#cbd5e1'); // klips
+    g.set(bx + 3, oy + 1, '#94a3b8');
+    g.set(bx, oy + 7, skin); g.set(bx + 1, oy + 7, skin); // tutan el
+    if (both) {
+      g.rect(13, oy + 3, 2, 2, shade(fore, -0.1));
+      if (pose === 'clipW') {
+        // kalem tutan el kağıdın üstünde
+        g.rect(12, oy + 4, 1, 2, shade(fore, -0.1));
+        g.rect(bx + 4, oy + 5, 2, 1, shade(skin, -0.08));
+        g.set(bx + 5, oy + 4, '#1f2937'); g.set(bx + 6, oy + 3, '#1f2937');
+      } else {
+        g.rect(12, oy + 5, 1, 1, shade(fore, -0.1));
+        g.set(bx + 6, oy + 5, shade(skin, -0.12)); g.set(bx + 6, oy + 6, shade(skin, -0.12));
+      }
+    }
   }
 }
 
@@ -293,16 +325,16 @@ function frontBody(g, L, frame, dir) {
   const run = frame.startsWith('run') ? Number(frame.slice(3)) : -1;
   const bob = run === 1 || run === 3 ? -1 : frame === 'lunge' ? 2 : 0;
   const oy = 9 + bob; // gövde başlangıcı
-  const COACH = { cheer: ['fist', 'fist'], angry: ['head', 'head'], point: ['down', 'point'], pointL: ['point', 'down'], sad: ['down', 'down'], cross: null, clap: null };
+  const COACH = { cheer: ['fist', 'fist'], angry: ['head', 'head'], point: ['down', 'point'], pointL: ['point', 'down'], sad: ['down', 'down'], cross: null, clap: null, clip: null, clipW: null, clipPt: [null, 'point'] };
   const armPose = frame in COACH ? COACH[frame] : frame === 'ready' ? ['up', 'up'] : frame === 'lunge' ? ['out', 'out'] : run === 0 ? ['back', 'fwd'] : run === 2 ? ['fwd', 'back'] : ['down', 'down'];
   // arka plan: uzak kol (sağ) önce
   if (armPose) {
-    armFront(g, L, 'R', armPose[1], oy);
-    armFront(g, L, 'L', armPose[0], oy);
+    if (armPose[1]) armFront(g, L, 'R', armPose[1], oy);
+    if (armPose[0]) armFront(g, L, 'L', armPose[0], oy);
   }
   torsoFront(g, L, oy, dir);
   if (L.zip && dir === 'down') for (let y = oy + 1; y < oy + 8; y++) g.set(9, y, shade(L.kit.body, 0.35)); // eşofman fermuarı
-  if (frame === 'cross' || frame === 'clap') armsOverTorso(g, L, frame, oy);
+  if (frame === 'cross' || frame === 'clap' || frame.startsWith('clip')) armsOverTorso(g, L, frame, oy);
   // şort (oy+8..oy+11)
   const sh = L.kit.shorts;
   for (let r = 0; r < 4; r++) for (let x = 5; x <= 12; x++) {
@@ -331,10 +363,22 @@ function legSide(g, L, hip, knee, ankle, { far = false, toe = 1 } = {}) {
   const shorts = limbColorFor(L, far, 'shorts');
   const skin = limbColorFor(L, far, 'skin');
   const sock = limbColorFor(L, far, 'sock');
-  // kalça → diz: şort bölgesi (ilk %40) + ten
-  g.line(hip[0], hip[1], knee[0], knee[1], (_y, t) => (t < 0.2 ? shorts : skin));
-  // diz → ayak bileği: bant + tozluk
-  g.line(knee[0], knee[1] + 1, ankle[0], ankle[1], (_y, t) => (t < 0.15 ? shade(L.kit.accent, far ? -0.24 : 0) : sock));
+  if (L.pants) {
+    // eşofman altı: kalçadan bileğe tek renk
+    g.line(hip[0], hip[1], knee[0], knee[1], shorts);
+    g.line(knee[0], knee[1] + 1, ankle[0], ankle[1], shade(shorts, -0.04));
+    if (L.stripes && !far) {
+      // yan şerit (yakın bacak)
+      const st = shade(L.kit.accent, -0.42);
+      g.line(hip[0], hip[1], knee[0], knee[1], st, 1);
+      g.line(knee[0], knee[1] + 1, ankle[0], ankle[1], st, 1);
+    }
+  } else {
+    // kalça → diz: şort bölgesi (ilk %40) + ten
+    g.line(hip[0], hip[1], knee[0], knee[1], (_y, t) => (t < 0.2 ? shorts : skin));
+    // diz → ayak bileği: bant + tozluk
+    g.line(knee[0], knee[1] + 1, ankle[0], ankle[1], (_y, t) => (t < 0.15 ? shade(L.kit.accent, far ? -0.24 : 0) : sock));
+  }
   // krampon 4 piksel öne doğru, altı koyu
   const bx = toe > 0 ? ankle[0] : ankle[0] - 2;
   const boot = shade(L.boots.main, far ? -0.2 : 0);
@@ -350,15 +394,19 @@ function armSide(g, L, sh, el, hd, far = false) {
   const fore = L.longSleeve ? sleeve : skin;
   g.line(sh[0], sh[1], el[0], el[1], sleeve);
   g.line(el[0], el[1] + 1, hd[0], hd[1], fore);
+  if (L.stripes && L.longSleeve && !far) { const st = shade(L.kit.accent, -0.45); g.line(sh[0], sh[1] + 1, el[0], el[1], st, 1); g.line(el[0], el[1] + 1, hd[0], hd[1], st, 1); }
   g.rect(hd[0], hd[1] + 1, 2, L.gloves ? 2 : 1, L.gloves ? shade(L.gloves, k) : skin);
 }
 
 function sideBody(g, L, frame) {
   const run = frame.startsWith('run') ? Number(frame.slice(3)) : -1;
+  // yürüme: walk0–3 (kollar sallanır), walkC0–3 (not panosuna bakarak yürür)
+  const walk = frame.startsWith('walk') ? Number(frame.at(-1)) : -1;
+  const clipW = walk >= 0 && frame[4] === 'C';
   const lunge = frame === 'lunge';
   const kick = frame === 'kick';
   const ready = frame === 'ready';
-  const bob = run === 1 || run === 3 ? -1 : lunge ? 3 : 0;
+  const bob = run === 1 || run === 3 || walk === 1 || walk === 3 ? -1 : lunge ? 3 : 0;
   const lean = run >= 0 ? 1 : lunge ? 2 : 0;
   const Y = (v) => v + bob;
   const A = FOOT_ROW - 2; // ayak bileği (krampon iki satır altında)
@@ -369,6 +417,8 @@ function sideBody(g, L, frame) {
     passS: [[8, Y(20)], [9, Y(24)], [8, A]], passR: [[8, Y(20)], [11, Y(23)], [7, Y(27)]],
     kickN: [[9, Y(20)], [12, Y(22)], [15, Y(23)]], kickF: [[8, Y(20)], [8, Y(25)], [7, A]],
     lungeN: [[9, Y(19)], [12, Y(23)], [14, A]], lungeF: [[8, Y(19)], [5, Y(23)], [2, A]],
+    walkF: [[8, Y(20)], [10, Y(24)], [11, A]], walkB: [[8, Y(20)], [7, Y(24)], [5, A - 1]],
+    walkS: [[8, Y(20)], [8, Y(24)], [8, A]], walkR: [[8, Y(20)], [10, Y(24)], [8, A - 1]],
   };
   let near;
   let far;
@@ -378,6 +428,10 @@ function sideBody(g, L, frame) {
   else if (run === 1) { near = P.passS; far = P.passR; }
   else if (run === 2) { near = P.strideB; far = P.strideF; }
   else if (run === 3) { near = P.passR; far = P.passS; }
+  else if (walk === 0) { near = P.walkF; far = P.walkB; }
+  else if (walk === 1) { near = P.walkS; far = P.walkR; }
+  else if (walk === 2) { near = P.walkB; far = P.walkF; }
+  else if (walk === 3) { near = P.walkR; far = P.walkS; }
   else { near = P.idleN; far = P.idleF; }
   // kollar [omuz, dirsek, el]
   const sh = [8 + lean, Y(10)];
@@ -388,6 +442,9 @@ function sideBody(g, L, frame) {
     up: [sh, [10, Y(7)], [11, Y(4)]],
     out: [sh, [11 + lean, Y(11)], [14, Y(11)]],
     outB: [sh, [5, Y(11)], [2, Y(11)]],
+    wFwd: [sh, [9, Y(13)], [10, Y(15)]],
+    wBack: [sh, [7, Y(13)], [6, Y(15)]],
+    hold: [sh, [9, Y(13)], [11, Y(12)]],
   };
   let nearArm;
   let farArm;
@@ -396,6 +453,11 @@ function sideBody(g, L, frame) {
   else if (kick) { nearArm = ARM.back; farArm = ARM.out; }
   else if (run === 0) { nearArm = ARM.back; farArm = ARM.fwd; }
   else if (run === 2) { nearArm = ARM.fwd; farArm = ARM.back; }
+  else if (walk >= 0) {
+    const swing = walk === 0 ? ['wBack', 'wFwd'] : walk === 2 ? ['wFwd', 'wBack'] : ['down', 'down'];
+    nearArm = clipW ? ARM.hold : ARM[swing[0]];
+    farArm = clipW ? [sh, [10, Y(13)], [11, Y(12)]] : swing[1] === 'down' ? [sh, [9, Y(13)], [9, Y(15)]] : ARM[swing[1]];
+  }
   else { nearArm = ARM.down; farArm = [sh, [9 + lean, Y(13)], [9 + lean, Y(15)]]; }
 
   armSide(g, L, ...farArm, true);
@@ -419,6 +481,12 @@ function sideBody(g, L, frame) {
   for (let r = 0; r < 3; r++) for (let x = 6; x <= 11; x++) g.set(x, Y(17 + r), x <= 7 ? shade(L.kit.shorts, -0.16) : L.kit.shorts);
   legSide(g, L, ...near);
   armSide(g, L, ...nearArm);
+  if (clipW) {
+    // önde tutulan not panosu (yandan ince görünür, kağıt yüze dönük)
+    g.rect(12, Y(9), 2, 5, '#7a4b22');
+    g.rect(12, Y(10), 1, 3, '#f4f1e8');
+    g.set(12, Y(8), '#cbd5e1');
+  }
   return { bob, lean };
 }
 

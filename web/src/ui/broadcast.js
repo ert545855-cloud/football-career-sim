@@ -986,7 +986,8 @@ export function createBroadcast(root, o) {
     skin: o.coach?.skin || '#d9a07a', hair: 'short', hairColor: o.coach?.hair || '#2a1a10', beard: true, longSleeve: true, pants: true, stripes: true, zip: true,
     kit: { body: '#161a24', accent: '#e5e7eb', pattern: 'solid', shorts: '#161a24', socks: '#161a24' }, boots: { main: '#f4f4f0', accent: '#16181d' },
   });
-  const C = { mood: 'idle', t: 0, show: 0, next: 9 + Math.random() * 8 };
+  // mood: tepki (cheer/concede/miss/save/instruct) · act: boşta davranış (pace: kenar çizgisinde volta, read: not panosu, stand: kollar bağlı)
+  const C = { mood: 'idle', t: 0, show: 0, next: 9 + Math.random() * 8, x: 0.5, tx: 0.5, face: 1, act: 'stand', actT: 2, clip: false, ph: 0, cam: 0, camNext: 14 + Math.random() * 10 };
   const COACH_LINES = {
     cheer: ['GOOOL!', 'İşte bu!', 'Evet, evet!'], concede: ['Olamaz!', 'Uyuyor musunuz?!', 'Nasıl bıraktınız?!'],
     miss: ['Nasıl kaçar?!', 'Of be!', 'Bitir şunu!'], save: ['Bravo!', 'Aferin!', 'Harika kurtarış!'],
@@ -995,6 +996,7 @@ export function createBroadcast(root, o) {
   function coachReact(kind) {
     if (o.auto) return;
     C.mood = kind; C.t = 0; C.show = kind === 'cheer' ? 5 : kind === 'concede' ? 4.2 : 3.4;
+    if (kind === 'cheer') C.face = C.x > 0.5 ? -1 : 1; // golde kenar çizgisinde birkaç adım koşar
     const ls = COACH_LINES[kind] || [];
     cbub.textContent = ls[Math.floor(Math.random() * ls.length)] || '';
     cbub.className = `bc-cbub ${kind}`;
@@ -1002,12 +1004,32 @@ export function createBroadcast(root, o) {
   function coachPose() {
     const t = C.t;
     switch (C.mood) {
-      case 'cheer': return { f: 'cheer', lift: Math.abs(Math.sin(t * 7.5)) * 0.18 };
+      case 'cheer': return t < 1.1 ? { f: `run${Math.floor(t * 9) % 4}`, dir: 'side', flip: C.face < 0, lift: 0 } : { f: 'cheer', lift: Math.abs(Math.sin(t * 7.5)) * 0.18 };
       case 'concede': return { f: t < 1.4 ? 'angry' : 'sad', lift: 0 };
       case 'miss': return { f: Math.floor(t * 2.5) % 2 ? 'angry' : 'pointL', lift: 0, shake: Math.sin(t * 34) * 0.8 };
       case 'save': return { f: Math.floor(t * 5) % 2 ? 'clap' : 'cross', lift: 0 };
-      case 'instruct': return { f: Math.floor(t * 1.3) % 2 ? 'point' : 'pointL', lift: 0 };
-      default: return { f: 'cross', lift: 0 };
+      case 'instruct': return C.clip ? { f: Math.floor(t * 1.3) % 2 ? 'clipPt' : 'clip', lift: 0 } : { f: Math.floor(t * 1.3) % 2 ? 'point' : 'pointL', lift: 0 };
+      default:
+        if (C.act === 'pace') return { f: `walk${C.clip ? 'C' : ''}${Math.floor(C.ph) % 4}`, dir: 'side', flip: C.face < 0, lift: 0 };
+        if (C.act === 'read') return { f: Math.floor(t * 1.6) % 3 === 2 ? 'clipW' : 'clip', lift: 0 };
+        return { f: 'cross', lift: 0 };
+    }
+  }
+  /** Boşta sıradaki davranış: volta at (bazen panoya bakarak), panoya not al ya da kollarını bağlayıp izle */
+  function coachNextAct() {
+    const r = Math.random();
+    C.t = 0;
+    if (r < 0.55) {
+      C.act = 'pace';
+      C.clip = Math.random() < 0.45;
+      const span = 0.32 + Math.random() * 0.28;
+      C.tx = clamp(C.x + (C.x > 0.5 ? -span : span) * (Math.random() < 0.85 ? 1 : -1), 0.2, 0.8);
+      C.face = C.tx >= C.x ? 1 : -1;
+      C.actT = 9;
+    } else if (r < 0.8) {
+      C.act = 'read'; C.clip = true; C.actT = 3 + Math.random() * 2.5;
+    } else {
+      C.act = 'stand'; C.clip = false; C.actT = 2.5 + Math.random() * 2.5;
     }
   }
   function drawCoach() {
@@ -1019,7 +1041,7 @@ export function createBroadcast(root, o) {
     g.imageSmoothingEnabled = false;
     // yedek kulübesi: arka duvar, kavisli cam çatı, koltuklar, buzluk, su şişeleri, çim
     g.fillStyle = '#16233b'; g.fillRect(0, 0, cw, ch);
-    const floor = ch * 0.86;
+    const floor = ch * 0.8;
     g.fillStyle = '#3a4a66'; g.fillRect(0, ch * 0.18, cw, floor - ch * 0.18);
     g.fillStyle = '#4b5d7e'; g.fillRect(0, ch * 0.18, cw, 2);
     g.fillStyle = 'rgba(148,163,184,0.35)';
@@ -1036,27 +1058,52 @@ export function createBroadcast(root, o) {
     g.fillStyle = '#334155'; for (let i = 0; i < 3; i++) g.fillRect(cw - 12 - i * 5, floor - ch * 0.12, 3, ch * 0.12);
     g.fillStyle = '#3c8636'; g.fillRect(0, floor, cw, ch - floor);
     g.fillStyle = '#45973e'; for (let x = 0; x < cw; x += 6) g.fillRect(x, floor, 3, ch - floor);
+    // teknik alan: kesikli beyaz çizgi (kulübe önü) ve kenar çizgisi
+    g.fillStyle = 'rgba(255,255,255,0.75)';
+    for (let x = 2; x < cw; x += 6) g.fillRect(x, floor - 2, 3, 1);
+    g.fillStyle = 'rgba(255,255,255,0.9)';
+    g.fillRect(0, Math.min(ch - 2, floor + ch * 0.05), cw, Math.max(1.5, ch * 0.022));
     // teknik direktör
     const ps = coachPose();
     const h = ch * 0.5;
     const lift = ps.lift * h;
+    const px = cw * C.x;
     // arkasında hafif ışık (koyu eşofman zeminden ayrışsın)
-    const gl = g.createRadialGradient(cw * 0.52, floor - h * 0.6, 2, cw * 0.52, floor - h * 0.6, h * 0.9);
+    const gl = g.createRadialGradient(px, floor - h * 0.6, 2, px, floor - h * 0.6, h * 0.9);
     gl.addColorStop(0, 'rgba(255,255,255,0.22)');
     gl.addColorStop(1, 'rgba(255,255,255,0)');
     g.fillStyle = gl;
     g.fillRect(0, 0, cw, ch);
-    drawPixelPlayer(g, cw * 0.52 + (ps.shake || 0), floor + 1, h, coachLook, { dir: 'down', frame: ps.f, lift, shadow: true });
+    drawPixelPlayer(g, px + (ps.shake || 0), floor + 1, h, coachLook, { dir: ps.dir || 'down', frame: ps.f, flip: !!ps.flip, lift, shadow: true });
   }
   function coachStep(dt) {
     C.t += dt;
     if (C.show > 0) C.show -= dt;
-    if (C.show <= 0 && C.mood !== 'idle') { C.mood = 'idle'; cbub.textContent = ''; }
+    if (C.show <= 0 && C.mood !== 'idle') { C.mood = 'idle'; cbub.textContent = ''; coachNextAct(); }
+    if (C.mood === 'cheer' && C.t < 1.1) C.x = clamp(C.x + C.face * 0.26 * dt, 0.18, 0.82);
     if (C.mood === 'idle') {
       C.next -= dt;
       if (C.next <= 0 && !S.script) { C.next = 12 + Math.random() * 12; coachReact('instruct'); }
+      // kenar çizgisinde volta: yavaş yürüyüş, adım karesi hıza bağlı
+      C.actT -= dt;
+      if (C.act === 'pace') {
+        const d = C.tx - C.x;
+        const v = 0.085 * dt;
+        if (Math.abs(d) <= v) { C.x = C.tx; coachNextAct(); }
+        else { C.x += Math.sign(d) * v; C.face = Math.sign(d); C.ph += dt * 4.2; }
+      } else if (C.actT <= 0) coachNextAct();
+      // ara sıra yayın kenardaki teknik direktöre kısa bir kesme yapar
+      if (!o.auto && !S.replaying) {
+        C.camNext -= dt;
+        if (C.camNext <= 0 && !S.script && !S.celebrate) {
+          C.camNext = 22 + Math.random() * 14;
+          C.cam = 6.5;
+          if (C.act !== 'pace') { C.act = 'stand'; C.actT = 0; coachNextAct(); }
+        }
+      }
     }
-    const visible = C.show > 0 || root.classList.contains('bc-full');
+    if (C.cam > 0) C.cam -= dt;
+    const visible = C.show > 0 || C.cam > 0 || root.classList.contains('bc-full');
     coachBox.classList.toggle('on', visible);
     if (visible && !S.paused) drawCoach();
   }
