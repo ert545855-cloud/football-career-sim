@@ -46,6 +46,10 @@ export const FLOWS = {
     { sel: '.sp-board', title: 'Sponsorlar', text: 'Ünün ve marka imajın arttıkça markalar sana teklif getirir: haftalık ücret, gol primi ve sahaya katkısı olan avantajlar (krampon, enerji içeceği…).' },
     { sel: '#sp-shoot', title: 'Reklam çekimi', text: 'Her sözleşmede zorunlu çekimler var. Yönetmen pozu söyler, doğru poza hızlıca bas. Çekimi yapmazsan ceza ödersin ve imajın düşer.' },
   ],
+  wealth: [
+    { sel: '.w-street', title: 'Senin sokağın', text: 'Kurduğun işletmeler, aldığın mülkler ve vakfın bu sokakta yükselir. Sağ üstte toplam servetin.' },
+    { sel: '.w-tabs', title: 'Servet sekmeleri', text: 'İşletmeler: kafe, spor salonu, krampon markası (her hafta kâr/zarar, iflas riski). Emlak: kiralık mülkler. Vakıf: hayır projeleri; miras iç saha maçlarında taraftar desteği verir.' },
+  ],
   invest: [
     { sel: '.inv-hero', title: 'Yatırım', text: 'Kazandığın parayı burada değerlendirirsin. Toplam servetin nakit ve portföyünden oluşur. Fiyatlar her hafta sonu değişir.' },
     { sel: '.inv-agent', title: 'Menajerin takipte', text: 'Menajerin portföyünü izler: düşüşte, aşırı riskte ya da kasan azalınca seni uyarır. İstersen "Menajer yönetsin" ile parayı bir plana göre o yönetir (yıllık ~%2 ücret).' },

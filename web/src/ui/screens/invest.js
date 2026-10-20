@@ -90,7 +90,7 @@ export function investScreen(app, params = {}) {
   const ag = currentAgent(s);
   const managed = v.mode === 'managed';
   const from = params.from || app.current || 'hub';
-  const back = ['hub', 'career', 'agent'].includes(from) ? from : 'hub';
+  const back = ['hub', 'career', 'agent', 'wealth'].includes(from) ? from : 'hub';
   const notes = v.log.slice(0, 3);
   const assets = listedAssets(s);
 

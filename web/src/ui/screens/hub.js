@@ -73,7 +73,7 @@ export function hubScreen(app) {
 
       <div class="row between" style="margin-top:14px">
         <div class="row" style="gap:6px;min-width:0">
-          <span class="money-pill">${icon('coin')} <span class="tnum">${money(career.money)}</span></span>
+          <button class="money-pill w-pill" data-act="wealth" title="Servet: işletmeler, emlak, vakıf">${icon('coin')} <span class="tnum">${money(career.money)}</span></button>
           <button class="money-pill inv-pill" data-act="invest" data-tut="invest">${icon('chart')} <span class="tnum">${(() => { const pv = portfolioValue(s); return pv > 0 ? money(pv) : 'Yatırım'; })()}</span></button>
         </div>
         <div class="row" style="gap:6px">${status}<button class="icon-btn" data-act="settings" aria-label="Ayarlar">${icon('gear')}</button></div>
@@ -168,6 +168,7 @@ export function hubScreen(app) {
         else if (t.dataset.act === 'settings') app.go('settings');
         else if (t.dataset.act === 'locker') app.go('locker');
         else if (t.dataset.act === 'invest') app.go('invest', { from: 'hub' });
+        else if (t.dataset.act === 'wealth') app.go('wealth', { from: 'hub' });
       });
     },
   };

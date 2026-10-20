@@ -48,7 +48,7 @@ export function legendScore(state) {
   const awards = (c.awards || []).length;
   const ballon = (c.awards || []).filter((a) => a.ballon).length;
   const caps = state.national?.caps?.A || c.caps || 0;
-  return Math.round(clamp((t.goals || 0) * 0.25 + (t.assists || 0) * 0.2 + (t.apps || 0) * 0.04 + awards * 5 + caps * 0.25 + ballon * 20 + (state.player.fame || 0) * 0.2, 0, 150));
+  return Math.round(clamp((t.goals || 0) * 0.25 + (t.assists || 0) * 0.2 + (t.apps || 0) * 0.04 + awards * 5 + caps * 0.25 + ballon * 20 + (state.player.fame || 0) * 0.2 + (state.foundation?.legacy || 0) * 0.5, 0, 150));
 }
 
 export function ensureAfter(state) {

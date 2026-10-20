@@ -47,6 +47,9 @@ import { investOnWeek } from './invest.js';
 import { canGym, gymOnRest, gymOnWeek } from './gym.js';
 import { questsOn } from './quests.js';
 import { canShoot, sponsorsOnMatch, sponsorsOnWeek } from './sponsors.js';
+import { businessOnWeek } from './business.js';
+import { realtyOnWeek } from './realestate.js';
+import { foundationOnWeek } from './foundation.js';
 import { boardOnMatch, electionDue, ensurePresident, ensureRival, makeElection, rivalOnMatch, rivalSeasonEnd, withheldWage, worldStarsWindow } from './living.js';
 import { offerFor } from './economy.js';
 
@@ -406,6 +409,12 @@ function endWeek(state, ctx) {
   // Sponsorluk: haftalık ücretler, avantajlar, yükümlülükler, yeni teklifler
   const sponsors = sponsorsOnWeek(state);
   for (const n of sponsors.news) addNews(state, n.text, n.kind);
+  // Kendi işin ve gayrimenkul: kâr/zarar, kira, olaylar
+  const business = state.business?.list?.length ? businessOnWeek(state, ctx) : null;
+  for (const n of business?.news || []) addNews(state, n.text, n.kind);
+  const realty = state.realty?.owned?.length ? realtyOnWeek(state) : null;
+  for (const n of realty?.news || []) addNews(state, n.text, n.kind);
+  for (const n of state.foundation?.name ? foundationOnWeek(state).news : []) addNews(state, n.text, n.kind);
   // Kişilik ve uyum: haftanın alışkanlıkları
   for (const n of characterOnWeek(state, { trainings: calendar.trainings, played: ctx?.summary?.played, rating: ctx?.summary?.rating, yellow: ctx?.yellow || 0 })) addNews(state, n, 'good');
   // Transfer söylentileri (ilgi aşaması)
@@ -489,7 +498,7 @@ function endWeek(state, ctx) {
     // Chirp: yeni haftanın maç önü kartı, sakatlıklar, dünya futbolu, trendler
     chirpTweets.push(...chirpWeekStart(state));
   }
-  return { finance: fin, changes: diffChanges(before, snapshot(state)), event, offers: state.pending.offers, seasonOver, discipline, chirp: chirpTweets, mentor, national, social, cupTie, invest, sponsors };
+  return { finance: fin, changes: diffChanges(before, snapshot(state)), event, offers: state.pending.offers, seasonOver, discipline, chirp: chirpTweets, mentor, national, social, cupTie, invest, sponsors, business, realty };
 }
 
 // ─────────────────────────────────────────────────────────────
