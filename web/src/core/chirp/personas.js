@@ -55,20 +55,20 @@ export const MILLI = new AuthorModel({
 });
 /** İtalyan transfer muhabiri */
 export const MATTEO = new AuthorModel({
-  id: 'matteo', displayName: 'Matteo Mercato', handle: '@MatteoMercato', kind: 'journalist', signature: 'Affare fatto!', followers: 1_600_000, parody: true,
-  bio: 'Calciomercato, sempre. (Parodi hesap)',
+  id: 'matteo', displayName: 'İtalya Transfer Hattı', handle: '@ItalyaTransfer', kind: 'journalist', signature: 'Anlaşma tamam!', followers: 1_600_000, parody: true,
+  bio: 'İtalya liginden transfer haberleri. (Parodi hesap)',
   avatar: { color: '#166534', look: { skin: 0, hair: 'curly', hairColor: 1 }, kit: ['#ffffff', '#166534'] },
 });
 /** İspanyol tartışma programı */
 export const TERTULIA = new AuthorModel({
-  id: 'tertulia', displayName: 'El Tertuliano', handle: '@ElTertulianoTV', kind: 'journalist', signature: '¡BOMBAZO!', followers: 2_200_000, parody: true,
-  bio: 'Gritos, rumores y fútbol. (Parodi hesap)',
+  id: 'tertulia', displayName: 'İspanya Kulis', handle: '@IspanyaKulis', kind: 'journalist', signature: 'BOMBA!', followers: 2_200_000, parody: true,
+  bio: 'İspanya\'dan dedikodu, söylenti ve futbol. (Parodi hesap)',
   avatar: { color: '#b91c1c', initials: '📺' },
 });
 /** İngiliz magazin spor sayfası */
 export const FOOTY = new AuthorModel({
-  id: 'footy', displayName: 'Footy Gossip UK', handle: '@FootyGossipUK', kind: 'journalist', signature: 'EXCLUSIVE:', followers: 3_000_000, parody: true,
-  bio: 'Transfer talk & dressing-room drama. (Parodi hesap)',
+  id: 'footy', displayName: 'İngiltere Kulis', handle: '@IngiltereKulis', kind: 'journalist', signature: 'ÖZEL:', followers: 3_000_000, parody: true,
+  bio: 'İngiltere\'den transfer ve soyunma odası haberleri. (Parodi hesap)',
   avatar: { color: '#1d4ed8', initials: 'FG' },
 });
 

@@ -151,6 +151,7 @@ export function createBroadcast(root, o) {
     ball: { x: 52.5, y: 34, z: 0, vx: 0, vy: 0, vz: 0, owner: null, flight: null, rot: 0 },
     script: null, restart: null, wipe: null, celebrate: null, bulge: null, confetti: [],
     boardShift: 0, boardT: 0, tag: '', freeze: false, flash: 0,
+    slowmo: 1, holdScript: false,
   };
   const rateNow = () => (o.auto ? 5 : ({ 1: 0.75, 2: 1.2, 4: 1.8 }[o.speed?.() || 1] || 0.75));
   /** Geçişler gerçek zamanlı akar (yayın hızından bağımsız), sadece 2x/4x'te biraz hızlanır */
@@ -647,6 +648,7 @@ export function createBroadcast(root, o) {
   }
   function updateScript(dt) {
     const sc0 = S.script;
+    if (S.holdScript) return; // kutlama seçimi: senaryo zamanı durur, sahne ağır çekimde akar
     sc0.t += dt;
     while (sc0.i < sc0.events.length && sc0.events[sc0.i].at <= sc0.t) sc0.events[sc0.i++].fn();
     sc0.onFrame?.(dt, sc0.t);
@@ -881,7 +883,25 @@ export function createBroadcast(root, o) {
     scorer.tx = cx; scorer.ty = cy; scorer.sp = 7.8;
     scorer.celebrate = true;
     scorer.celebT = 0;
-    scorer.celebStyle = scorer === mePlayer && meOn ? (me.celebration || 'corner') : ['corner', 'slide', 'plane', 'heart', 'dance', 'corner', 'flip'][Math.floor(Math.random() * 7)];
+    const mine = scorer === mePlayer && meOn;
+    scorer.celebStyle = mine ? (me.celebration || 'corner') : ['corner', 'slide', 'plane', 'heart', 'dance', 'corner', 'flip'][Math.floor(Math.random() * 7)];
+    // Kendi golün: süreli kutlama seçimi — sahne ağır çekime geçer, seçtiğin sevinci yaparsın
+    let picking = false;
+    if (mine && !o.auto && typeof o.pickCelebration === 'function') {
+      picking = true;
+      scorer.celebStyle = 'pending';
+      S.slowmo = 0.28;
+      S.holdScript = true;
+      Promise.resolve(o.pickCelebration()).catch(() => null).then((style) => {
+        scorer.celebStyle = style || me.celebration || 'corner';
+        scorer.celebT = 0;
+        if (scorer.celebStyle === 'plane') { scorer.tx = clamp(scorer.x - d * 9, 4, PL - 4); scorer.ty = 2.6; scorer.sp = 6.5; }
+        if (scorer.celebStyle === 'slide') { scorer.tx = clamp(scorer.x - d * 3.2, 4, PL - 4); scorer.ty = scorer.y + 0.4; scorer.sp = 5.5; }
+        S.slowmo = 1;
+        S.holdScript = false;
+        bannerOff(1300);
+      });
+    }
     const mates = att.filter((p) => p !== scorer && p.pos !== 'GK').sort((a, b) => Math.hypot(a.x - cx, a.y - cy) - Math.hypot(b.x - cx, b.y - cy)).slice(0, 6);
     mates.forEach((p, i) => {
       p.scripted = true; p.mark = null;
@@ -893,7 +913,7 @@ export function createBroadcast(root, o) {
     const gk0 = att.find((p) => p.pos === 'GK');
     if (gk0) { gk0.scripted = true; gk0.celebrate = true; gk0.celebStyle = 'heart'; gk0.tx = gk0.x + d * 3; gk0.ty = gk0.y; gk0.sp = 3; }
     for (const p of def) { if (p.pos !== 'GK') { p.mark = null; p.scripted = true; p.tx = p.x - d * 3; p.ty = p.y; p.sp = 1.4; p.face = 'up'; p.dejected = true; } }
-    showBanner(ev, scorer);
+    showBanner(ev, scorer, picking);
     S.camFocus = scorer;
     // konfeti (tribünden)
     for (let i = 0; i < 90; i++) S.confetti.push({ x: Math.random(), y: -Math.random() * 0.3, v: 0.1 + Math.random() * 0.18, c: (homeScored ? homeFans : awayFans)[i % 2], ph: Math.random() * 6 });
@@ -913,17 +933,45 @@ export function createBroadcast(root, o) {
     }
   }
 
-  function showBanner(ev, scorer) {
+  /**
+   * Sinematik gol perdesi. Kendi takımın: sinema şeritleri, ışık hüzmeleri, harf harf düşen GOOOL, golcü kartı ve skor.
+   * Rakip golü: kırmızı uyarı şeridi "RAKİP GOL ATTI", sarsıntı.
+   * hold=true: kutlama seçimi süresince perde açık kalır (yukarı kayar), seçimden sonra kapanır.
+   */
+  function showBanner(ev, scorer, hold = false) {
     if (!banner) return;
-    const club = ev.side === 'my' ? myClub : oppClub;
-    const nm = (scorer?.name || '').toUpperCase();
-    const ast = ev.assistLabel ? `<small>Asist: ${escapeHtml(ev.assistLabel)}</small>` : '';
-    banner.innerHTML = `<div class="bcg" style="--c1:${club.colors[0]};--c2:${club.colors[1]}"><b>GOL!</b><span><em>${scorer?.num ?? ''}</em>${escapeHtml(nm)}</span>${ast}</div>`;
-    banner.classList.remove('on');
+    const mineTeam = ev.side === 'my';
+    const club = mineTeam ? myClub : oppClub;
+    const nm = escapeHtml((scorer?.name || '').toUpperCase());
+    const num = scorer?.num ?? '';
+    const minute = ev.minute != null ? `<small>${escapeHtml(String(ev.minute))}'</small>` : '';
+    const score = typeof ev.scoreText === 'function' ? ev.scoreText() : ev.scoreText || '';
+    const c1 = club.colors[0];
+    const c2 = club.colors[1];
+    if (mineTeam) {
+      const meGoal = !!ev.me;
+      const word = (ev.kind === 'pen' ? 'PENALTI GOL!' : 'GOOOL!').split('').map((ch, i) => `<span style="--i:${i}">${ch === ' ' ? '&nbsp;' : ch}</span>`).join('');
+      const ast = ev.assistLabel ? `<div class="bcx-ast">Asist: ${escapeHtml(ev.assistLabel)}</div>` : '';
+      banner.innerHTML = `<div class="bcx my ${meGoal ? 'me' : ''}" style="--c1:${c1};--c2:${c2}"><i class="bcx-flash"></i><i class="bcx-rays"></i><i class="bcx-lb t"></i><i class="bcx-lb b"></i>
+        <div class="bcx-in">${meGoal ? '<div class="bcx-tag">SENİN GOLÜN!</div>' : ''}<div class="bcx-word">${word}</div>
+        <div class="bcx-card"><em>${num}</em><b>${nm}</b>${minute}</div>${ast}${score ? `<div class="bcx-score">${escapeHtml(score)}</div>` : ''}</div></div>`;
+    } else {
+      banner.innerHTML = `<div class="bcx opp" style="--c1:${c1};--c2:${c2}"><i class="bcx-lb t"></i><i class="bcx-lb b"></i>
+        <div class="bcx-in"><div class="bcx-alert"><i>!</i>RAKİP GOL ATTI</div>
+        <div class="bcx-card"><em>${num}</em><b>${nm}</b>${minute}</div>${score ? `<div class="bcx-score">${escapeHtml(score)}</div>` : ''}</div></div>`;
+    }
+    banner.classList.remove('on', 'hi');
     void banner.offsetWidth;
     banner.classList.add('on');
     clearTimeout(showBanner.tm);
-    showBanner.tm = setTimeout(() => banner.classList.remove('on'), 2800 / Math.max(1, S.rate));
+    clearTimeout(showBanner.hiT);
+    if (hold) showBanner.hiT = setTimeout(() => banner.classList.add('hi'), 800);
+    else bannerOff((mineTeam ? 3300 : 2600) / Math.max(1, S.rate));
+  }
+  function bannerOff(ms) {
+    if (!banner) return;
+    clearTimeout(showBanner.tm);
+    showBanner.tm = setTimeout(() => banner.classList.remove('on', 'hi'), ms);
   }
 
   function setTag(text, cls = '') {
@@ -1430,13 +1478,16 @@ export function createBroadcast(root, o) {
       p.lift = Math.abs(Math.sin(S.time * 7 + p.slot * 1.3)) * 0.42;
     } else if (p.dejected && sp < 0.8) {
       dir = 'up'; frame = 'idle';
-    } else if (p.celebrate && (sp < 0.6 || p.celebStyle === 'plane')) {
+    } else if (p.celebrate && (sp < 0.6 || p.celebStyle === 'plane' || (p.celebStyle === 'slide' && p.celebT === 0 && sp < 6))) {
       const cs = p.celebStyle || 'corner';
       const ct = p.celebT || 0;
       if (cs === 'plane') { dir = sp > 0.6 ? 'side' : 'down'; flip = p.vx < 0; frame = 'lunge'; }
       else if (cs === 'slide') { dir = 'side'; flip = (p.side === 'my') === (p.x > 52.5) ? false : true; frame = 'lunge'; }
       else if (cs === 'dance') { dir = 'down'; frame = Math.floor(ct * 4) % 2 ? 'run0' : 'run2'; }
       else if (cs === 'flip' && ct < 0.7) { dir = 'side'; frame = 'ready'; p.rot = -Math.PI * 2 * ease(ct / 0.7); p.lift = Math.sin(Math.PI * (ct / 0.7)) * 1.3; }
+      else if (cs === 'corner') { dir = 'down'; frame = Math.floor(ct * 2.5) % 2 ? 'cheer' : 'ready'; }
+      else if (cs === 'heart') { dir = 'down'; frame = 'clap'; }
+      else if (cs === 'shush') { dir = 'down'; frame = Math.floor(ct * 1.5) % 2 ? 'point' : 'pointL'; }
       else { frame = 'ready'; dir = 'down'; if (cs === 'flip') { p.rot = 0; p.lift = 0; } }
     } else if (sp > 0.35) {
       const f = dirFromVelocity(p.vx, p.vy, p.st.last || 'down');
@@ -1646,7 +1697,7 @@ export function createBroadcast(root, o) {
     if (!root.isConnected) { stop(); return; }
     const dt0 = Math.min(0.05, (now - (last || now)) / 1000);
     last = now;
-    S.rate = rateNow() * (S.replaying ? 0.45 : 1);
+    S.rate = rateNow() * (S.replaying ? 0.45 : 1) * (S.slowmo || 1);
     if (!S.paused) {
       resize();
       // sabit adımlar (yüksek hızda da kararlı)

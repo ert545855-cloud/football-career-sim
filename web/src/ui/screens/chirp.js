@@ -1,6 +1,6 @@
 // CHIRP EKRANI — akış, keşfet (gündem + #etiket sayfaları), takımım, gazeteciler, magazin, ben.
 import { CLUB_BY_ID } from '../../core/data.js';
-import { FABRICIO, MAGAZIN, PERSONAS, YAGIZ, playerAuthor, timelineOf } from '../../core/chirp/index.js';
+import { playerAuthor, timelineOf } from '../../core/chirp/index.js';
 import { chirpAvatar, icon } from '../art.js';
 import { esc } from '../dom.js';
 import { bindTweetActions, compact, composeFlow, ephemeralPosts, shareCard, shareFlow, tweetCard } from '../chirpView.js';
@@ -80,10 +80,7 @@ export function chirpScreen(app, params = {}) {
         <div class="row" style="gap:8px">${chirpAvatar(me, 34)}<div class="col" style="gap:0"><b class="small">${compact(s.chirp.followers)}</b><span class="muted" style="font-size:10.5px">takipçi</span></div></div>
       </div>
       <button class="compose-bar" data-compose>${chirpAvatar(me, 32)}<span class="grow">Ne düşünüyorsun, ${esc(s.player.name.split(' ')[0])}?</span>${icon('plus', 'ico sm')}</button>
-      ${view.filter === 'all' ? `<div class="press-row">
-        ${[FABRICIO, YAGIZ, PERSONAS.sermet, MAGAZIN].map((a) => `<div class="press">${chirpAvatar(a, 38)}<div class="grow" style="min-width:0"><b class="small ellipsis">${esc(a.displayName)}</b><div class="muted ellipsis" style="font-size:11px">${esc(a.signature || a.handle)} · ${compact(a.followers)}</div></div></div>`).join('')}
-      </div>
-      ${trends.length ? `<div class="trend-strip">${trends.slice(0, 5).map((t) => `<button data-tag="${esc(t.tag)}">${esc(t.tag)}</button>`).join('')}</div>` : ''}` : ''}
+      ${view.filter === 'all' ? `${trends.length ? `<div class="trend-strip">${trends.slice(0, 5).map((t) => `<button data-tag="${esc(t.tag)}">${esc(t.tag)}</button>`).join('')}</div>` : ''}` : ''}
       ${view.filter === 'all' ? shareCard(s) : ''}
       <div class="seg chirp-tabs" style="margin:12px 0">
         ${FILTERS.map((x) => `<button class="${x.id === view.filter ? 'on' : ''}" data-filter="${x.id}">${x.label}</button>`).join('')}

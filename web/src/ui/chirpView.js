@@ -1,5 +1,6 @@
 // Chirp görünüm parçaları: gönderi kartı (görselli kartlar, #etiketler, yanıtlar), paylaşım kartı,
 // serbest gönderi yazma, yanıtlama, keşfet için anlık (kaydedilmeyen) gönderiler.
+import { allTurkish, localizeText, showComment } from '../core/chirp/lang.js';
 import { CLUB_BY_ID } from '../core/data.js';
 import { JOURNALISTS, PERSONAS, PlayerPostService, RELATIONS, Timeline, TweetModel, playerAuthor } from '../core/chirp/index.js';
 import { FOREIGN_POSTS, USER_POSTS } from '../core/chirp/content.js';
@@ -61,7 +62,7 @@ function replyHTML(c) {
 export function tweetCard(state, tw, { compactReplies = true, eph = false } = {}) {
   const author = authorOf(state, tw);
   const when = tw.season === state.calendar.season && tw.week === state.calendar.week ? 'Bu hafta' : `S${tw.season} · H${tw.week}`;
-  const comments = tw.comments || [];
+  const comments = (tw.comments || []).filter(showComment);
   const shown = compactReplies ? comments.slice(0, 2) : comments;
   const photo = tw.meta?.photo ? `<div class="tw-photo"><canvas data-photo="${esc(JSON.stringify(tw.meta.photo))}"></canvas><span class="tb-stamp sm">ÖZEL</span></div>` : '';
   return `<article class="tweet ${tw.authorId === 'me' ? 'mine' : ''} ${author.kind === 'club' ? 'official' : ''}" ${eph ? 'data-eph' : `data-tweet="${tw.id}"`}>
@@ -73,7 +74,7 @@ export function tweetCard(state, tw, { compactReplies = true, eph = false } = {}
         ${author.parody ? '<span class="parody">PARODİ</span>' : ''}
         <span class="muted ellipsis">${esc(author.handle || '')} · ${when}</span>
       </div>
-      <div class="tw-text">${formatText(tw.text, author)}</div>
+      <div class="tw-text">${formatText(localizeText(tw.text), author)}</div>
       ${tw.card ? `<div class="tw-card">${chirpCardHTML(tw.card, state)}</div>` : ''}
       ${photo}
       ${tw.meta?.scoreLine ? `<div class="chips" style="margin-top:8px"><span class="chip">${esc(tw.meta.scoreLine)}</span></div>` : ''}
@@ -310,7 +311,7 @@ export function ephemeralPosts(state, tag, n = 6) {
   const vars = { player: state.player.name, first: state.player.name.split(' ')[0], club: club.name, clubShort: club.short, league: '', tag, mate: mates[0] || 'yedek kaleci' };
   const out = [];
   for (let i = 0; i < n; i++) {
-    const foreign = rnd() < Math.min(0.4, (state.player.fame || 0) / 150);
+    const foreign = !allTurkish() && rnd() < Math.min(0.4, (state.player.fame || 0) / 150);
     const langs = Object.keys(FOREIGN_POSTS);
     const lang = foreign ? langs[Math.floor(rnd() * langs.length)] : 'tr';
     const pool = foreign ? FOREIGN_POSTS[lang] : USER_POSTS;

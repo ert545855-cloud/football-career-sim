@@ -17,6 +17,7 @@ import { sprite } from '../../assets/sprites.js';
 import { FEED_SPRITES } from '../spriteMap.js';
 import { nationalCrest } from '../nationalView.js';
 import { createBroadcast } from '../broadcast.js';
+import { celebrationChoices, pickCelebration } from '../celebPick.js';
 import { runTutorial } from '../tutorial.js';
 import { playerCanvas } from '../../games/pixel/sprites.js';
 import { shortName as shortOf } from '../../core/lineups.js';
@@ -173,6 +174,12 @@ export function matchScreen(app, { match }) {
         auto: app.autoplay,
         names: { home: home.name, away: away.name, homeShort: hs, awayShort: as, city: CLUB_BY_ID[match.homeId]?.city || '' },
         coach: { name: match.national ? 'Milli Takım T.D.' : s.coach?.clubId === match.myId && s.coach?.name ? `T.D. ${s.coach.name}` : 'Teknik Direktör' },
+        // golden sonra süreli sevinç seçimi (sahip olduğun en fazla 3 sevinç)
+        pickCelebration: () => pickCelebration(bcEl, {
+          look: meLook,
+          choices: celebrationChoices(s),
+          onPick: (style, tapped) => { (match.celebs ||= []).push(style); if (tapped) app.click(); },
+        }),
       });
       bc.onSfx((n) => sfx(n));
       if (import.meta.env?.DEV) window.__bc = bc;
@@ -186,6 +193,8 @@ export function matchScreen(app, { match }) {
         glA.innerHTML = (match.goals || []).filter((g) => g.side !== homeSide).map(fmt).join('');
       };
       let chanceAnims = 0;
+      // sahada değilsen (yedek/sakat/cezalı) maçı kulübeden ya da tribünden izlersin: daha çok pozisyon canlandırılır
+      const watching = () => match.role === 'out' || offPitch || (match.role === 'bench' && !(match.subMinute && minute >= match.subMinute));
       // Canlandırma: gol satırı, skor ve tribün sesi topun ağlara girdiği anda gelir (önceden skor değişmez)
       const animate = async (ln, g) => {
         let pushed = false;
@@ -202,9 +211,11 @@ export function matchScreen(app, { match }) {
             assist: meAssist ? shortName : g?.assist ?? undefined, meAssist,
             assistLabel: meAssist ? shortName : g?.assist ? shortOf(g.assist) : '',
             replay: me || meAssist,
+            minute: ln.minute,
+            scoreText: () => scoreText(),
             onGoal: doPush,
           });
-        } else if (ln.ai && ['save', 'post', 'chance'].includes(ln.kind) && (app.settings.speed || 1) === 1 && chanceAnims < 2) {
+        } else if (ln.ai && ['save', 'post', 'chance'].includes(ln.kind) && (app.settings.speed || 1) === 1 && chanceAnims < (watching() ? 4 : 2)) {
           chanceAnims++;
           await bc.play({ side: ln.side || 'my', outcome: ln.kind === 'save' ? 'save' : ln.kind === 'post' ? 'post' : 'miss', kind: Math.random() < 0.5 ? 'open' : 'long', onGoal: doPush });
         }
@@ -250,6 +261,31 @@ export function matchScreen(app, { match }) {
           buzz(ln.kind === 'goal-me' ? 'celebrate' : ln.assist ? 'assist' : [30, 50, 60]);
         } else if (ln.kind === 'goal-opp') { momentum = Math.max(15, momentum - 18); pop(); sfx('miss'); buzz('heartBreak'); }
         else if (ln.kind === 'save' || ln.kind === 'chance' || ln.kind === 'post') sfx('swish');
+      };
+      // Hakem kartı: büyük kart görseli (sözlü uyarı, sarı, kırmızı)
+      const showCard = (kind) => {
+        const box = el(`<div class="ref-card ${kind}"><span class="rc-card"></span><b>${kind === 'red' ? 'KIRMIZI KART' : kind === 'card' ? 'SARI KART' : 'SÖZLÜ UYARI'}</b><span>${esc(shortName)}</span></div>`);
+        bcEl.appendChild(box);
+        sfx(kind === 'warn' ? 'shortWhistle' : 'whistle');
+        buzz(kind === 'red' ? [80, 60, 80] : [40, 40]);
+        setTimeout(() => box.classList.add('out'), kind === 'red' ? 2600 : 1900);
+        setTimeout(() => box.remove(), kind === 'red' ? 3000 : 2300);
+      };
+      const insertInjected = () => {
+        for (const ev of match._inject || []) {
+          let j = idx;
+          while (j < timeline.length && timeline[j].minute <= ev.minute) j++;
+          timeline.splice(j, 0, { minute: ev.minute, order: 2, ev });
+        }
+        match._inject = [];
+      };
+      const sentOffUI = (mm) => {
+        offPitch = true;
+        roleEl.innerHTML = `${icon('user')} Kırmızı kart (${mm}')`;
+        roleEl.className = 'chip bad';
+        bc.setOnPitch(false);
+        el0.querySelector('[data-card]')?.classList.add('off');
+        skipBtn.innerHTML = `${icon('chev')} Sona atla`;
       };
       const setMom = () => {
         momentum += (Math.random() - 0.5) * 6;
@@ -303,7 +339,9 @@ export function matchScreen(app, { match }) {
         for (const ln of lines) {
           if (ln.kind?.startsWith('goal')) await animate(ln, newGoals.shift());
           else push(ln);
+          if (ln.kind === 'card' || ln.kind === 'red' || ln.kind === 'warn') { showCard(ln.kind); await sleep(ln.kind === 'red' ? 1400 : 700); }
         }
+        if (match.sentOff != null) { sentOffUI(match.sentOff); insertInjected(); }
         busy = false;
         last = performance.now();
       }
@@ -370,6 +408,7 @@ export function matchScreen(app, { match }) {
           return;
         }
         if (item.m) {
+          if (item.m.skipped || match.sentOff != null) return; // kırmızı kart: kalan anlar yok
           skipTo = null;
           await playMoment(item.m);
         }
@@ -432,7 +471,7 @@ export function matchScreen(app, { match }) {
       });
       skipBtn.addEventListener('click', () => {
         app.click();
-        const rest = timeline.slice(idx).filter((t) => t.m);
+        const rest = timeline.slice(idx).filter((t) => t.m && !t.m.skipped && match.sentOff == null);
         skipTo = rest.length ? rest[0].minute : 90;
         if (rest.length <= 1) skipBtn.innerHTML = `${icon('chev')} Sona atla`;
       });

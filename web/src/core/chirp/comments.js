@@ -2,6 +2,7 @@
 // TARAFTAR YORUM SİSTEMİ — her ana tweetin altına 3–4 bot yorumu.
 // Yorumun olumlu/olumsuz olması bağlama ve taraftar ilişkisine göre seçilir,
 // etiketi ise duygu analizinden gelir (analyzeSentiment).
+import { allTurkish } from './lang.js';
 import { CommentModel, makeBotUser } from './models.js';
 import { FOREIGN_COMMENTS, RICH_COMMENTS } from './content.js';
 import { FOREIGN_LANGS, randomUser } from './personas.js';
@@ -157,7 +158,7 @@ export class CommentGenerator {
       const r = this.rnd();
       if (mates.length && r < (o.lineup ?? 0.18)) {
         item = RICH_COMMENTS.lineup[Math.floor(this.rnd() * RICH_COMMENTS.lineup.length)];
-      } else if (r < (o.lineup ?? 0.18) + (o.foreign || 0)) {
+      } else if (!allTurkish() && r < (o.lineup ?? 0.18) + (o.foreign || 0)) {
         lang = langs[Math.floor(this.rnd() * langs.length)];
         const fp = FOREIGN_COMMENTS[lang] || FOREIGN_COMMENTS.en;
         item = fp[Math.floor(this.rnd() * fp.length)];

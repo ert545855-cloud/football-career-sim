@@ -126,10 +126,10 @@ export class TweetModel {
 
 export const FABRICIO = new AuthorModel({
   id: 'fabricio',
-  displayName: 'Fabricio Romana',
-  handle: '@FabricioRomana_',
+  displayName: 'Transfer Masası',
+  handle: '@TransferMasasi',
   kind: 'journalist',
-  signature: "It's a deal!",
+  signature: 'İşte oldu!',
   bio: 'Transfer haberleri ve büyük dedikodular. (Parodi hesap)',
   followers: 2_400_000,
   parody: true,
@@ -139,8 +139,8 @@ export const FABRICIO = new AuthorModel({
 
 export const YAGIZ = new AuthorModel({
   id: 'yagiz',
-  displayName: 'Yağız Sapanca',
-  handle: '@YagizSapanca_',
+  displayName: 'Kulis Muhabiri Ozan',
+  handle: '@OzanKulis',
   kind: 'journalist',
   signature: 'Flaş Gelişme:',
   bio: 'Yerel lig, sakatlıklar, kulis. (Parodi hesap)',

@@ -1,4 +1,5 @@
 // UYGULAMA DENETLEYİCİSİ — ekran yönetimi ve oyun akışları (antrenman, maç günü, sezon sonu…)
+import { setSocialLang } from '../core/chirp/lang.js';
 import { ACTIONS, CLUB_BY_ID, LEAGUES, POSITIONS, STATS, STAT_KEYS, TRAINING } from '../core/data.js';
 import {
   canDoAction, chooseEvent, completeMatch, declineOffers, doAction, endSeason, finishTraining, getMatch, newGame, retire, takeOffer, trainingSetup,
@@ -124,7 +125,7 @@ export function createApp(rootEl) {
     state: loadGame(),
     /** Seçmeler taslağı (kamp sürerken) */
     draft: loadDraft(),
-    settings: loadSettings(),
+    settings: (() => { const st = loadSettings(); setSocialLang(st.socialLang); return st; })(),
     installPrompt: null,
     autoplay: new URLSearchParams(location.search).has('autoplay'),
     current: null,

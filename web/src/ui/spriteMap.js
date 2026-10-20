@@ -60,6 +60,8 @@ export const FEED_SPRITES = {
   save: 'gloves',
   corner: 'corner_flag',
   card: 'card_yellow',
+  red: 'card_red',
+  warn: 'whistle',
   post: 'goal_frame',
   offside: 'flag_linesman',
   tackle: 'boots',

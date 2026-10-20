@@ -78,7 +78,7 @@ export function playIntercept(host, opts = {}) {
         buzz('tackle');
         stage.shake(8);
       } else if (r.outcome === 'foul') {
-        big.show(r.card ? 'FAUL · SARI KART!' : 'FAUL!', '#facc15', 46);
+        big.show(r.foulType === 'behind' ? 'ARKADAN FAUL!' : 'FAUL!', '#facc15', 46);
         sfx('whistle');
         buzz('tackleLost');
       } else {
@@ -94,7 +94,7 @@ export function playIntercept(host, opts = {}) {
       const r = D.result;
       setTimeout(() => {
         stage.stop();
-        resolve({ success: r.outcome === 'won', accuracy: r.acc || 0, outcome: r.outcome, method: r.method, passes: r.passes, card: !!r.card });
+        resolve({ success: r.outcome === 'won', accuracy: r.acc || 0, outcome: r.outcome, method: r.method, passes: r.passes, card: !!r.card, foulType: r.foulType, reckless: !!r.reckless, lastMan: !!r.lastMan });
       }, 50);
     }
 

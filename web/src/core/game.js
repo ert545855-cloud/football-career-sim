@@ -390,7 +390,8 @@ export function completeMatch(state, match) {
     const rank = ballonRank(state);
     if (rank <= 10) chirp.push(new ChirpTriggerEngine(state).post(FABRICIO, 'ballon', 'Altın Top yarışında ara sıralama: {player} {rank}. sırada! Avrupa devleri gözlerini Türkiye\'ye çevirdi.', { rank }));
   }
-  const weekEnd = endWeek(state, { summary, yellow: match.tally?.yellow || 0 });
+  if (summary.ban?.ban) addNews(state, summary.ban.reason === 'yellows' ? `${4} sarı kart sınırına ulaştın: 1 maç cezalısın.` : `Kırmızı kart cezası: ${summary.ban.ban} maç forma giyemeyeceksin.`, 'bad');
+  const weekEnd = endWeek(state, { summary, yellow: match.tally?.yellow || 0, red: match.tally?.red ? 1 : 0 });
   return { summary, results, weekEnd, europe, chirp: [...chirp, ...euroTweets, ...weekEnd.chirp] };
 }
 

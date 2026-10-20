@@ -1,3 +1,4 @@
+import { setSocialLang } from '../src/core/chirp/lang.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { setRandom, seeded } from '../src/core/rng.js';
@@ -73,7 +74,8 @@ test('yanıt: oyuncunun yorumu en üste eklenir, taraftar cevap verir', () => {
   assert.ok(tw.comments.length >= n + 2);
 });
 
-test('yorumlar: zengin havuz, yabancı kullanıcılar ve "şu oyuncu oynamalı"', () => {
+test('yorumlar: zengin havuz, yabancı kullanıcılar (Orijinal dil modu) ve "şu oyuncu oynamalı"', () => {
+  setSocialLang('orig');
   const g = new CommentGenerator(seeded(11));
   let lineup = 0;
   let foreign = 0;
@@ -88,6 +90,10 @@ test('yorumlar: zengin havuz, yabancı kullanıcılar ve "şu oyuncu oynamalı"'
     }
   }
   assert.ok(lineup > 10 && foreign > 10, `${lineup} / ${foreign}`);
+  // Türkçe mod (varsayılan): yabancı dilde yorum yok
+  setSocialLang('tr');
+  const g2 = new CommentGenerator(seeded(12));
+  for (let i = 0; i < 40; i++) for (const c of g2.generateRich('preview', { vars: { first: 'Arda', opp: 'Van', clubShort: 'SAP' }, mates: [], foreign: 0.6, idPrefix: `u${i}` })) assert.ok(!c.author.lang, c.text);
   for (const [k, pool] of Object.entries(RICH_COMMENTS)) assert.ok(pool.length >= 3, k);
   assert.ok(Object.keys(COMMENT_POOLS).includes('gossip'));
 });

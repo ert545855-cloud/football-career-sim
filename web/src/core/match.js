@@ -10,6 +10,7 @@ import { matchInjuryRoll } from './injury.js';
 import { goalBonusFor } from './clauses.js';
 import { clubLineup, pickScorer, shortName } from './lineups.js';
 import { cardEscapeChance } from './character.js';
+import { disciplineOnMatch, ensureDisc, refDecision, sendOff } from './discipline.js';
 
 /** İlk 11 kararı: OVR + hoca ilişkisi + form + moral, rakip oyuncuya karşı. */
 export function selection(state) {
@@ -448,12 +449,29 @@ export function resolveMoment(match, moment, result, playerName) {
       }[result.method];
       lines.push({ minute: m, kind: 'tackle', text: how || `${playerName} araya girip topu kaptı!` });
     } else if (result.outcome === 'foul') {
-      // Faul: kart riski + tehlikeli bölgede serbest vuruş (disiplinli oyuncu hakemi ikna eder)
+      // Faul: hakem kararı (sözlü uyarı → sarı → ikinci sarı/kırmızı; arkadan doğrudan sarı ya da kırmızı)
       t.lost++;
-      if (result.card && chance(cardEscapeChance(match.discipline ?? 50))) { result.card = false; result.warned = true; }
-      t.rating -= result.card ? 0.55 : 0.3;
-      if (result.card) t.yellow = (t.yellow || 0) + 1;
-      lines.push({ minute: m, kind: 'chance', text: result.card ? `${playerName} rakibini düşürdü, hakem sarı kartını çıkardı!` : result.warned ? `${playerName} faul yaptı; sakin tavrıyla hakemi ikna etti, sadece sözlü uyarı aldı.` : `${playerName} faul yaptı, hakem düdüğü çaldı.` });
+      const dec = refDecision(match, { foulType: result.foulType || 'side', reckless: !!result.reckless, lastMan: !!result.lastMan }, { discipline: match.discipline ?? 50, attitude: match.attitude ?? 0 });
+      // disiplinli oyuncu sarıyı bazen sözlü uyarıya çevirir (yalnız yandan fauller)
+      if (dec.card === 'yellow' && result.foulType !== 'behind' && chance(cardEscapeChance(match.discipline ?? 50) * 0.5)) {
+        const d = ensureDisc(match); d.yellow -= 1; d.warnings += 1; dec.card = 'warning'; dec.talked = true;
+      }
+      match.lastCard = { card: dec.card, minute: m };
+      const behind = result.foulType === 'behind';
+      if (dec.card === 'warning') {
+        t.rating -= 0.25;
+        lines.push({ minute: m, kind: 'warn', text: dec.talked ? `${playerName} faul yaptı; sakin tavrıyla hakemi ikna etti, sadece sözlü uyarı aldı.` : `${playerName} kayarak rakibini düşürdü. Hakem onu yanına çağırdı: sözlü uyarı. "Bir daha olursa kart!"` });
+      } else if (dec.card === 'yellow') {
+        t.rating -= 0.55;
+        t.yellow = (t.yellow || 0) + 1;
+        lines.push({ minute: m, kind: 'card', text: behind ? `${playerName} rakibine arkadan kaydı! Hakem tereddüt etmeden SARI KART gösterdi.` : `${playerName} yine adama girdi, hakem SARI KARTINI çıkardı!` });
+      } else {
+        t.rating -= 1.2;
+        t.yellow = (t.yellow || 0) + (dec.card === 'second' ? 1 : 0);
+        t.red = dec.card;
+        lines.push({ minute: m, kind: 'red', text: dec.card === 'second' ? `${playerName} ikinci sarı kartını gördü: KIRMIZI KART! Oyundan atıldı, takım 10 kişi kaldı.` : `${playerName} ${result.lastMan ? 'son adam olarak ' : ''}rakibini arkadan biçti: DOĞRUDAN KIRMIZI KART! Takım 10 kişi.` });
+        sendOff(match, m);
+      }
       if (moment.context === 'threat' && chance(0.12)) {
         match.score.opp += 1;
         const g = recordGoal(match, 'opp', m + 1, { assist: null, kind: 'freekick' });
@@ -541,6 +559,14 @@ export function finalizeMatch(state, match) {
   // Sakatlık zarı: yorgunluk, zemin, geçmiş sakatlıklar
   const injury = matchInjuryRoll(state, match, played);
   gymOnMatch(state, { played }); // maç kondisyonu + kas ağrısı
+  // Disiplin: kırmızı kart cezası, sarı birikimi
+  const ban = disciplineOnMatch(state, match);
+  if (t.red) {
+    changeMorale(player, -6);
+    changeRel(player, 'manager', -6);
+    changeRel(player, 'federation', -4);
+    changeRel(player, 'teammates', -3);
+  }
 
   // Maç içi gelişim
   const gained = {};
@@ -569,7 +595,10 @@ export function finalizeMatch(state, match) {
       fans: player.rel.fans - before.fans,
       fame: round1(player.fame - before.fame),
     },
-    motm: !!(rating && rating >= 8),
+    motm: !!(rating && rating >= 8 && !t.red),
     injury,
+    yellow: t.yellow || 0,
+    red: t.red || null,
+    ban,
   };
 }

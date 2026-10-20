@@ -68,7 +68,7 @@ function playMatch(state, outcome) {
   return completeMatch(state, m);
 }
 
-test('A) formsuzluk: son 3 maç kötü → Yağız Sapanca tweeti (şablon + imza)', () => {
+test('A) formsuzluk: son 3 maç kötü → Kulis Muhabiri tweeti (şablon + imza)', () => {
   setRandom(seeded(21));
   const s = newGame({ name: 'Arda Yılmaz', position: 'FW' });
   s.player.stats.shooting = 70; // ilk 11'de oynasın
@@ -83,28 +83,28 @@ test('A) formsuzluk: son 3 maç kötü → Yağız Sapanca tweeti (şablon + imz
   assert.ok(dip.comments.length >= 3 && dip.comments.length <= 4);
 });
 
-test('B) büyük kulüpten teklif → Fabricio Romana "It\'s a deal!" tweeti', () => {
+test('B) büyük kulüpten teklif → Transfer Masası "İşte oldu!" tweeti', () => {
   setRandom(seeded(31));
   const s = newGame({ name: 'Kerem Demir', position: 'MF' });
   const big = CLUBS.find((c) => c.id === 'bog');
   const engine = new ChirpTriggerEngine(s, seeded(32));
   const [t] = engine.onOffers([{ clubId: 'bog', wage: 9000, years: 3, signingBonus: 50000 }]);
   assert.equal(t.authorId, 'fabricio');
-  assert.equal(t.text, `It's a deal! ${big.name}, Kerem Demir için resmi teklifini yaptı. Taraflar prensipte anlaşıyor. Detaylar netleşiyor.`);
+  assert.equal(t.text, `İşte oldu! ${big.name}, Kerem Demir için resmi teklifini yaptı. Taraflar prensipte anlaşıyor. Detaylar netleşiyor.`);
   // Küçük kulüp teklifi haber olmaz
   const s2 = newGame({ name: 'Kerem Demir', position: 'MF' });
   const small = CLUBS.filter((c) => c.league === 'first').sort((a, b) => a.rating - b.rating)[0];
   assert.equal(new ChirpTriggerEngine(s2).onOffers([{ clubId: small.id, wage: 500, years: 2 }]).length, 0);
 });
 
-test('transfer kesinleşince Romana, yenilemede Yağız yazar', () => {
+test('transfer kesinleşince Transfer Masası, yenilemede Kulis Muhabiri yazar', () => {
   setRandom(seeded(41));
   const s = newGame({ name: 'Efe Kaya', position: 'DF' });
   takeOffer(s, { clubId: 'pam', wage: 2000, years: 3, signingBonus: 5000 });
   const tl = new Timeline(s).list();
   const romana = tl.find((t) => t.authorId === 'fabricio' && t.topic === 'transfer_done');
   assert.ok(romana, 'Romana transferi duyurur');
-  assert.match(romana.text, /^It's a deal! Efe Kaya resmen Pamukkale Spor'a transfer oldu\. 3 yıllık/);
+  assert.match(romana.text, /^İşte oldu! Efe Kaya resmen Pamukkale Spor'a transfer oldu\. 3 yıllık/);
   // Yeni kulübün resmi hesabı "Hoş geldin" kartı paylaşır (sözleşme detaylarıyla)
   const welcome = tl.find((t) => t.authorId === 'club:pam' && t.card?.kind === 'welcome');
   assert.ok(welcome && welcome.card.me && welcome.card.years === 3);

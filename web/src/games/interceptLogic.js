@@ -129,10 +129,12 @@ function slideStep(D, h) {
     return;
   }
   if (D.phase !== 'pass' && manD < 1.2 && ballD > manD + 0.15) {
-    // topa değil adama: faul — arkadan ya da geç girersen kart
+    // topa değil adama: faul. Kartı hakem verir (core/discipline.js): arkadan mı, sert mi, son adam mı?
     const fromBehind = D.me.y < c.y - 0.2; // rakipler +y yönüne (kaleye) hücum eder
-    const card = D.rnd() < (fromBehind ? 0.7 : 0.32);
-    end(D, 'foul', { method: 'slide', card, acc: 0 });
+    const speed = hyp(D.me.vx, D.me.vy);
+    const lastMan = !(D.mate && D.mate.y > c.y + 0.3);
+    const card = D.rnd() < (fromBehind ? 0.7 : 0.32); // antrenmanda gösterim için (maçta hakem karar verir)
+    end(D, 'foul', { method: 'slide', card, acc: 0, foulType: fromBehind ? 'behind' : 'side', reckless: speed > 6.2, lastMan });
     return;
   }
   if (sl.t > 0.5) {
