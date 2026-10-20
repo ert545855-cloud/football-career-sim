@@ -53,8 +53,15 @@ function groundLayer(kind, W, H, area) {
     }
   } else if (kind === 'snow') {
     // Kar örtüsü: düzgün beyaz örtü + ince doku; çizgiler soluk seçilir; ezilmiş koridorlarda yeşil görünür
-    g.fillStyle = 'rgba(232, 241, 252, 0.62)';
+    // örtü hafif: saha ve oyuncular okunur kalsın (yer yer kar birikintileri daha yoğun)
+    g.fillStyle = 'rgba(232, 241, 252, 0.34)';
     g.fillRect(0, y0, W, span);
+    for (let i = 0; i < 9; i++) {
+      const x = r() * W;
+      const y = y0 + r() * span;
+      g.fillStyle = 'rgba(245, 249, 255, 0.28)';
+      g.beginPath(); g.ellipse(x, y, W * (0.06 + r() * 0.08), span * (0.03 + r() * 0.04), 0, 0, Math.PI * 2); g.fill();
+    }
     for (let i = 0; i < 5; i++) { // oyuncuların ezdiği koridorlar
       const x = W * (0.2 + r() * 0.6);
       g.fillStyle = 'rgba(90, 130, 95, 0.09)';
@@ -63,7 +70,7 @@ function groundLayer(kind, W, H, area) {
     const dots = Math.round((W * span) / 420);
     for (let i = 0; i < dots; i++) {
       const v = r();
-      g.fillStyle = v < 0.55 ? 'rgba(255,255,255,0.75)' : v < 0.85 ? 'rgba(196, 212, 236, 0.55)' : 'rgba(120, 150, 125, 0.35)';
+      g.fillStyle = v < 0.55 ? 'rgba(255,255,255,0.6)' : v < 0.85 ? 'rgba(196, 212, 236, 0.45)' : 'rgba(120, 150, 125, 0.3)';
       g.fillRect(Math.round(r() * W), Math.round(y0 + r() * span), v < 0.85 ? 2 : 1, 2);
     }
   }
@@ -104,7 +111,7 @@ export function weatherFx(weather, area = {}) {
     },
     /** Kayan sahneler için düz zemin tonu (birikinti çizmeden) */
     tint(ctx, W, H) {
-      const c = { wet: 'rgba(12, 32, 60, 0.18)', heavy: 'rgba(96, 64, 30, 0.2)', snow: 'rgba(236, 244, 255, 0.42)' }[surface];
+      const c = { wet: 'rgba(12, 32, 60, 0.18)', heavy: 'rgba(96, 64, 30, 0.2)', snow: 'rgba(236, 244, 255, 0.26)' }[surface];
       if (c) { ctx.fillStyle = c; ctx.fillRect(0, 0, W, H); }
     },
     sky(ctx, W, H, t) {

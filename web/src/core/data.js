@@ -71,31 +71,33 @@ export const TRAINING = {
 
 // Kurgusal kulüpler. rating = kulübün genel gücü (oyuncu OVR'si ile aynı ölçek).
 export const CLUBS = [
-  { id: 'bog', name: 'Boğaziçi SK', short: 'BOĞ', league: 'super', rating: 79, colors: ['#c8102e', '#ffd200'], pattern: 'stripes', city: 'İstanbul' },
-  { id: 'aka', name: 'Anadolu Kartalları', short: 'AKA', league: 'super', rating: 76, colors: ['#111827', '#f8fafc'], pattern: 'stripes', city: 'İstanbul' },
-  { id: 'ege', name: 'Ege Yıldızları', short: 'EGE', league: 'super', rating: 72, colors: ['#1d4ed8', '#fbbf24'], pattern: 'solid', city: 'İzmir' },
-  { id: 'bas', name: 'Başkent Gücü', short: 'BGÜ', league: 'super', rating: 70, colors: ['#7c2d12', '#facc15'], pattern: 'half', city: 'Ankara' },
-  { id: 'kfi', name: 'Karadeniz Fırtınası', short: 'KFI', league: 'super', rating: 68, colors: ['#7f1d1d', '#38bdf8'], pattern: 'hoops', city: 'Trabzon' },
-  { id: 'mun', name: 'Marmara United', short: 'MUN', league: 'super', rating: 65, colors: ['#065f46', '#f8fafc'], pattern: 'sash', city: 'Kocaeli' },
-  { id: 'tor', name: 'Toros Spor', short: 'TOR', league: 'super', rating: 62, colors: ['#ea580c', '#1e293b'], pattern: 'solid', city: 'Adana' },
-  { id: 'kap', name: 'Kapadokya FK', short: 'KAP', league: 'super', rating: 60, colors: ['#b91c1c', '#fde68a'], pattern: 'stripes', city: 'Kayseri' },
-  { id: 'akd', name: 'Akdeniz Dalgası', short: 'AKD', league: 'super', rating: 58, colors: ['#0e7490', '#f8fafc'], pattern: 'hoops', city: 'Antalya' },
-  { id: 'tra', name: 'Trakya Spor', short: 'TRA', league: 'super', rating: 55, colors: ['#4338ca', '#f8fafc'], pattern: 'half', city: 'Edirne' },
-  { id: 'fir', name: 'Fırat FK', short: 'FIR', league: 'super', rating: 53, colors: ['#16a34a', '#111827'], pattern: 'stripes', city: 'Elazığ' },
-  { id: 'ulu', name: 'Uludağ SK', short: 'ULU', league: 'super', rating: 50, colors: ['#f8fafc', '#2563eb'], pattern: 'sash', city: 'Bursa' },
+  // Süper Lig — gerçek kulüpleri çağrıştıran kurgusal adlar ve benzer renkler (gerçek ad/arma kullanılmaz)
+  { id: 'bog', name: 'İstanbul Aslan', short: 'ASL', fan: 'Aslan', league: 'super', rating: 79, colors: ['#a90432', '#fdb912'], pattern: 'half', city: 'İstanbul' },
+  { id: 'aka', name: 'İstanbul Kartal', short: 'KRT', fan: 'Kartal', league: 'super', rating: 76, colors: ['#111111', '#f8fafc'], pattern: 'stripes', city: 'İstanbul' },
+  { id: 'ege', name: 'İstanbul Kanarya', short: 'KNR', fan: 'Kanarya', league: 'super', rating: 72, colors: ['#163962', '#ffed00'], pattern: 'stripes', city: 'İstanbul' },
+  { id: 'bas', name: 'İstanbul Baykuş', short: 'BYK', fan: 'Baykuş', league: 'super', rating: 70, colors: ['#f26522', '#1e2b5c'], pattern: 'solid', city: 'İstanbul' },
+  { id: 'kfi', name: 'Karadeniz Fırtınası', short: 'KFI', fan: 'Fırtına', league: 'super', rating: 68, colors: ['#7a1e3a', '#4ea8de'], pattern: 'stripes', city: 'Trabzon' },
+  { id: 'mun', name: 'Samsun Kırmızı Şimşek', short: 'SAM', fan: 'Şimşek', league: 'super', rating: 65, colors: ['#d6001c', '#ffffff'], pattern: 'solid', city: 'Samsun' },
+  { id: 'tor', name: 'İzmir Sarı-Kırmızı', short: 'İZM', fan: 'Göz Göz', league: 'super', rating: 62, colors: ['#ffd200', '#c8102e'], pattern: 'half', city: 'İzmir' },
+  { id: 'kap', name: 'Kayseri Anadolu Yıldızı', short: 'KAY', fan: 'Yıldız', league: 'super', rating: 60, colors: ['#ffd200', '#c8102e'], pattern: 'stripes', city: 'Kayseri' },
+  { id: 'akd', name: 'Antalya Akrep', short: 'ANT', fan: 'Akrep', league: 'super', rating: 58, colors: ['#d6001c', '#ffffff'], pattern: 'stripes', city: 'Antalya' },
+  { id: 'tra', name: 'Konya Selçuklu', short: 'KON', fan: 'Selçuklu', league: 'super', rating: 55, colors: ['#007a3d', '#ffffff'], pattern: 'hoops', city: 'Konya' },
+  { id: 'fir', name: 'Sivas Yiğido', short: 'SİV', fan: 'Yiğido', league: 'super', rating: 53, colors: ['#c8102e', '#ffffff'], pattern: 'solid', city: 'Sivas' },
+  { id: 'ulu', name: 'Bursa Timsah', short: 'BUR', fan: 'Timsah', league: 'super', rating: 50, colors: ['#00843d', '#ffffff'], pattern: 'stripes', city: 'Bursa' },
 
-  { id: 'pam', name: 'Pamukkale Spor', short: 'PAM', league: 'first', rating: 45, colors: ['#f1f5f9', '#dc2626'], pattern: 'solid', city: 'Denizli' },
-  { id: 'kac', name: 'Kaçkar FK', short: 'KAÇ', league: 'first', rating: 43, colors: ['#15803d', '#fde047'], pattern: 'stripes', city: 'Rize' },
-  { id: 'efe', name: 'Efes Gençlik', short: 'EFE', league: 'first', rating: 41, colors: ['#0369a1', '#f8fafc'], pattern: 'hoops', city: 'Aydın' },
-  { id: 'nem', name: 'Nemrut SK', short: 'NEM', league: 'first', rating: 39, colors: ['#9a3412', '#fcd34d'], pattern: 'half', city: 'Adıyaman' },
-  { id: 'has', name: 'Hasandağı FK', short: 'HAS', league: 'first', rating: 37, colors: ['#991b1b', '#f8fafc'], pattern: 'sash', city: 'Aksaray' },
-  { id: 'mnz', name: 'Munzur Spor', short: 'MNZ', league: 'first', rating: 35, colors: ['#1e3a8a', '#f59e0b'], pattern: 'stripes', city: 'Tunceli' },
-  { id: 'agr', name: 'Ağrı Dağı FK', short: 'AĞR', league: 'first', rating: 34, colors: ['#334155', '#f8fafc'], pattern: 'hoops', city: 'Ağrı' },
-  { id: 'har', name: 'Harran SK', short: 'HAR', league: 'first', rating: 33, colors: ['#ca8a04', '#7c2d12'], pattern: 'solid', city: 'Şanlıurfa' },
-  { id: 'sap', name: 'Sapanca FK', short: 'SAP', league: 'first', rating: 31, colors: ['#0f766e', '#f8fafc'], pattern: 'half', city: 'Sakarya' },
-  { id: 'dat', name: 'Datça Spor', short: 'DAT', league: 'first', rating: 30, colors: ['#2563eb', '#f8fafc'], pattern: 'stripes', city: 'Muğla' },
-  { id: 'kiz', name: 'Kızılırmak FK', short: 'KIZ', league: 'first', rating: 28, colors: ['#b91c1c', '#111827'], pattern: 'sash', city: 'Kırşehir' },
-  { id: 'van', name: 'Van Gölü SK', short: 'VAN', league: 'first', rating: 26, colors: ['#0ea5e9', '#14532d'], pattern: 'hoops', city: 'Van' },
+  // 1. Lig
+  { id: 'pam', name: 'Kocaeli Körfez', short: 'KOC', fan: 'Körfez', league: 'first', rating: 45, colors: ['#007a3d', '#111111'], pattern: 'stripes', city: 'Kocaeli' },
+  { id: 'kac', name: 'Rize Çaycılar', short: 'RİZ', fan: 'Çaycılar', league: 'first', rating: 43, colors: ['#00843d', '#1e73be'], pattern: 'half', city: 'Rize' },
+  { id: 'efe', name: 'Ankara Gelincik', short: 'ANK', fan: 'Gelincik', league: 'first', rating: 41, colors: ['#c8102e', '#111111'], pattern: 'stripes', city: 'Ankara' },
+  { id: 'nem', name: 'Erzurum Dadaş', short: 'ERZ', fan: 'Dadaş', league: 'first', rating: 39, colors: ['#0057b8', '#ffffff'], pattern: 'solid', city: 'Erzurum' },
+  { id: 'has', name: 'Antep Şahin', short: 'ANP', fan: 'Şahin', league: 'first', rating: 37, colors: ['#d6001c', '#111111'], pattern: 'solid', city: 'Gaziantep' },
+  { id: 'mnz', name: 'Eskişehir Es-Es', short: 'ESK', fan: 'Es-Es', league: 'first', rating: 35, colors: ['#c8102e', '#111111'], pattern: 'hoops', city: 'Eskişehir' },
+  { id: 'agr', name: 'Sakarya Yeşil-Siyah', short: 'SAK', fan: 'Sakarya', league: 'first', rating: 34, colors: ['#00843d', '#111111'], pattern: 'hoops', city: 'Sakarya' },
+  { id: 'har', name: 'Hatay Defne', short: 'HAT', fan: 'Defne', league: 'first', rating: 33, colors: ['#7a1e3a', '#ffffff'], pattern: 'solid', city: 'Hatay' },
+  { id: 'sap', name: 'Manisa Tarzan', short: 'MAN', fan: 'Tarzan', league: 'first', rating: 31, colors: ['#111111', '#ffffff'], pattern: 'stripes', city: 'Manisa' },
+  { id: 'dat', name: 'Bodrum Kale', short: 'BOD', fan: 'Bodrum', league: 'first', rating: 30, colors: ['#00843d', '#ffffff'], pattern: 'solid', city: 'Muğla' },
+  { id: 'kiz', name: 'Ankara Başkent Gücü', short: 'BAŞ', fan: 'Başkent', league: 'first', rating: 28, colors: ['#ffd200', '#0b1d4f'], pattern: 'solid', city: 'Ankara' },
+  { id: 'van', name: 'Diyarbakır Amed', short: 'AMD', fan: 'Amed', league: 'first', rating: 26, colors: ['#00843d', '#c8102e'], pattern: 'half', city: 'Diyarbakır' },
 ].map((c) => ({ ...c, country: 'tr' }));
 
 const WORLD = generateWorld({ tr: CLUBS.map((c) => c.short) });
@@ -137,6 +139,64 @@ export const YOUTH_CLUBS = CLUBS.filter((c) => c.league === 'super').map((c) => 
 export const ALL_CLUBS = [...CLUBS, ...YOUTH_CLUBS];
 
 export const CLUB_BY_ID = Object.fromEntries(ALL_CLUBS.map((c) => [c.id, c]));
+
+/**
+ * Bölgesel Amatör Lig (BAL) kulüpleri: yalnızca Türkiye Kupası'nın ön eleme turlarında oynarlar.
+ * Lig tablolarına, transfer tekliflerine ve sıralamalara girmezler (CLUBS/ALL_CLUBS'ta değil, yalnız CLUB_BY_ID'de).
+ */
+export const AMATEUR_CLUBS = [
+  ['akc', 'Akçakoca Dalga', 'AKC', 'Düzce', ['#0369a1', '#ffffff'], 'hoops'],
+  ['ayv', 'Ayvalık Zeytin', 'AYV', 'Balıkesir', ['#4d7c0f', '#f8fafc'], 'solid'],
+  ['baf', 'Bafra Ovası', 'BAF', 'Samsun', ['#b91c1c', '#facc15'], 'stripes'],
+  ['byp', 'Beypazarı Gümüş', 'BYP', 'Ankara', ['#64748b', '#0f172a'], 'half'],
+  ['bir', 'Birecik Kelaynak', 'BİR', 'Şanlıurfa', ['#111827', '#f97316'], 'solid'],
+  ['bzy', 'Bozüyük Demiryolu', 'BZY', 'Bilecik', ['#1e3a8a', '#ef4444'], 'hoops'],
+  ['cid', 'Cide Kayalar', 'CİD', 'Kastamonu', ['#0f766e', '#ffffff'], 'stripes'],
+  ['dtc', 'Datça Badem', 'DAT', 'Muğla', ['#f8fafc', '#16a34a'], 'half'],
+  ['dev', 'Devrek Baston', 'DEV', 'Zonguldak', ['#7c2d12', '#fde68a'], 'solid'],
+  ['did', 'Didim Apollon', 'DİD', 'Aydın', ['#38bdf8', '#ffffff'], 'stripes'],
+  ['elm', 'Elmalı Yayla', 'ELM', 'Antalya', ['#dc2626', '#16a34a'], 'half'],
+  ['eme', 'Emet Bor', 'EME', 'Kütahya', ['#1d4ed8', '#e2e8f0'], 'solid'],
+  ['erd', 'Erdek Martı', 'ERD', 'Balıkesir', ['#ffffff', '#0284c7'], 'hoops'],
+  ['fin', 'Finike Portakal', 'FİN', 'Antalya', ['#f97316', '#14532d'], 'solid'],
+  ['ger', 'Gerze Ayyıldız', 'GER', 'Sinop', ['#dc2626', '#ffffff'], 'stripes'],
+  ['goy', 'Göynük Kartalkaya', 'GÖY', 'Bolu', ['#166534', '#f8fafc'], 'half'],
+  ['hlf', 'Halfeti Gül', 'HLF', 'Şanlıurfa', ['#111111', '#be123c'], 'solid'],
+  ['ine', 'İnebolu Liman', 'İNE', 'Kastamonu', ['#1e40af', '#facc15'], 'hoops'],
+  ['kmy', 'Kemaliye Taşyol', 'KMY', 'Erzincan', ['#78350f', '#ffffff'], 'stripes'],
+  ['kul', 'Kula Volkan', 'KUL', 'Manisa', ['#18181b', '#ef4444'], 'half'],
+  ['kum', 'Kumluca Sera', 'KUM', 'Antalya', ['#22c55e', '#ffffff'], 'solid'],
+  ['mud', 'Mudurnu Vadi', 'MUD', 'Bolu', ['#065f46', '#fbbf24'], 'stripes'],
+  ['nik', 'Niksar Kale', 'NİK', 'Tokat', ['#7f1d1d', '#e2e8f0'], 'solid'],
+  ['ort', 'Ortaca Kaplumbağa', 'ORT', 'Muğla', ['#0e7490', '#fde047'], 'hoops'],
+  ['ode', 'Ödemiş Bozdağ', 'ÖDE', 'İzmir', ['#1f2937', '#22d3ee'], 'half'],
+  ['sav', 'Şavşat Karagöl', 'ŞAV', 'Artvin', ['#0f172a', '#4ade80'], 'solid'],
+  ['sef', 'Seferihisar Mandalina', 'SEF', 'İzmir', ['#fb923c', '#1e3a8a'], 'stripes'],
+  ['sil', 'Silifke Kızkalesi', 'SİL', 'Mersin', ['#e11d48', '#f8fafc'], 'half'],
+  ['snp', 'Sinop Burun', 'SİN', 'Sinop', ['#1d4ed8', '#ffffff'], 'stripes'],
+  ['tas', 'Taşköprü Sarımsak', 'TAŞ', 'Kastamonu', ['#f8fafc', '#7c3aed'], 'solid'],
+  ['tir', 'Tirebolu Fındık', 'TİR', 'Giresun', ['#15803d', '#a16207'], 'hoops'],
+  ['uzk', 'Uzunköprü Kemer', 'UZU', 'Edirne', ['#991b1b', '#fef3c7'], 'stripes'],
+  ['ylv', 'Yalvaç Antiokheia', 'YAL', 'Isparta', ['#9333ea', '#ffffff'], 'half'],
+  ['zar', 'Zara Kızılırmak', 'ZAR', 'Sivas', ['#b91c1c', '#111827'], 'solid'],
+  ['arh', 'Arhavi Horon', 'ARH', 'Artvin', ['#0c4a6e', '#f43f5e'], 'stripes'],
+  ['kah', 'Kâhta Nemrut', 'KAH', 'Adıyaman', ['#a16207', '#0f172a'], 'hoops'],
+].map(([id, name, short, city, colors, pattern], i) => ({ id: `bal-${id}`, name, short, city, colors, pattern, rating: 12 - Math.round((i * 7) / 35), country: 'tr', league: 'bal', tier: 5, amateur: true }));
+for (const c of AMATEUR_CLUBS) CLUB_BY_ID[c.id] = c;
+
+/** Pankart ve tezahüratlarda kulübün adı (kısaltma değil): taraftar adı ya da ekleri atılmış kulüp adı */
+const NAME_AFFIX = /^(FC|SC|AC|AS|US|SS|CF|CD|UD|SD|RC|AJ|GD|SV|TSV|VfB|VfL|SpVgg|1\.|AFC|CPD|FK|SK|BK|IF|FF|B\.)$/i;
+const NAME_SUFFIX = /\s+(FK|SK|FC|Spor|Gençlik|Belediyespor|İdman Yurdu|Gücü|United|City|Rovers|Athletic|Town|Wanderers|Albion|County|Thistle|Academicals|Calcio|CF|BK|IF|FF|Boldklub|U-17)$/i;
+export function fanName(club) {
+  if (!club) return '';
+  if (club.fan) return club.fan;
+  let n = String(club.name || '').replace(NAME_SUFFIX, '');
+  const words = n.split(/\s+/);
+  while (words.length > 1 && NAME_AFFIX.test(words[0])) words.shift();
+  n = words.join(' ');
+  for (const p of ['Real ', 'Atlético ', 'Racing ', 'Deportivo ', 'Borussia ', 'Eintracht ', 'Virtus ', 'Sporting ', 'Pro ', 'Olympique ', 'Stade ', 'En Avant ', 'Académico de ', 'Desportivo de ', 'União de ', 'Sporting de ', 'Dinamo ', 'Torpedo ', 'Spartak ', 'Lokomotiv ', 'Metallurg ', 'Zvezda ', 'Krylya ']) if (n.startsWith(p)) n = n.slice(p.length);
+  return n || club.short;
+}
 
 export const SEASON_WEEKS = 22;
 export const MID_WINDOW_WEEK = 11;

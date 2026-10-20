@@ -319,9 +319,9 @@ export function getMatch(state) {
   if (!state.pending.match || state.pending.match.id !== id) {
     ensureCoach(state);
     state.pending.match = planMatch(state);
-    // Ağır kar / dondurucu soğuk: maç ertelenebilir (sezonun son haftalarında ertelenmez)
+    // Ağır kar / dondurucu soğuk: maç ertelenebilir (son haftada ertelenmez: maç sezon bitmeden hafta içine alınır)
     const wx = state.pending.match.weather;
-    if (wx?.postpone && state.calendar.week <= SEASON_WEEKS - 3) state.pending.match.postponed = wx.id === 'storm' ? 'storm' : wx.temp <= -8 && wx.id !== 'snow' ? 'frost' : 'snow';
+    if (wx?.postpone && state.calendar.week <= SEASON_WEEKS - 1) state.pending.match.postponed = wx.id === 'storm' ? 'storm' : wx.temp <= -8 && wx.id !== 'snow' ? 'frost' : 'snow';
     // Basın toplantısı (büyük maç, yeni hoca, formsuzluk, gol yağmuru)
     state.pending.match.press = state.pending.match.postponed ? null : planPress(state, state.pending.match);
   }
@@ -407,7 +407,7 @@ export function completeMatch(state, match) {
 export function postponeMatch(state, match) {
   const results = simulateWeek(state.world, match.week, null, { skip: { h: match.homeId, a: match.awayId } });
   state.pending.match = null;
-  (state.pending.makeups ||= []).push({ h: match.homeId, a: match.awayId, week: match.week, season: state.calendar.season, due: match.week + 2, why: match.postponed });
+  (state.pending.makeups ||= []).push({ h: match.homeId, a: match.awayId, week: match.week, season: state.calendar.season, due: Math.min(match.week + 2, SEASON_WEEKS), why: match.postponed });
   const why = { snow: 'yoğun kar yağışı', frost: 'dondurucu soğuk ve buzlanan zemin', storm: 'şiddetli fırtına' }[match.postponed] || 'hava muhalefeti';
   addNews(state, `${CLUB_BY_ID[match.homeId].short}-${CLUB_BY_ID[match.awayId].short} maçı ${why} nedeniyle ertelendi. Maç hafta içine alınacak.`, 'info');
   const europe = europeWeek(state, match.week);

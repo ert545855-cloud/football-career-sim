@@ -1,5 +1,5 @@
 // MAÇ EKRANI — canlı anlatım, skor tabelası, oyuncunun anlarında mini oyun.
-import { CLUB_BY_ID, GAME_WEIGHTS } from '../../core/data.js';
+import { CLUB_BY_ID, GAME_WEIGHTS, fanName } from '../../core/data.js';
 import { playSiyahShow } from '../siyahShow.js';
 import { showAirs } from '../../core/siyahShow.js';
 import { applyAiEvent, MOMENT_INTRO, momentFatigue, momentTitle, resolveMoment } from '../../core/match.js';
@@ -179,7 +179,7 @@ export function matchScreen(app, { match }) {
         weather: match.weather,
         speed: () => app.settings.speed || 1,
         auto: app.autoplay,
-        names: { home: home.name, away: away.name, homeShort: hs, awayShort: as, city: CLUB_BY_ID[match.homeId]?.city || '' },
+        names: { home: home.name, away: away.name, homeShort: hs, awayShort: as, homeFan: fanName(home), awayFan: fanName(away), city: CLUB_BY_ID[match.homeId]?.city || '' },
         coach: { name: match.national ? 'Milli Takım T.D.' : s.coach?.clubId === match.myId && s.coach?.name ? `T.D. ${s.coach.name}` : 'Teknik Direktör' },
         // golden sonra süreli sevinç seçimi (sahip olduğun en fazla 3 sevinç)
         pickCelebration: () => pickCelebration(bcEl, {
@@ -320,13 +320,14 @@ export function matchScreen(app, { match }) {
         } finally { bc.resume(); last = performance.now(); }
       };
       const onPitchNow = () => match.sentOff == null && !offPitch && (match.role === 'starter' || (match.subMinute && minute >= match.subMinute));
-      async function playTension(t) {
+      async function playTension(t, auto = false) {
         if (t.done || !onPitchNow()) return;
         busy = true;
         const opts = tensionOptions(t.kind, attitudeKind(match.attitude ?? 0));
         const def = TENSION_KINDS[t.kind] || TENSION_KINDS.trash;
         let choice = 'ignore';
-        if (!app.autoplay) {
+        // ileri sarılırken gerginlik soruları sorulmaz: oyuncu tepki vermeden geçer (görmezden gel)
+        if (!app.autoplay && !auto) {
           sfx('whistle');
           buzz([30, 40, 30]);
           choice = await pickTension(bcEl, { title: def.title, text: def.text(t.opp || 'Rakip oyuncu'), options: opts, att: match.attitude ?? 0, onPick: (id, tapped) => { if (tapped) app.click(); } });
@@ -420,7 +421,7 @@ export function matchScreen(app, { match }) {
         }
         if (item.kind === 'chant') {
           const awayEnd = Math.random() < 0.3;
-          line(item.minute, `📣 ${awayEnd ? 'Deplasman tribünü' : 'Tribünler'}: "${pickLine(CHANTS)(awayEnd ? as : hs)}"`, 'chant');
+          line(item.minute, `📣 ${awayEnd ? 'Deplasman tribünü' : 'Tribünler'}: "${pickLine(CHANTS)(fanName(awayEnd ? away : home))}"`, 'chant');
           sfx('chant');
           return;
         }
@@ -468,8 +469,7 @@ export function matchScreen(app, { match }) {
         }
         if (item.tension) {
           if (item.tension.done || !onPitchNow()) return;
-          skipTo = null;
-          await playTension(item.tension);
+          await playTension(item.tension, skipTo !== null);
           return;
         }
         if (item.m) {
@@ -536,7 +536,7 @@ export function matchScreen(app, { match }) {
       });
       skipBtn.addEventListener('click', () => {
         app.click();
-        const rest = timeline.slice(idx).filter((t) => ((t.m && !t.m.skipped) || (t.tension && !t.tension.done)) && match.sentOff == null);
+        const rest = timeline.slice(idx).filter((t) => t.m && !t.m.skipped && match.sentOff == null);
         skipTo = rest.length ? rest[0].minute : 90;
         if (rest.length <= 1) skipBtn.innerHTML = `${icon('chev')} Sona atla`;
       });

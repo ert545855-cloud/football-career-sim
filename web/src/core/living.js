@@ -71,7 +71,7 @@ export function rivalSeasonEnd(state) {
   if (r.age >= 36 && chance(0.5)) { r.retired = true; out.retired = true; return out; }
   if (chance(0.25)) {
     // daha güçlü bir kulübe transfer
-    const cands = Object.values(CLUB_BY_ID).filter((c) => clubRating(state.world, c.id) > clubRating(state.world, r.clubId) && clubRating(state.world, c.id) <= r.ovr + 10);
+    const cands = Object.values(CLUB_BY_ID).filter((c) => !c.amateur && !c.youth && clubRating(state.world, c.id) > clubRating(state.world, r.clubId) && clubRating(state.world, c.id) <= r.ovr + 10);
     if (cands.length) { r.clubId = pick(cands).id; out.moved = r.clubId; }
   }
   return out;

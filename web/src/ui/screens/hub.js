@@ -11,7 +11,7 @@ import { bigMatchChip, hubMentorCard, meetingFlow, requestsSheet, selectionSheet
 import { actionArt } from '../spriteMap.js';
 import { monthName, weatherFor } from '../../core/weather.js';
 import { hubLockerCard } from '../lockerView.js';
-import { ROUND_LABEL } from '../../core/cup.js';
+import { ROUND_LABEL, cupTieReady } from '../../core/cup.js';
 import { portfolioValue } from '../../core/invest.js';
 import { GYM_RULES, ensureGym } from '../../core/gym.js';
 import { questsCard, questsClick } from '../questsView.js';
@@ -53,7 +53,8 @@ export function hubScreen(app) {
     s.board?.crisis ? `<span class="chip bad">${icon('coin', 'ico sm')} Kulüpte mali kriz</span>` : '',
   ].join('');
 
-  const cupTie = calendar.phase === 'week' ? s.pending.cupTie : null;
+  const cupTie = calendar.phase === 'week' && cupTieReady(s) ? s.pending.cupTie : null;
+  const cupLate = calendar.phase === 'week' && s.pending.cupTie && !cupTie ? s.pending.cupTie : null;
   const news = career.news.slice(0, 3).map((n) => `<div class="li"><span class="news-dot ${n.kind}"></span><div class="grow small">${esc(n.text)}</div><span class="muted small">H${n.w}</span></div>`).join('');
 
   return {
@@ -96,6 +97,7 @@ export function hubScreen(app) {
         <p class="muted small center" style="margin:10px 0 0">${cupTie.kind === 'makeup' ? 'Hava muhalefeti nedeniyle ertelenen lig maçı. Sonuç tabloya işlenir; lig maçından önce oynanır.' : cupTie.group ? `${esc(cupTie.name)} · grup maçı, beraberlik de puan. Lig maçından önce oynanır.` : `${esc(cupTie.name)} · tek maç eleme, berabere biterse penaltılar. Lig maçından önce oynanır.`}</p>
         <button class="btn primary block" style="margin-top:10px" data-act="cup">${icon('whistle')} Kupa Maçına Çık</button>
       </div>` : ''}
+      ${cupLate ? `<div class="card cup-late"><span class="chip bad">${icon('shield', 'ico xs')} Ertelendi</span> <span class="small">${esc(CLUB_BY_ID[cupLate.h]?.name || '')} – ${esc(CLUB_BY_ID[cupLate.a]?.name || '')} ${cupLate.kind === 'makeup' ? 'ertelenen lig maçı' : 'kupa maçı'} hava muhalefeti yüzünden gelecek hafta oynanacak.</span></div>` : ''}
 
       <div class="h-sec">${cupTie ? 'Hafta sonu lig maçı' : 'Sıradaki maç'} <span>${monthName(calendar.week)} · Hafta ${calendar.week}/${SEASON_WEEKS}</span></div>
       <div class="card glow" data-tut="fixture">

@@ -1,5 +1,7 @@
 // ÇİZİM GÖRSELLER — avatar, arma, forma, ikonlar ve mağaza görselleri (hepsi SVG, dış dosya yok).
 import { AVATAR, CLUB_BY_ID } from '../core/data.js';
+import { playerLook } from '../core/cosmetics.js';
+import { portraitHTML } from './portrait.js';
 
 let uid = 0;
 const nid = (p) => `${p}${++uid}`;
@@ -154,7 +156,8 @@ export function avatarSVG(avatar = {}, kit = {}, number = 9, cls = '') {
 
 export function playerAvatar(state, cls = '') {
   const club = CLUB_BY_ID[state.career.clubId];
-  return avatarSVG(state.player.avatar, club, state.player.number, cls);
+  // piksel portre (oyundaki görünüş); tarayıcı dışında SVG avatar
+  return portraitHTML(playerLook(state), cls) || avatarSVG(state.player.avatar, club, state.player.number, cls);
 }
 
 // ─────────────────────────────────────────────────────────────

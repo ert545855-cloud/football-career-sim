@@ -2,8 +2,8 @@
 // KULÜP KADROSU — mentor adaylarını ve gençleri barındıran yapay zekâ oyuncuları.
 // Kadro yalnızca oyuncunun bulunduğu kulüp için üretilir; her sezon yaşlanır, emeklilik ve
 // yeni transferlerle yenilenir. Sonuç düz JSON olarak state.mentor.squads[clubId] altında tutulur.
-import { CLUB_BY_ID, COUNTRY_BY_ID } from '../data.js';
-import { NAME_BLOCK, NAME_POOLS, randomName } from '../world/names.js';
+import { CLUB_BY_ID, COUNTRY_BY_ID, LEAGUES } from '../data.js';
+import { NAME_BLOCK, foreignLang, foreignShare, randomName } from '../world/names.js';
 import { SquadPlayer, TRAIT_IDS } from './models.js';
 
 /** @typedef {import('./models.js').SquadPosition} SquadPosition */
@@ -36,8 +36,9 @@ export function makeSquadPlayer(rnd, o) {
   let name = '';
   // Kulübün ülkesine göre isim; kadroların yaklaşık %12'si yabancı oyuncu
   const country = COUNTRY_BY_ID[CLUB_BY_ID[o.clubId]?.country || 'tr'] || COUNTRY_BY_ID.tr;
-  const foreign = r.chance(0.12);
-  const lang = foreign ? r.pick(Object.keys(NAME_POOLS).filter((k) => k !== country.lang)) : country.lang;
+  const tier = LEAGUES[CLUB_BY_ID[o.clubId]?.league]?.tier || 3;
+  const foreign = r.chance(foreignShare(country.id, tier, country.wage || 1) * (young ? 0.4 : 1));
+  const lang = foreign ? foreignLang(country.id, country.lang, rnd) : country.lang;
   for (let i = 0; i < 30 && (!name || o.taken.has(name)); i++) {
     name = lang === 'tr' ? `${r.pick(young ? YOUNG_FIRST : VET_FIRST)} ${r.pick(LAST)}` : randomName(lang, rnd);
     if (NAME_BLOCK.has(name)) name = '';

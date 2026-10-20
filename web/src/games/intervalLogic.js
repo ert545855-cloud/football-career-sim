@@ -3,7 +3,7 @@
 // Atletizm pistinde aralıklı koşu: TEMPO bölümlerinde nabzı 115–145, SPRİNT bölümlerinde 158–182 aralığında tut.
 // KOŞ'a basılı tut: hızlan; bırak: yavaşla. Nabız hızın arkasından gecikmeyle gelir. Kondisyonun düşükse aynı hızda
 // nabız daha yüksek çıkar: sprintte tam gaz gidersen kırmızı bölgeye (190+) girersin, nefesin kesilir.
-// Sprint bölümlerinde engeller var: ZIPLA ile aş; çarparsan sendelersin.
+// Sprint bölümlerinde engeller gelir (zamanla, önünde belirir): ZIPLA ile aş; çarparsan sendelersin.
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -43,20 +43,16 @@ export function segmentAt(t) {
   return { i: IV_PROGRAM.length - 1, kind, t0: acc, t1: acc, left: 0 };
 }
 
-/** Engeller: sprint bölümlerinde, sprint hızında ~1.9 sn arayla (metre cinsinden konum) */
-function buildHurdles(P) {
-  const out = [];
-  let acc = 0;
-  let pos = 0;
-  for (const [kind, d] of IV_PROGRAM) {
-    const v = kind === 'sprint' ? P.vmax * 0.86 : 4.5;
-    if (kind === 'sprint') {
-      for (let s = 1.6; s < d - 0.6; s += 1.9) out.push({ x: pos + v * s, hit: false, cleared: false });
-    }
-    pos += v * d;
-    acc += d;
-  }
-  return out;
+/** Engeller zamanla doğar: sprint bölümünde ~1.9 sn arayla, ekranın hemen dışında (oyuncunun önünde) */
+export const IV_SPAWN_AHEAD = 19; // metre
+export const IV_SPAWN_EVERY = 1.9; // sn
+
+function spawnHurdles(R, seg) {
+  if (seg.kind !== 'sprint' || R.t < R.spawnAt || seg.left < 1.1) return;
+  const last = R.hurdles[R.hurdles.length - 1];
+  const x = Math.max(R.x + IV_SPAWN_AHEAD, last ? last.x + 8 : 0);
+  R.hurdles.push({ x, hit: false, cleared: false });
+  R.spawnAt = R.t + IV_SPAWN_EVERY;
 }
 
 export function createInterval(P) {
@@ -64,7 +60,7 @@ export function createInterval(P) {
     P, t: 0, x: 0, v: 3.5, hr: 92, hold: false,
     air: 0, stumble: 0, gasp: 0,
     inZone: 0, total: 0, redT: 0, hits: 0, cleared: 0, jumps: 0,
-    hurdles: buildHurdles(P), events: [], done: false, lastSeg: -1,
+    hurdles: [], spawnAt: Infinity, events: [], done: false, lastSeg: -1,
   };
 }
 
@@ -83,7 +79,12 @@ export function intervalStep(R, dt) {
   const P = R.P;
   R.t += dt;
   const seg = segmentAt(R.t);
-  if (seg.i !== R.lastSeg) { R.lastSeg = seg.i; R.events.push({ type: 'seg', kind: seg.kind }); }
+  if (seg.i !== R.lastSeg) {
+    R.lastSeg = seg.i;
+    R.events.push({ type: 'seg', kind: seg.kind });
+    R.spawnAt = seg.kind === 'sprint' ? R.t + 0.15 : Infinity;
+  }
+  spawnHurdles(R, seg);
   // hız
   let cap = P.vmax;
   if (R.gasp > 0) { cap = P.vmax * 0.55; R.gasp -= dt; }

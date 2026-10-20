@@ -4,7 +4,7 @@ import { drawPostponeArt } from './postponeArt.js';
 import { condOf } from '../core/gym.js';
 import { attitudeBar } from './attitudeView.js';
 import { attitudeOf } from '../core/attitude.js';
-import { ACTIONS, CLUB_BY_ID, LEAGUES, POSITIONS, STATS, STAT_KEYS, TRAINING } from '../core/data.js';
+import { ACTIONS, CLUB_BY_ID, LEAGUES, POSITIONS, SEASON_WEEKS, STATS, STAT_KEYS, TRAINING } from '../core/data.js';
 import {
   canDoAction, chooseEvent, completeMatch, declineOffers, doAction, endSeason, finishTraining, getMatch, newGame, postponeMatch, retire, takeOffer, trainingSetup,
 } from '../core/game.js';
@@ -65,7 +65,7 @@ import { campMatchFlow, nationalFlow, tournamentFlow } from './nationalView.js';
 import { campScreen } from './screens/camp.js';
 import { coachChangeFlow, lockerFlow, lockerScreen, pressFlow } from './lockerView.js';
 import { cupFlow, finishCupMatch } from './cupView.js';
-import { cupTieLabel } from '../core/cup.js';
+import { cupTieLabel, cupTieReady } from '../core/cup.js';
 import { injuryFlow } from './injuryView.js';
 import { clauseOptions, negotiateClauses } from '../core/clauses.js';
 import { lastMinuteOffer } from '../core/economy.js';
@@ -503,7 +503,7 @@ export function createApp(rootEl) {
     async matchDay() {
       const s = this.state;
       if (s.calendar.phase !== 'week') return this.runPending();
-      if (s.pending.cupTie) { await cupFlow(this); return; }
+      if (cupTieReady(s)) { await cupFlow(this); return; }
       if (s.calendar.slots > 0) {
         const ok = await sheet({
           center: true,
@@ -575,7 +575,7 @@ export function createApp(rootEl) {
             <div class="team">${crestSVG(away, 'crest lg')}<span>${esc(away.name)}</span></div>
           </div>
           <p class="lead center">${esc(why[1])}</p>
-          <p class="muted small center">Maç iki hafta sonra hafta içine alınacak. Bu hafta sonu dinlen: enerji toplarsın.</p>
+          <p class="muted small center">Maç ${match.week >= SEASON_WEEKS - 1 ? 'sezon bitmeden, gelecek hafta' : 'iki hafta sonra'} hafta içine alınacak. Bu hafta sonu dinlen: enerji toplarsın.</p>
           <button class="btn primary block" style="margin-top:14px" data-close>Tamam</button>`,
         onMount: (n) => drawPostponeArt(n.querySelector('[data-pp]'), match.postponed),
       });
@@ -692,7 +692,7 @@ export function createApp(rootEl) {
       // Yeni sezon: yaz kampı (2. sezondan itibaren)
       if (summerCampDue(s)) await summerCampSheet(this);
       // Hafta içi kupa maçı / Süper Kupa: lig maçının hemen ardından başlamaz, ana ekranda ayrı maç olarak bekler
-      if (s.pending.cupTie && s.calendar.phase === 'week' && !s.pending.cupTie.announced) {
+      if (cupTieReady(s) && s.calendar.phase === 'week' && !s.pending.cupTie.announced) {
         s.pending.cupTie.announced = true;
         this.save();
         setTimeout(() => toast(`Hafta içi ${cupTieLabel(s.pending.cupTie)} maçın var. Ana ekrandan oynayabilirsin.`), 400);

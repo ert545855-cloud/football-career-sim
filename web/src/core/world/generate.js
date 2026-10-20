@@ -1,6 +1,7 @@
 // DÜNYA ÜRETİCİ — ülke verisinden ligleri ve kurgusal kulüpleri her açılışta aynı şekilde üretir
 // (tohumlu rastgelelik: kayıt dosyasına kulüp listesi yazılmaz, sadece güçler ve tablolar).
 import { COUNTRIES } from './countries.js';
+import { PARODY_TOP } from './clubs.js';
 
 /** Basit 32-bit karma + mulberry32: tohumlu, tekrarlanabilir rastgelelik */
 export function hashStr(s) {
@@ -99,25 +100,33 @@ export function generateWorld(reserved = {}) {
     }
     const order = seededShuffle(entries, rnd);
     const taken = new Set(reserved[country.id] || []);
+    // üst lig: gerçek kulüpleri çağrıştıran kurgusal adlar (kısaltmalar önceden ayrılır)
+    const parody = country.id !== 'tr' ? PARODY_TOP[country.id] || [] : [];
+    for (const p of parody) taken.add(p.short);
     levels.forEach((level, li) => {
       const group = order.slice(li * 12, li * 12 + 12);
       const [lo, hi] = tierRange(country, level);
       group.forEach((e, k) => {
         const t = k / (group.length - 1);
         const rating = Math.round(hi - (hi - lo) * Math.pow(t, 0.9) + (rnd() - 0.5) * 2);
-        const short = shortCode(e.town, e.name, taken);
+        const P = level === 1 ? parody[k] : null;
+        const short = P ? P.short : shortCode(e.town, e.name, taken);
         taken.add(short);
+        // rastgele sayı sırası korunur (alt liglerin adları/renkleri değişmesin)
         const colors = PALETTE[Math.floor(rnd() * PALETTE.length)];
+        const flip = rnd() < 0.2;
+        const pattern = KITS[Math.floor(rnd() * KITS.length)];
         clubs.push({
           id: `${leagueIdFor(country.id, level)}-${String(k + 1).padStart(2, '0')}`,
-          name: e.name,
+          name: P ? P.name : e.name,
           short,
           league: leagueIdFor(country.id, level),
           rating: Math.max(8, rating),
-          colors: rnd() < 0.2 ? [colors[1], colors[0]] : colors,
-          pattern: KITS[Math.floor(rnd() * KITS.length)],
-          city: e.town,
+          colors: P ? P.colors : flip ? [colors[1], colors[0]] : colors,
+          pattern: P ? P.pattern : pattern,
+          city: P ? P.city : e.town,
           country: country.id,
+          ...(P ? { fan: P.fan } : {}),
         });
       });
     });

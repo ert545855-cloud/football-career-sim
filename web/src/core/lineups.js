@@ -1,7 +1,8 @@
 // KADROLAR (maç için) — golcü ve asist isimleri: kendi takımın mentor kadrosundan, rakip takımlar
 // kulüp ve sezona göre sabit (tohumlu) kurgusal isimlerle. Böylece rakip golcüler de isimleriyle görünür.
 import { CLUB_BY_ID, COUNTRY_BY_ID } from './data.js';
-import { randomName } from './world/names.js';
+import { foreignLang, foreignShare, randomName } from './world/names.js';
+import { LEAGUES } from './data.js';
 import { MentorManager } from './mentor/index.js';
 
 const SHAPE = ['GK', 'DF', 'DF', 'DF', 'DF', 'MF', 'MF', 'MF', 'FW', 'FW', 'FW'];
@@ -23,17 +24,19 @@ function seeded(a) {
 }
 
 /** Kurgusal 11 (kulüp + sezon sabit) */
-function generated(key, lang) {
+function generated(key, lang, mix = null) {
   if (cache.has(key)) return cache.get(key);
   const rnd = seeded(hash(key));
   const used = new Set();
   const counters = { GK: 0, DF: 0, MF: 0, FW: 0 };
   const xi = SHAPE.map((pos) => {
+    // kozmopolit kadrolar: ligin zenginliğine göre yabancı oyuncular (uyruğuna uygun isimle)
+    const nat = mix && rnd() < mix.share ? foreignLang(mix.country, lang, rnd) : lang;
     let name = '';
-    for (let i = 0; i < 10 && (!name || used.has(name)); i++) name = randomName(lang, rnd);
+    for (let i = 0; i < 10 && (!name || used.has(name)); i++) name = randomName(nat, rnd);
     used.add(name);
     const num = NUMS[pos][counters[pos]++] ?? 12 + counters[pos];
-    return { name, pos, num };
+    return { name, pos, num, nat };
   });
   if (cache.size > 400) cache.clear();
   cache.set(key, xi);
@@ -46,8 +49,11 @@ function generated(key, lang) {
  */
 export function clubLineup(state, clubId, { mine = false } = {}) {
   const club = CLUB_BY_ID[clubId];
-  const lang = COUNTRY_BY_ID[club?.country || 'tr']?.lang || 'tr';
-  const base = generated(`${clubId}|${state.calendar?.season || 1}`, lang).map((p) => ({ ...p }));
+  const country = COUNTRY_BY_ID[club?.country || 'tr'] || COUNTRY_BY_ID.tr;
+  const lang = country.lang || 'tr';
+  const tier = LEAGUES[club?.league]?.tier || 3;
+  const mix = { country: country.id, share: foreignShare(country.id, tier, country.wage || 1) };
+  const base = generated(`${clubId}|${state.calendar?.season || 1}`, lang, mix).map((p) => ({ ...p }));
   if (!mine) return base;
   // kendi takımın: tanıdık isimler (soyunma odası kadrosu) önce
   let squad = [];

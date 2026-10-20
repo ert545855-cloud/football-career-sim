@@ -46,6 +46,7 @@ export function ensureRanking(state) {
   if (!r.init && state.world) {
     // sıfırdan: tüm kulüplere başlangıç puanı (yalnız sıfırdan büyükler saklanır)
     for (const id of Object.keys(CLUB_BY_ID)) {
+      if (CLUB_BY_ID[id].amateur) continue;
       const b = basePoints(state.world, id);
       if (b > 0.5) r.pts[id] = Math.round(b * 10) / 10;
     }

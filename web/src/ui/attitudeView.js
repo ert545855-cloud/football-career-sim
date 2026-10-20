@@ -18,7 +18,7 @@ export function attitudeBar(v, o = {}) {
   const from = o.delta ? pct(Math.max(-100, Math.min(100, v - o.delta))) : pct(v);
   const to = pct(v);
   return `<div class="att ${o.compact ? 'compact' : ''}">
-    ${o.compact ? '' : `<div class="att-h"><span>Mütevazı</span><b style="color:${ATT_KINDS[kind].color}">${esc(attitudeLabel(v))}</b><span>Egoist</span></div>`}
+    ${o.compact ? '' : `<div class="att-h">${['humble', 'balanced', 'ego'].map((k) => `<span class="${k === kind ? 'on' : ''}" style="${k === kind ? `color:${ATT_KINDS[k].color}` : ''}">${esc(k === kind ? attitudeLabel(v) : ATT_KINDS[k].label)}</span>`).join('')}</div>`}
     <div class="att-track"><div class="att-cells">${cells.join('')}</div><u class="att-mk ${o.delta ? 'move' : ''}" style="--from:${from.toFixed(1)}%;--to:${to.toFixed(1)}%;left:${to.toFixed(1)}%"></u></div>
     ${o.delta ? `<div class="att-d ${o.delta > 0 ? 'e' : 'h'}">${o.delta > 0 ? 'Egoist yönüne ▶' : '◀ Mütevazı yönüne'} ${Math.abs(o.delta).toFixed(1)}</div>` : ''}
   </div>`;

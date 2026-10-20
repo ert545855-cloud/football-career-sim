@@ -161,7 +161,7 @@ export function playInterval(host, opts = {}) {
         // tribün: basamaklar ve sıra sıra taraftar (yavaş kayar)
         const par = Math.round(camX * ppm * 0.25);
         const tiers = 6;
-        const tierH = Math.floor((gTop - stTop - 6) / tiers);
+        const tierH = Math.floor((gTop - stTop - 9) / tiers);
         rect(c, 0, stTop - 2, LW, 2, '#0a0f1c');
         for (let r = 0; r < tiers; r++) {
           const y0 = stTop + r * tierH;
@@ -185,11 +185,11 @@ export function playInterval(host, opts = {}) {
           rect(c, x, y + 2, 2, 2, f.col);
         }
         // reklam panosu
-        rect(c, 0, gTop - 9, LW, 9, '#0f172a');
+        rect(c, 0, gTop - 11, LW, 11, '#0f172a');
         for (let i = 0; i < 6; i++) {
           const x = ((i * 46 - Math.round(camX * ppm * 0.6)) % 276 + 276) % 276 - 20;
-          rect(c, x, gTop - 8, 42, 7, i % 2 ? '#c6ff3d' : '#38bdf8');
-          drawPixelText(c, i % 2 ? 'KOŞ' : 'NABIZ', x + 21, gTop - 7, '#0b1220', { align: 'center' });
+          rect(c, x, gTop - 10, 42, 9, i % 2 ? '#c6ff3d' : '#38bdf8');
+          drawPixelText(c, i % 2 ? 'KOŞ' : 'NABIZ', x + 21, gTop - 9, '#0b1220', { align: 'center' });
         }
         // dev ekran: kondisyon ve nabız
         {
@@ -239,8 +239,16 @@ export function playInterval(host, opts = {}) {
         if (S.phase !== 'count') {
           // hayalet hep görünür: önde/arkada en fazla 7 m
           const gx = sx(Rn.x + clamp(S.mateX - Rn.x, -7, 7));
-          if (gx > -10 && gx < LW + 10) blitSprite(c, mateLook, 'side', `run${Math.floor(S.matePh) % 4}`, gx, mateY, 1, { alpha: 0.45 });
-          if (gx > -10 && gx < LW + 10) drawPixelText(c, 'TEMPO', gx, mateY - 38, 'rgba(255,255,255,0.6)', { align: 'center' });
+          if (gx > -10 && gx < LW + 10) {
+            blitSprite(c, mateLook, 'side', `run${Math.floor(S.matePh) % 4}`, gx, mateY, 1, { alpha: 0.45 });
+            // etiket: koşucunun benden uzak tarafında, gövde hizasında (panolara ve bana değmez)
+            const tw = 21;
+            const right = gx <= sx(Rn.x) ? gx - 7 - tw < 1 : gx + 7 + tw <= LW - 1;
+            const lx = right ? Math.min(LW - tw - 1, gx + 7) : Math.max(1, gx - 7 - tw);
+            const ly = mateY - 21;
+            rect(c, lx, ly, tw, 7, 'rgba(8,12,24,0.7)');
+            drawPixelText(c, 'TEMPO', lx + 1, ly + 1, 'rgba(198,255,61,0.9)');
+          }
         }
         // koşucu (ben)
         const px = sx(Rn.x);

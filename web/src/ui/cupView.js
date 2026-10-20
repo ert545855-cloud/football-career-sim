@@ -1,6 +1,7 @@
 // KUPA ARAYÜZÜ — kupa maçı akışı (maç öncesi kart, maç, penaltılar, sonuç), lig ekranındaki kupa ağacı.
 import { CLUB_BY_ID } from '../core/data.js';
-import { CUP_WEEK, KO_ROUNDS, ROUND_LABEL, completeCupMatch, cupStages, ensureCup, groupTable, isGroupStage, myCupStatus, myGroup, nextPath, planCupMatch, roundLabel, thirdsTable } from '../core/cup.js';
+import { CUP_WEEK, KO_ROUNDS, ROUND_LABEL, completeCupMatch, cupStages, cupTieCanPostpone, ensureCup, groupTable, isGroupStage, myCupStatus, myGroup, nextPath, planCupMatch, postponeCupTie, roundLabel, thirdsTable } from '../core/cup.js';
+import { drawPostponeArt } from './postponeArt.js';
 import { clubRating } from '../core/league.js';
 import { effectiveSkill } from '../core/player.js';
 import { playerLook } from '../core/cosmetics.js';
@@ -23,6 +24,31 @@ export async function cupFlow(app) {
   const mk = tie.kind === 'makeup';
   const grp = isGroupStage(tie.round);
   const ctx = cupContext(s, tie.round);
+  // Kar / fırtına: hakem sahayı oynanamaz bulursa eşleşme bir hafta ertelenir (bir kez; final ve Süper Kupa hariç)
+  if (cupTieCanPostpone(s, match)) {
+    const why = postponeCupTie(s, match);
+    const w = match.weather;
+    const txt = { snow: ['YOĞUN KAR', 'Saha kar altında; hakem ve federasyon temsilcisi maçı oynanamaz buldu.'], frost: ['DONDURUCU SOĞUK', 'Zemin buz tuttu; oyuncuların sağlığı için maç oynatılmayacak.'], storm: ['FIRTINA', 'Şiddetli fırtına ve şimşek nedeniyle güvenlik kararıyla maç ertelendi.'] }[why];
+    app.save();
+    sfx('whistle');
+    await sheet({
+      center: true,
+      dismissable: false,
+      html: `<div class="postpone-art ${why}"><canvas data-pp></canvas></div>
+        <div class="center"><span class="chip bad">${icon('shield', 'ico xs')} ${mk ? 'ERTELENEN MAÇ YİNE ERTELENDİ' : 'KUPA MAÇI ERTELENDİ'} · ${txt[0]}</span></div>
+        <div class="fixture" style="margin:12px 0">
+          <div class="team">${crestSVG(home, 'crest lg')}<span>${esc(home.name)}</span></div>
+          <span class="vs">${w ? `${w.emoji} ${w.temp}°` : 'VS'}</span>
+          <div class="team">${crestSVG(away, 'crest lg')}<span>${esc(away.name)}</span></div>
+        </div>
+        <p class="lead center">${esc(txt[1])}</p>
+        <p class="muted small center">${esc(match.cup?.name || '')} eşleşmesi gelecek hafta hafta içinde oynanacak. Bu hafta lig maçına odaklan.</p>
+        <button class="btn primary block" style="margin-top:14px" data-close>Tamam</button>`,
+      onMount: (n) => drawPostponeArt(n.querySelector('[data-pp]'), why),
+    });
+    app.go('hub');
+    return true;
+  }
   sfx('whistle');
   await sheet({
     center: true,
@@ -137,12 +163,14 @@ export function groupCard(state, cup, g, o = {}) {
   const thirdsOk = cup.thirds?.length ? cup.thirds : thirdsTable(state.world, cup).slice(0, cup.format.thirds).map((r) => r.id);
   const body = rows.map((r, i) => {
     const q = i < 2 ? 'q' : i === 2 && thirdsOk.includes(r.id) ? 'q3' : i === 3 ? 'x' : '';
+    const av = `${r.gf - r.ga > 0 ? '+' : ''}${r.gf - r.ga}`;
+    if (o.compact) return `<div class="gt-r ${q} ${r.id === me ? 'me' : ''}"><span class="n">${i + 1}</span>${crestSVG(CLUB_BY_ID[r.id], 'crest xs')}<span class="grow ellipsis">${esc(CLUB_BY_ID[r.id]?.name || '')}</span><span class="c">${r.p}</span><span class="c">${av}</span><b class="c">${r.pts}</b></div>`;
     return o.mini
       ? `<div class="gt-r ${q} ${r.id === me ? 'me' : ''}"><span class="n">${i + 1}</span>${crestSVG(CLUB_BY_ID[r.id], 'crest xs')}<span class="grow ellipsis">${esc(short(r.id))}</span><b>${r.pts}</b></div>`
       : `<div class="gt-r ${q} ${r.id === me ? 'me' : ''}"><span class="n">${i + 1}</span>${crestSVG(CLUB_BY_ID[r.id], 'crest xs')}<span class="grow ellipsis">${esc(CLUB_BY_ID[r.id]?.name || '')}</span><span class="c">${r.p}</span><span class="c">${r.w}</span><span class="c">${r.d}</span><span class="c">${r.l}</span><span class="c">${r.gf - r.ga > 0 ? '+' : ''}${r.gf - r.ga}</span><b class="c">${r.pts}</b></div>`;
   }).join('');
   const fx = o.fixtures ? `<div class="gt-fx">${g.fx.map((f) => `<span class="${f.h === me || f.a === me ? 'me' : ''}"><em>${f.md}.</em> ${esc(short(f.h))} <b>${f.hg == null ? '–' : `${f.hg}-${f.ag}`}</b> ${esc(short(f.a))}</span>`).join('')}</div>` : '';
-  return `<div class="gt ${o.mini ? 'mini' : ''}"><div class="gt-h"><b>Grup ${g.id}</b>${o.mini ? '' : '<span class="c">O</span><span class="c">G</span><span class="c">B</span><span class="c">M</span><span class="c">AV</span><span class="c">P</span>'}</div>${body}${fx}</div>`;
+  return `<div class="gt ${o.mini ? 'mini' : ''}"><div class="gt-h"><b>Grup ${g.id}</b>${o.mini ? '' : o.compact ? '<span class="c">O</span><span class="c">AV</span><span class="c">P</span>' : '<span class="c">O</span><span class="c">G</span><span class="c">B</span><span class="c">M</span><span class="c">AV</span><span class="c">P</span>'}</div>${body}${fx}</div>`;
 }
 
 function thirdsCard(state, cup) {
@@ -249,7 +277,7 @@ export function cupContext(state, round) {
   const me = state.career.clubId;
   if (isGroupStage(round)) {
     const g = myGroup(cup, me);
-    return g ? groupCard(state, cup, g, { fixtures: true }) : '';
+    return g ? groupCard(state, cup, g, { fixtures: true, compact: true }) : '';
   }
   if (KO_ROUNDS.includes(round) || KO_ROUNDS.includes(cup.stage)) {
     const from = KO_ROUNDS.includes(cup.stage) ? cup.stage : round;

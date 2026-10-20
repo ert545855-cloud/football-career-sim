@@ -134,7 +134,7 @@ function drawStudio(c, t, st, ctx) {
   R(c, 0, DESK, LW, 2, '#2a2a40');
   R(c, 0, DESK + 2, LW, 1, '#8b5cf6');
   for (let x = 6; x < LW; x += 14) { c.globalAlpha = 0.25; R(c, x, DESK + 6, 6, 1, '#c4b5fd'); c.globalAlpha = 1; }
-  drawPixelText(c, 'SİYAH SHOW', LW / 2, DESK + 11, '#e5e7eb', { scale: 2, align: 'center' });
+  drawPixelText(c, 'SİYAH SHOW', LW - 6, DESK + 11, '#e5e7eb', { scale: 2, align: 'right' });
   // masadaki eşyalar: mikrofonlar, kupalar, taktik tahtası, sunucu kartları
   for (const id of ORDER) {
     const x = LOOKS[id].x;
@@ -200,7 +200,11 @@ export function playSiyahShow(o) {
       my: o.names.my, myName: s.player.name.split(' ')[0], score: o.score || '0-0', id: o.match?.id, myGoals: o.match?.tally?.goals || 0,
       homeCol: o.colors.home || ['#2563eb', '#fff'], awayCol: o.colors.away || ['#dc2626', '#fff'],
     };
-    const lines = showScript(ctx);
+    // son programlarda geçen replikler tekrar gelmesin
+    const recent = (s.siyahRecent ||= []);
+    const lines = showScript(ctx, { recent });
+    for (const l of lines) if (!l.laugh && l.key) recent.push(l.key);
+    if (recent.length > 120) recent.splice(0, recent.length - 120);
     const layer = document.createElement('div');
     layer.className = 'ss-layer';
     layer.innerHTML = `<div class="ss-tv">
@@ -232,7 +236,8 @@ export function playSiyahShow(o) {
     const fit = () => {
       const dpr = Math.min(3, window.devicePixelRatio || 1);
       const w = Math.min(layer.clientWidth - 16, 720, (layer.clientHeight - 220) * (LW / LH));
-      k = Math.max(1, Math.floor((w * dpr) / LW));
+      // çift ölçek: orta plan (1.5x) ve yakın plan (2x) keskin piksellerle kesilsin
+      k = Math.max(2, Math.floor((w * dpr) / LW / 2) * 2);
       cv.width = LW * k;
       cv.height = LH * k;
       cv.style.width = `${(LW * k) / dpr}px`;
@@ -262,8 +267,9 @@ export function playSiyahShow(o) {
       st.laugh = !!L.laugh;
       st.ben = !!L.ben;
       st.ad = !!L.ad;
+      // kamera: çoğunlukla orta plan (konuşan + yanındakiler), bazen yakın, açılış/kahkaha geniş
       if (L.cam) st.cam = L.cam;
-      else if (L.who !== 'all') st.cam = Math.random() < 0.55 ? 'close' : 'wide';
+      else if (L.who !== 'all') st.cam = Math.random() < 0.4 ? 'close' : 'mid';
       if (L.laugh || L.who === 'all') st.cam = 'wide';
       stamp.hidden = true;
       adTag.hidden = !L.ad;
@@ -301,12 +307,14 @@ export function playSiyahShow(o) {
       if (st.ad) drawAd(c, t); else drawStudio(c, t, st, ctx);
       g.imageSmoothingEnabled = false;
       g.clearRect(0, 0, cv.width, cv.height);
-      if (st.cam === 'close' && !st.ad && LOOKS[st.speaker]) {
-        // yakın plan: konuşanın etrafındaki yarım kare, tam 2x
-        const w = LW / 2;
-        const h = LH / 2;
-        const sx = Math.max(0, Math.min(LW - w, LOOKS[st.speaker].x - w / 2));
-        const sy = DESK - h + 10;
+      const shot = !st.ad && LOOKS[st.speaker] ? st.cam : 'wide';
+      if (shot === 'close' || shot === 'mid') {
+        // yakın plan 2x (konuşan), orta plan 1.5x (konuşan + yanındakiler)
+        const z = shot === 'close' ? 2 : 1.5;
+        const w = LW / z;
+        const h = LH / z;
+        const sx = Math.round(Math.max(0, Math.min(LW - w, LOOKS[st.speaker].x - w / 2)));
+        const sy = Math.round(Math.max(0, Math.min(LH - h, DESK - h + (shot === 'close' ? 10 : 14))));
         g.drawImage(off, sx, sy, w, h, 0, 0, cv.width, cv.height);
       } else g.drawImage(off, 0, 0, LW, LH, 0, 0, cv.width, cv.height);
       raf = requestAnimationFrame(tick);

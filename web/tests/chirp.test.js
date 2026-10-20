@@ -104,7 +104,7 @@ test('transfer kesinleşince Transfer Masası, yenilemede Kulis Muhabiri yazar',
   const tl = new Timeline(s).list();
   const romana = tl.find((t) => t.authorId === 'fabricio' && t.topic === 'transfer_done');
   assert.ok(romana, 'Romana transferi duyurur');
-  assert.match(romana.text, /^İşte oldu! Efe Kaya resmen Pamukkale Spor'a transfer oldu\. 3 yıllık/);
+  assert.match(romana.text, /^İşte oldu! Efe Kaya resmen Kocaeli Körfez'e transfer oldu\. 3 yıllık/);
   // Yeni kulübün resmi hesabı "Hoş geldin" kartı paylaşır (sözleşme detaylarıyla)
   const welcome = tl.find((t) => t.authorId === 'club:pam' && t.card?.kind === 'welcome');
   assert.ok(welcome && welcome.card.me && welcome.card.years === 3);

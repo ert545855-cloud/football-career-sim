@@ -115,7 +115,125 @@ export const NAME_POOLS = {
     first: L('Min-jun,Seo-jun,Do-yoon,Ji-ho,Joon-young,Hyun-woo,Ji-hoon,Seung-ho,Tae-yang,Dong-hyun,Sung-min,Jae-won,Woo-jin,Kyung-min,Sang-hoon,Jin-woo,Hyun-jun,Chan-ho'),
     last: L('Kim,Lee,Park,Choi,Jung,Kang,Cho,Yoon,Jang,Lim,Han,Oh,Seo,Shin,Kwon,Hwang,Ahn,Song'),
   },
+  // ── Ligi olmayan ama oyuncu yetiştiren ülkeler (yabancı oyuncular için). Ünlü futbolcuların soyadları konmadı.
+  rs: {
+    first: L('Nemanja,Stefan,Marko,Uroš,Lazar,Nikola,Miloš,Vuk,Dragan,Bogdan,Đorđe,Aleksa,Veljko,Strahinja,Luka,Ognjen,Mihajlo,Petar'),
+    last: L('Jovanović,Petrović,Nikolić,Marković,Đorđević,Stojanović,Ilić,Popović,Simić,Lukić,Obradović,Radovanović,Vučković,Ristić,Todorović,Milenković,Gavrilović,Dimitrijević,Vasiljević,Bogdanović,Zarić,Lazarević'),
+  },
+  hr: {
+    first: L('Ivan,Josip,Mario,Ante,Marin,Luka,Domagoj,Tomislav,Dario,Filip,Matej,Karlo,Petar,Stipe,Mislav,Lovro,Duje,Bruno'),
+    last: L('Horvat,Kovač,Babić,Marić,Jurić,Novak,Knežević,Vuković,Pavlović,Blažević,Grgić,Perić,Tomić,Pavić,Bošnjak,Šarić,Matić,Lončar,Bilić,Galić'),
+  },
+  nl: {
+    first: L('Daan,Sem,Lucas,Milan,Thijs,Jesse,Bram,Ruben,Stijn,Joris,Lars,Niels,Sven,Teun,Gijs,Jasper,Koen,Wout'),
+    last: L('de Vries,Jansen,van den Berg,Bakker,Visser,Smit,Meijer,de Boer,Mulder,Bos,Vos,Peters,Hendriks,Dekker,van Leeuwen,Brouwer,de Graaf,Kuipers,Verhoeven,Willems'),
+  },
+  se: {
+    first: L('Erik,Oscar,Hugo,Viktor,Isak,Linus,Albin,Anton,Filip,Gustav,Jonathan,Melker,Ludvig,Axel,Emil,Noah'),
+    last: L('Lindqvist,Bergström,Holmberg,Sundberg,Nyström,Ekström,Lundgren,Sandberg,Wallin,Hedlund,Forsberg,Engström,Blomqvist,Åberg,Dahlberg,Sjöberg'),
+  },
+  no: {
+    first: L('Magnus,Sander,Kristian,Henrik,Eirik,Jonas,Håkon,Sindre,Torbjørn,Aksel,Mathias,Even,Vegard,Ola,Sigurd,Tobias'),
+    last: L('Johansen,Olsen,Larsen,Berg,Haugen,Hagen,Bakken,Solberg,Strand,Moen,Lund,Dahl,Aasen,Lie,Eide,Nygaard'),
+  },
+  cz: {
+    first: L('Jakub,Tomáš,Ondřej,Lukáš,Matěj,Petr,Vojtěch,David,Adam,Jan,Filip,Michal,Daniel,Šimon,Radek,Martin'),
+    last: L('Novák,Svoboda,Novotný,Dvořák,Černý,Procházka,Kučera,Veselý,Horák,Němec,Marek,Pokorný,Pospíšil,Hájek,Král,Jelínek'),
+  },
+  hu: {
+    first: L('Bence,Máté,Dávid,Levente,Ádám,Balázs,Gergő,Zsolt,Kristóf,Botond,Márk,Dániel,Norbert,Péter,Attila,Tamás'),
+    last: L('Nagy,Kovács,Tóth,Szabó,Horváth,Varga,Kiss,Molnár,Németh,Farkas,Balogh,Papp,Takács,Juhász,Lakatos,Mészáros'),
+  },
+  al: {
+    first: L('Ardit,Elvis,Klajdi,Erion,Arlind,Besart,Dardan,Fatjon,Gentian,Ilir,Kristi,Lorik,Mergim,Redon,Valon,Endrit'),
+    last: L('Hoxha,Krasniqi,Gashi,Berisha,Shala,Morina,Kelmendi,Rexhepi,Hasani,Bytyqi,Leka,Mehmeti,Zeqiri,Dervishi,Kastrati,Rama'),
+  },
+  ge: {
+    first: L('Giorgi,Levan,Nika,Luka,Davit,Lasha,Saba,Irakli,Otar,Zurab,Guram,Beka,Tornike,Vakhtang,Lado,Gela'),
+    last: L('Beridze,Kapanadze,Gelashvili,Mamaladze,Lomidze,Tsiklauri,Chikvaidze,Abashidze,Kiknadze,Gogoladze,Japaridze,Mchedlishvili,Natsvlishvili,Sharashenidze,Tabatadze,Zhvania'),
+  },
+  sn: {
+    first: L('Moussa,Cheikh,Ibrahima,Mamadou,Ousmane,Pape,Abdoulaye,Babacar,Lamine,Alioune,Serigne,Modou,Assane,Bamba,Khadim,Malick'),
+    last: L('Diop,Ndiaye,Fall,Sarr,Seck,Faye,Ba,Cissé,Sow,Diallo,Thiam,Gaye,Ndour,Mbaye,Diouf,Samb'),
+  },
+  ci: {
+    first: L('Yao,Kouadio,Serge,Wilfried,Jean-Michel,Ismaël,Franck,Hervé,Didier,Arsène,Lassina,Souleymane,Christian,Bertrand,Junior,Salif'),
+    last: L('Koné,Kouassi,Yao,Bamba,Touré,Coulibaly,Ouattara,Konan,Kouamé,Traoré,Diabaté,Gnagbo,Aka,Brou,Tanoh,Zadi'),
+  },
+  gh: {
+    first: L('Kwame,Kofi,Kwabena,Yaw,Kojo,Kwaku,Emmanuel,Isaac,Ebenezer,Samuel,Daniel,Joseph,Prince,Richmond,Felix,Nana'),
+    last: L('Mensah,Owusu,Boateng,Asante,Osei,Agyeman,Opoku,Darko,Amoah,Appiah,Frimpong,Antwi,Badu,Yeboah,Ofori,Sarpong'),
+  },
+  cm: {
+    first: L('Jean-Pierre,Samuel,Eric,André,Vincent,Joël,Clinton,Georges,Patrick,Alain,Stéphane,Fabrice,Rigobert,Cédric,Landry,Arnaud'),
+    last: L('Mbarga,Ngono,Atangana,Fouda,Essomba,Ndjock,Abena,Mvogo,Bilong,Owona,Elong,Manga,Ndongo,Tsala,Nkodo,Ebanda'),
+  },
+  co: {
+    first: L('Juan,Andrés,Camilo,Santiago,Sebastián,Felipe,Jhon,Yerson,Wilmar,Brayan,Daniel,Mateo,Kevin,Duván,Jefferson,Óscar'),
+    last: L('Restrepo,Gutiérrez,Montoya,Vargas,Mosquera,Murillo,Henao,Cárdenas,Palacios,Quintero,Arango,Ocampo,Mejía,Cortés,Angulo,Salazar'),
+  },
+  uy: {
+    first: L('Matías,Federico,Agustín,Nicolás,Diego,Rodrigo,Facundo,Gastón,Maximiliano,Sebastián,Santiago,Bruno,Mathías,Joaquín,Emiliano,Franco'),
+    last: L('Pereyra,Olivera,Silva,Rodríguez,Castro,Sosa,Correa,Acosta,Viera,Píriz,Techera,Rivero,Méndez,Olmedo,Barreto,Cabrera'),
+  },
+  mx: {
+    first: L('José,Luis,Carlos,Jesús,Miguel,Alejandro,Fernando,Héctor,Jorge,Rodrigo,Uriel,Érick,Diego,Sebastián,Emilio,Iván'),
+    last: L('Hernández,Ramírez,Cruz,Morales,Flores,Reyes,Gutiérrez,Ortiz,Chávez,Mendoza,Ruiz,Aguilar,Castillo,Vega,Salinas,Ibarra'),
+  },
+  ir: {
+    first: L('Ali,Reza,Mehdi,Saeed,Hossein,Amir,Milad,Payam,Arash,Kaveh,Omid,Shahab,Vahid,Morteza,Ehsan,Sina'),
+    last: L('Hosseini,Ahmadi,Rahimi,Karimi,Mohammadi,Rezaei,Jafari,Ghasemi,Mousavi,Sadeghi,Heidari,Nouri,Kazemi,Bagheri,Sharifi,Tehrani'),
+  },
+  in: {
+    first: L('Arjun,Rohit,Vikram,Aditya,Rahul,Karan,Siddharth,Aman,Nikhil,Harsh,Pranav,Ishaan,Ankit,Yash,Kunal,Varun'),
+    last: L('Sharma,Verma,Gupta,Singh,Patel,Reddy,Nair,Iyer,Menon,Rao,Kumar,Joshi,Mehta,Bose,Das,Pillai'),
+  },
+  bd: {
+    first: L('Rafiq,Tanvir,Sakib,Mehedi,Arif,Shakil,Imran,Rakib,Sohel,Jamal,Nayeem,Tariq,Faisal,Rubel,Hasib,Shanto'),
+    last: L('Hossain,Rahman,Islam,Ahmed,Chowdhury,Khan,Uddin,Alam,Karim,Miah,Sarkar,Talukder,Haque,Sheikh,Bhuiyan,Mondal'),
+  },
+  pk: {
+    first: L('Hamza,Bilal,Usman,Zain,Ahsan,Faizan,Hassan,Saad,Waqas,Danish,Haris,Imad,Junaid,Shoaib,Talha,Umair'),
+    last: L('Qureshi,Malik,Butt,Chaudhry,Raza,Abbasi,Siddiqui,Mirza,Javed,Iqbal,Sheikh,Awan,Rana,Bhatti,Gill,Hashmi'),
+  },
+  id: {
+    first: L('Rizky,Bagus,Dimas,Fajar,Aditya,Yoga,Rendy,Andika,Bayu,Gilang,Ilham,Putra,Arif,Hendra,Dani,Wahyu'),
+    last: L('Saputra,Pratama,Wijaya,Santoso,Hidayat,Nugroho,Kurniawan,Setiawan,Firmansyah,Ramadhan,Gunawan,Siregar,Lubis,Nasution,Harahap,Simanjuntak'),
+  },
 };
+
+/** Yabancı oyuncuların çoğunlukla geldiği ülkeler (ağırlıklı); ligin ülkesine göre gerçekçi dağılım */
+const FOREIGN_FROM = {
+  default: [['br', 5], ['ar', 4], ['fr', 4], ['es', 3], ['pt', 3], ['rs', 3], ['hr', 3], ['nl', 3], ['sn', 3], ['ci', 2], ['gh', 2], ['ng', 3], ['co', 2], ['uy', 2], ['de', 2], ['en', 2], ['se', 1], ['no', 1], ['cz', 1], ['al', 1], ['ma', 2], ['cm', 2]],
+  tr: [['br', 5], ['pt', 3], ['fr', 3], ['rs', 3], ['hr', 3], ['nl', 2], ['sn', 3], ['ng', 3], ['ci', 2], ['gh', 2], ['al', 2], ['ge', 2], ['cz', 1], ['de', 2], ['ar', 2], ['co', 2], ['uy', 1], ['ma', 2], ['ir', 1]],
+  en: [['fr', 4], ['es', 3], ['pt', 3], ['br', 4], ['ar', 3], ['nl', 3], ['de', 2], ['no', 2], ['se', 2], ['sn', 2], ['ci', 2], ['gh', 2], ['ng', 2], ['hr', 1], ['rs', 1], ['uy', 2], ['co', 1], ['sc', 2], ['wa', 2]],
+  es: [['ar', 5], ['br', 4], ['uy', 3], ['fr', 3], ['pt', 3], ['co', 2], ['mx', 2], ['hr', 1], ['rs', 1], ['ma', 2], ['sn', 1], ['nl', 1], ['de', 1]],
+  it: [['ar', 4], ['br', 4], ['rs', 3], ['hr', 3], ['fr', 3], ['nl', 2], ['de', 2], ['se', 1], ['no', 1], ['ng', 2], ['ci', 2], ['sn', 2], ['uy', 2], ['al', 2], ['ge', 1]],
+  de: [['fr', 3], ['nl', 3], ['hr', 2], ['rs', 2], ['cz', 2], ['hu', 2], ['br', 2], ['ar', 1], ['se', 2], ['no', 2], ['dk', 2], ['gh', 2], ['ci', 2], ['ng', 1], ['en', 2], ['al', 1]],
+  fr: [['sn', 4], ['ci', 4], ['cm', 3], ['ma', 3], ['br', 3], ['pt', 2], ['ar', 2], ['nl', 1], ['gh', 2], ['ng', 2], ['es', 1], ['co', 1]],
+  pt: [['br', 6], ['ar', 2], ['uy', 2], ['co', 2], ['es', 2], ['ng', 1], ['gh', 1], ['ci', 1], ['sn', 1], ['rs', 1], ['mx', 1]],
+  sa: [['br', 5], ['pt', 3], ['fr', 2], ['ar', 2], ['eg', 3], ['ma', 3], ['sn', 2], ['ng', 2], ['es', 2], ['co', 2], ['rs', 1], ['hr', 1]],
+  us: [['ar', 3], ['mx', 4], ['co', 3], ['br', 3], ['uy', 2], ['en', 2], ['fr', 1], ['es', 2], ['gh', 2], ['ng', 1], ['ca', 2]],
+  cn: [['br', 6], ['ar', 2], ['pt', 2], ['co', 2], ['rs', 2], ['ng', 2], ['kr', 2], ['es', 1]],
+  jp: [['br', 6], ['kr', 3], ['au', 0], ['es', 1], ['pt', 1], ['ng', 1], ['id', 1]],
+  kr: [['br', 6], ['jp', 2], ['au', 0], ['rs', 1], ['pt', 1], ['co', 1]],
+  ru: [['br', 3], ['rs', 3], ['ar', 2], ['co', 2], ['ua', 0], ['ge', 2], ['al', 1], ['ci', 1], ['ng', 1], ['ir', 1]],
+};
+
+/** Ligin yabancı oyuncu oranı: zengin ve üst ligler daha kozmopolit */
+export function foreignShare(countryId, tier = 1, wage = 1) {
+  const base = tier === 1 ? 0.18 + Math.min(0.3, (wage - 0.5) * 0.2) : tier === 2 ? 0.1 : 0.05;
+  return countryId === 'tr' && tier === 1 ? 0.36 : Math.max(0.03, Math.min(0.5, base));
+}
+
+/** Yabancı oyuncunun isim havuzu (ağırlıklı) */
+export function foreignLang(countryId, homeLang, rnd = Math.random) {
+  const list = (FOREIGN_FROM[countryId] || FOREIGN_FROM.default).filter(([l, w]) => w > 0 && l !== homeLang && NAME_POOLS[l]);
+  const tot = list.reduce((a, [, w]) => a + w, 0);
+  let r = rnd() * tot;
+  for (const [l, w] of list) { r -= w; if (r <= 0) return l; }
+  return list[0]?.[0] || 'en';
+}
 
 /** Gerçek ünlü futbolcu/teknik adamlarla birebir çakışan birleşimler üretilmez */
 export const NAME_BLOCK = new Set(['Burak Yılmaz', 'Umut Bulut', 'Ahmet Kaya', 'Erol Bulut', 'Barış Yılmaz', 'Rui Costa', 'Diogo Costa', 'Nuno Gomes',

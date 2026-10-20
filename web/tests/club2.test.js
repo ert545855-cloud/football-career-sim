@@ -6,19 +6,22 @@ import { completeCupMatch, createCup, cupOnWeekEnd, groupTable, planCupMatch, sc
 import { chooseTreatment, ensureMedical, medicalOnWeekEnd, startInjury, treatmentOptions } from '../src/core/injury.js';
 import { clauseOptions, negotiateClauses, applyClauses, goalBonusFor, clausesOnSeasonEnd } from '../src/core/clauses.js';
 import { lastMinuteOffer } from '../src/core/economy.js';
+import { CLUB_BY_ID } from '../src/core/data.js';
 
 test('kupa: ön eleme → gruplar (ilk 2 + en iyi 3.ler) → eleme ağacı; senin maçların hafta içi', () => {
   setRandom(seeded(101));
   const s = newGame({ name: 'Kupa Test', position: 'FW' });
   const cup = createCup(s);
   assert.ok(cup && cup.name === 'Türkiye Kupası');
-  assert.equal(cup.format.groups, 6, 'Türkiye: 6 grup');
-  assert.ok(cup.pre?.pre1?.length === 12 && cup.preByes.pre2.length === 12, 'alt liglerin iki turlu ön elemesi');
-  assert.equal(cup.direct.length, 12, 'üst lig doğrudan grupta');
+  assert.equal(cup.format.groups, 12, 'Türkiye (4 lig + amatörler): 12 grup');
+  assert.ok(cup.pre?.pre1?.length === 12 && cup.preByes.pre2.length === 36, 'amatörler ve alt liglerle iki turlu ön eleme');
+  assert.ok(cup.pre.pre1.every((t) => CLUB_BY_ID[t.h].amateur && CLUB_BY_ID[t.a].amateur), '1. ön eleme: amatör kulüpler');
+  assert.equal(cup.direct.length, 24, 'Süper Lig ve 1. Lig doğrudan grupta');
   const me = s.career.clubId;
   const inPre = cup.pre.pre1.some((t) => t.h === me || t.a === me) || cup.preByes.pre2.includes(me);
   assert.ok(inPre || cup.direct.includes(me), 'kulübün kupada');
-  // eleme şablonu baştan hazır: Son 16 → Final
+  // eleme şablonu baştan hazır: Son 32 → Final
+  assert.equal(cup.rounds.r32.length, 16);
   assert.equal(cup.rounds.r16.length, 8);
   assert.equal(cup.rounds.f.length, 1);
   let played = 0;
@@ -36,11 +39,11 @@ test('kupa: ön eleme → gruplar (ilk 2 + en iyi 3.ler) → eleme ağacı; seni
       played++;
     }
     if (week === 9) {
-      // gruplar bitti: 6 × (1. + 2.) + en iyi 4 üçüncü = 16
-      assert.equal(cup.stage, 'r16');
-      const teams = cup.rounds.r16.flatMap((x) => [x.h, x.a]);
-      assert.equal(new Set(teams).size, 16);
-      assert.equal(cup.thirds.length, 4);
+      // gruplar bitti: 12 × (1. + 2.) + en iyi 8 üçüncü = 32
+      assert.equal(cup.stage, 'r32');
+      const teams = cup.rounds.r32.flatMap((x) => [x.h, x.a]);
+      assert.equal(new Set(teams).size, 32);
+      assert.equal(cup.thirds.length, 8);
       for (const g of cup.groups) { const tb = groupTable(s.world, g); assert.ok(teams.includes(tb[0].id) && teams.includes(tb[1].id)); }
     }
   }
@@ -111,5 +114,37 @@ test('sözleşme maddeleri ve son dakika teklifi', () => {
   s.player.fame = 60;
   const lm = lastMinuteOffer(s, []);
   assert.ok(lm === null || (lm.lastMinute && lm.signingBonus > 0));
+  setRandom(Math.random);
+});
+
+test('kupa: karda ertelenen eşleşme bir hafta bekler, tur o oynanınca ilerler', async () => {
+  const { cupTieReady, cupTieCanPostpone, postponeCupTie } = await import('../src/core/cup.js');
+  setRandom(seeded(202));
+  const s = newGame({ name: 'Kar Test', position: 'FW' });
+  const cup = createCup(s);
+  let t = null;
+  let week = 1;
+  for (; week <= 22 && !t; week++) { s.calendar.week = week; t = cupOnWeekEnd(s, week); }
+  assert.ok(t, 'bir kupa eşleşmesi geldi');
+  const stage = cup.stage;
+  s.calendar.week = week; // eşleşmenin oynanacağı hafta
+  const m = planCupMatch(s);
+  m.weather = { ...m.weather, id: 'snow', temp: -6, postpone: true };
+  assert.ok(cupTieCanPostpone(s, m));
+  postponeCupTie(s, m);
+  assert.equal(cupTieReady(s), false, 'bu hafta oynanmaz');
+  assert.equal(cupTieCanPostpone(s, m), false, 'ikinci kez ertelenmez');
+  // hafta biter: tur ilerlemez, yeni eşleşme gelmez
+  assert.equal(cupOnWeekEnd(s, week), null);
+  assert.equal(cup.stage, stage);
+  s.calendar.week = week + 1;
+  assert.ok(cupTieReady(s), 'gelecek hafta oynanır');
+  const m2 = planCupMatch(s);
+  m2.score = { my: 2, opp: 0 };
+  completeCupMatch(s, m2, { success: true });
+  assert.equal(s.pending.cupTie, null);
+  // gecikmeli tur sonraki hafta sonunda işlenir
+  for (let w = week + 1; w <= week + 3 && !s.pending.cupTie && !cup.out; w++) cupOnWeekEnd(s, w);
+  assert.notEqual(cup.stage, stage, 'kupa ilerledi');
   setRandom(Math.random);
 });

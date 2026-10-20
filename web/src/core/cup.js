@@ -10,7 +10,7 @@
 //  • Senin kulübünün maçı canlı yayınla oynanır; diğerleri simüle edilir. Grup maçlarında beraberlik olur;
 //    eleme maçlarında berabere biterse penaltılar.
 //  • Süper Kupa: sezon başında lig şampiyonu ile kupa şampiyonu (aynıysa lig ikincisi) karşılaşır.
-import { CLUB_BY_ID, COUNTRY_BY_ID, LEAGUES } from './data.js';
+import { AMATEUR_CLUBS, CLUB_BY_ID, COUNTRY_BY_ID, LEAGUES, SEASON_WEEKS } from './data.js';
 import { chance, clamp, poisson, randInt, shuffle } from './rng.js';
 import { applyMakeup, clubRating, goalLambda, sortedTable } from './league.js';
 import { changeFame, changeMorale, changeRel } from './player.js';
@@ -38,9 +38,13 @@ export function cupName(country) {
 }
 export const superName = (country) => (country === 'tr' ? 'Türkiye Süper Kupası' : `${COUNTRY_BY_ID[country]?.name || ''} Süper Kupası`);
 
-const countryClubs = (world, cc) => Object.values(world.leagues)
-  .filter((lg) => LEAGUES[lg.id]?.country === cc && !LEAGUES[lg.id]?.youth)
-  .flatMap((lg) => sortedTable(lg).map((r) => r.id));
+const countryClubs = (world, cc) => [
+  ...Object.values(world.leagues)
+    .filter((lg) => LEAGUES[lg.id]?.country === cc && !LEAGUES[lg.id]?.youth)
+    .flatMap((lg) => sortedTable(lg).map((r) => r.id)),
+  // amatör kulüpler ön elemelerde (yalnız kupada)
+  ...AMATEUR_CLUBS.filter((c) => c.country === cc).map((c) => c.id),
+];
 
 const tie = (h, a) => ({ h, a, hg: null, ag: null, pens: null, w: null });
 const slot = (label) => ({ h: null, a: null, hl: label[0], al: label[1], hg: null, ag: null, pens: null, w: null });
@@ -211,7 +215,9 @@ export function cupOnWeekEnd(state, week) {
   const cup = ensureCup(state);
   if (!cup || cup.winner || !cup.stage) return null;
   const st = cup.stage;
-  if (CUP_WEEK[st] !== week) return null;
+  // ertelenen (karda kalan) eşleşmen hâlâ bekliyorsa tur ilerlemez; gecikmeli tur sonraki haftalarda işlenir
+  if (state.pending.cupTie && state.pending.cupTie.kind !== 'makeup') return null;
+  if (!(CUP_WEEK[st] <= week)) return null;
   const me = state.career.clubId;
   const list = stageMatches(cup, st);
   const mine = list.find((m) => myIn(m, me) && !played(m)) || null;
@@ -347,6 +353,29 @@ export function planCupMatch(state) {
     knockout: !grp,
     big: isFinal ? { kind: 'final', title, nerves: 0.38, tempo: 1.15, skillMult: 0.95, cool: false } : null,
   });
+}
+
+/** Bekleyen eşleşme bu hafta oynanabilir mi? (karda ertelenen eşleşme bir hafta bekler) */
+export function cupTieReady(state) {
+  const t = state.pending?.cupTie;
+  return !!t && !(t.delayUntil > (state.calendar?.week || 0));
+}
+
+/** Kupa/ertelenen maç oynanacakken hava muhalefeti: bir kez, finaller ve Süper Kupa hariç */
+export function cupTieCanPostpone(state, match) {
+  const t = state.pending?.cupTie;
+  if (!t || t.delayed || t.kind === 'super' || t.round === 'f') return false;
+  return !!match?.weather?.postpone && (state.calendar?.week || 0) < SEASON_WEEKS;
+}
+
+/** Eşleşmeyi bir hafta erteler (lig maçı bu hafta normal oynanır) */
+export function postponeCupTie(state, match) {
+  const t = state.pending.cupTie;
+  const why = match?.weather?.id === 'storm' ? 'storm' : match?.weather?.temp <= -8 && match?.weather?.id !== 'snow' ? 'frost' : 'snow';
+  t.delayed = why;
+  t.delayUntil = (state.calendar?.week || 0) + 1;
+  t.announced = false;
+  return why;
 }
 
 /**

@@ -15,7 +15,7 @@ const THUMB = {
   heart: { dir: 'down', frame: 'clap' },
   shush: { dir: 'down', frame: 'point' },
   dance: { dir: 'down', frame: 'run0' },
-  flip: { dir: 'side', frame: 'ready', rot: -2.4 },
+  flip: { dir: 'down', frame: 'cheer', rot: Math.PI },
 };
 
 /** Seçenekler: önce kuşanılan, sonra sahip olunan diğerleri (pahalıdan ucuza), en fazla 3 */
@@ -39,11 +39,34 @@ function drawThumb(cv, look, style) {
   g.imageSmoothingEnabled = false;
   g.save();
   if (t.rot) {
-    // takla: gövde ortasından döndür, kareye sığdır
-    const f = 0.72;
-    g.translate(cv.width / 2, cv.height * 0.52);
-    g.rotate(t.rot);
-    g.drawImage(playerCanvas(look, t.dir, t.frame), (-SPRITE_W * k * f) / 2, (-SPRITE_H * k * f) / 2, SPRITE_W * k * f, SPRITE_H * k * f);
+    // takla: ters dönmüş oyuncu + etrafında dönüş oku
+    const f = 0.62;
+    const cx = cv.width / 2;
+    const cy = cv.height * 0.5;
+    const rad = Math.min(cv.width, cv.height) * 0.44;
+    g.strokeStyle = '#ffd34d';
+    g.lineWidth = Math.max(2, Math.round(1.5 * dpr));
+    g.lineCap = 'round';
+    g.beginPath();
+    g.arc(cx, cy, rad, Math.PI * 0.95, Math.PI * 2.2);
+    g.stroke();
+    // ok ucu (yayın sonunda, saat yönünde)
+    const ea = Math.PI * 2.2;
+    const ex = cx + Math.cos(ea) * rad;
+    const ey = cy + Math.sin(ea) * rad;
+    const tx = -Math.sin(ea);
+    const ty = Math.cos(ea);
+    const ah = 4.5 * dpr;
+    g.fillStyle = '#ffd34d';
+    g.beginPath();
+    g.moveTo(ex + tx * ah, ey + ty * ah);
+    g.lineTo(ex - ty * ah * 0.8 - tx * ah * 0.2, ey + tx * ah * 0.8 - ty * ah * 0.2);
+    g.lineTo(ex + ty * ah * 0.8 - tx * ah * 0.2, ey - tx * ah * 0.8 - ty * ah * 0.2);
+    g.closePath();
+    g.fill();
+    g.translate(cx, cy);
+    g.rotate(Math.PI);
+    g.drawImage(playerCanvas(look, 'down', 'cheer'), (-SPRITE_W * k * f) / 2, (-SPRITE_H * k * f) / 2, SPRITE_W * k * f, SPRITE_H * k * f);
   } else {
     g.translate(cv.width / 2, cv.height - 2 * dpr);
     g.drawImage(playerCanvas(look, t.dir, t.frame), (-SPRITE_W * k) / 2, -SPRITE_H * k, SPRITE_W * k, SPRITE_H * k);

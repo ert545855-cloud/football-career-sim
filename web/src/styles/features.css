@@ -684,8 +684,14 @@
 .bcx-rays { position: absolute; left: 50%; top: 50%; width: 170%; aspect-ratio: 1; margin: -85% 0 0 -85%; background: repeating-conic-gradient(var(--c1) 0deg 7deg, transparent 7deg 18deg); opacity: 0; -webkit-mask: radial-gradient(circle, #000 12%, transparent 58%); mask: radial-gradient(circle, #000 12%, transparent 58%); animation: bcxRays 3.4s linear forwards; }
 @keyframes bcxRays { 0% { opacity: 0; transform: rotate(0) scale(0.6); } 12% { opacity: 0.5; } 80% { opacity: 0.4; } 100% { opacity: 0; transform: rotate(40deg) scale(1.05); } }
 .bcx-in { position: relative; display: grid; justify-items: center; gap: 4px; transition: transform 0.45s cubic-bezier(0.3, 1.2, 0.4, 1); }
-.bc-goal.hi .bcx-in { transform: translateY(-58%) scale(0.72); }
+.bcx { container-type: size; }
+.bc-goal.hi .bcx-in { transform-origin: 50% 0; transform: translateY(-58%) scale(0.66); transform: translateY(calc(40px - 50cqh + 50%)) scale(0.66); }
+.bc.bc-full .bc-goal.hi .bcx-in { transform: translateY(calc(50px - 50cqh + 50%)) scale(0.7); }
 .bc-goal.hi .bcx-rays { opacity: 0.18; }
+/* seçim paneli açıkken: üst perde kalkar (skor tabelası görünür), skor/asist satırı gizlenir */
+.bc-goal.hi .bcx-lb.t { animation: bcxLbOut 0.3s ease-in forwards; }
+.bc-goal.hi .bcx-score, .bc-goal.hi .bcx-ast { visibility: hidden; }
+@keyframes bcxLbOut { from { transform: scaleY(1); } to { transform: scaleY(0); } }
 .bcx-word { display: flex; font-size: clamp(42px, 14vw, 104px); line-height: 0.92; font-weight: 900; font-style: italic; letter-spacing: 0.01em; color: #fff; }
 .bcx-word span { display: inline-block; opacity: 0; -webkit-text-stroke: 2px #070b14; text-shadow: 0 4px 0 var(--c2), 0 8px 0 rgba(0, 0, 0, 0.6), 0 0 26px rgba(255, 255, 255, 0.35); animation: bcxLet 0.5s cubic-bezier(0.2, 1.6, 0.4, 1) forwards, bcxBob 1.1s ease-in-out infinite; animation-delay: calc(var(--i) * 70ms + 110ms), calc(var(--i) * 90ms + 700ms); }
 .bcx.me .bcx-word span { color: #ffd23f; }
@@ -1006,7 +1012,10 @@ canvas.bld { flex: none; image-rendering: pixelated; }
 /* karakter barı */
 .att { display: grid; gap: 5px; }
 .att-h { display: flex; justify-content: space-between; align-items: baseline; font-size: 11px; font-weight: 800; color: var(--muted); }
-.att-h b { font-size: 13px; letter-spacing: 0.04em; }
+.att-h span { flex: 1; }
+.att-h span:nth-child(2) { text-align: center; }
+.att-h span:last-child { text-align: right; }
+.att-h span.on { font-size: 13px; font-weight: 900; letter-spacing: 0.04em; }
 .att-track { position: relative; padding-top: 9px; }
 .att-cells { display: grid; grid-template-columns: repeat(21, 1fr); gap: 2px; padding: 3px; border-radius: 4px; background: #05080f; box-shadow: 0 0 0 2px #000, inset 0 0 0 1px rgba(255, 255, 255, 0.08); }
 .att-c { display: block; height: 12px; }
@@ -1113,3 +1122,7 @@ canvas.bld { flex: none; image-rendering: pixelated; }
 .ss-ctrl { display: flex; gap: 8px; }
 .ss-ctrl .btn { min-width: 120px; }
 .ss-note { margin: 0; color: rgba(203, 213, 225, 0.55); font-size: 10.5px; text-align: center; }
+.cup-late { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: 10px; padding: 9px 12px; border-left: 3px solid var(--bad); }
+/* piksel portre (avatar halkası içinde) */
+.px-portrait { display: block; width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; image-rendering: crisp-edges; transform: translateY(6%) scale(1.04); }
+.avatar-ring .px-portrait, .avatar-big .px-portrait { background: radial-gradient(circle at 50% 38%, rgba(198, 255, 61, 0.14), transparent 62%); }

@@ -211,7 +211,7 @@ export function createBroadcast(root, o) {
     const bannerTexts = [
       (o.names?.home || 'EV SAHİBİ').toUpperCase(),
       'SONUNA KADAR',
-      `ŞAMPİYON ${(o.names?.homeShort || '').toUpperCase()}`.trim(),
+      `ŞAMPİYON ${up(o.names?.homeFan || o.names?.homeShort || '')}`.trim(),
       'HEP SENİNLEYİZ',
       `${(o.names?.city || 'ŞEHİR').toUpperCase()} BURADA`,
       'BU TRİBÜN SUSMAZ',
@@ -220,13 +220,13 @@ export function createBroadcast(root, o) {
     let bi = 0;
     while (bx < awayFrom - 60) {
       const text = bannerTexts[bi % bannerTexts.length];
-      const w = Math.min(90, 14 + text.length * 4.6);
+      const w = Math.min(124, 14 + text.length * 4.6);
       const col = bi % 2 ? [homeFans[1], homeFans[0]] : [homeFans[0], homeFans[1]];
       banners.push({ x: bx, w, text, bg: col[0], fg: col[1] });
       bx += w + 14 + Math.floor(r() * 18);
       bi++;
     }
-    banners.push({ x: awayFrom + 6, w: Math.min(80, (awayTo - awayFrom) - 10), text: `${(o.names?.awayShort || 'DEPLASMAN').toUpperCase()} DEPLASMANDA`, bg: awayFans[0], fg: awayFans[1] });
+    banners.push({ x: awayFrom + 6, w: Math.min(80, (awayTo - awayFrom) - 10), text: `${up(o.names?.awayFan || o.names?.awayShort || 'DEPLASMAN')} DEPLASMANDA`, bg: awayFans[0], fg: awayFans[1] });
     const flags = [];
     for (let i = 0; i < 12; i++) {
       const fxu = 24 + i * (wU / 12.5) + r() * 16;
@@ -341,7 +341,7 @@ export function createBroadcast(root, o) {
     g.font = `900 ${Math.round(th * 0.42)}px "Arial Black", Impact, system-ui`;
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.fillText((o.names?.homeShort || 'EV').toUpperCase(), tw / 2, th * 0.52, tw * 0.56);
+    g.fillText(up(o.names?.homeFan || o.names?.homeShort || 'EV'), tw / 2, th * 0.52, tw * 0.56);
     g.font = `900 ${Math.round(th * 0.14)}px system-ui`;
     g.fillText('★ ★ ★', tw / 2, th * 0.14);
     crowd.tifo = c;
@@ -1812,6 +1812,8 @@ export function createBroadcast(root, o) {
   };
   return api;
 }
+
+const up = (s) => String(s || '').toLocaleUpperCase('tr');
 
 function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
