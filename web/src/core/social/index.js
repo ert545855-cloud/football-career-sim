@@ -150,7 +150,7 @@ export function talkContext(state) {
     offers: !!state.pending.offers?.list?.length,
     national: (state.national?.log?.[0]?.s === state.calendar.season) && state.calendar.week - (state.national.log[0].w || 0) <= 3,
     coachNew: state.coach?.reason === 'sacked' && state.coach.since?.s === state.calendar.season && state.calendar.week - state.coach.since.w <= 6,
-    cup: !!cup && !cup.out && !cup.winner && ['qf', 'sf', 'f'].includes(cup.current),
+    cup: !!cup && !cup.out && !cup.winner && ['qf', 'sf', 'f'].includes(cup.stage),
     winter: isWinterWeek(state.calendar.week),
     bench: (state.flags.benchStreak || 0) >= 2,
     fame: state.player.fame || 0,

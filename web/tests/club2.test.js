@@ -2,38 +2,65 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { setRandom, seeded } from '../src/core/rng.js';
 import { newGame } from '../src/core/game.js';
-import { CUP_WEEK, completeCupMatch, createCup, cupOnWeekEnd, planCupMatch, scheduleSuperCup, cupSeasonEnd } from '../src/core/cup.js';
+import { completeCupMatch, createCup, cupOnWeekEnd, groupTable, planCupMatch, scheduleSuperCup, cupSeasonEnd } from '../src/core/cup.js';
 import { chooseTreatment, ensureMedical, medicalOnWeekEnd, startInjury, treatmentOptions } from '../src/core/injury.js';
 import { clauseOptions, negotiateClauses, applyClauses, goalBonusFor, clausesOnSeasonEnd } from '../src/core/clauses.js';
 import { lastMinuteOffer } from '../src/core/economy.js';
 
-test('kupa: tur haftasında eşleşme, maç, ilerleme; şampiyonluk ödülü', () => {
+test('kupa: ön eleme → gruplar (ilk 2 + en iyi 3.ler) → eleme ağacı; senin maçların hafta içi', () => {
   setRandom(seeded(101));
   const s = newGame({ name: 'Kupa Test', position: 'FW' });
   const cup = createCup(s);
   assert.ok(cup && cup.name === 'Türkiye Kupası');
-  const first = cup.current;
-  assert.ok(cup.rounds[first].some((t) => t.h === s.career.clubId || t.a === s.career.clubId));
-  const tie = cupOnWeekEnd(s, CUP_WEEK[first]);
-  assert.ok(tie && s.pending.cupTie);
-  const m = planCupMatch(s);
-  assert.ok(m.cup && m.knockout && m.homeId === tie.h);
-  m.score = { my: 3, opp: 0 };
-  const r = completeCupMatch(s, m);
-  assert.equal(r.won, true);
-  assert.equal(s.pending.cupTie, null);
-  assert.notEqual(cup.current, first, 'sonraki tura geçildi');
-  // berabere: penaltılar karar verir, won her zaman boolean
-  const t2 = cupOnWeekEnd(s, CUP_WEEK[cup.current]);
-  if (t2) {
-    const m2 = planCupMatch(s);
-    m2.score = { my: 1, opp: 1 };
-    const r2 = completeCupMatch(s, m2, { success: true });
-    assert.ok(r2.pens && typeof r2.won === 'boolean');
+  assert.equal(cup.format.groups, 6, 'Türkiye: 6 grup');
+  assert.ok(cup.pre?.pre1?.length === 12 && cup.preByes.pre2.length === 12, 'alt liglerin iki turlu ön elemesi');
+  assert.equal(cup.direct.length, 12, 'üst lig doğrudan grupta');
+  const me = s.career.clubId;
+  const inPre = cup.pre.pre1.some((t) => t.h === me || t.a === me) || cup.preByes.pre2.includes(me);
+  assert.ok(inPre || cup.direct.includes(me), 'kulübün kupada');
+  // eleme şablonu baştan hazır: Son 16 → Final
+  assert.equal(cup.rounds.r16.length, 8);
+  assert.equal(cup.rounds.f.length, 1);
+  let played = 0;
+  for (let week = 1; week <= 22 && !cup.winner; week++) {
+    s.calendar.week = week;
+    const t = cupOnWeekEnd(s, week);
+    if (t) {
+      const m = planCupMatch(s);
+      assert.ok(m.cup && m.homeId === t.h);
+      assert.equal(m.knockout, !['g1', 'g2', 'g3'].includes(t.round), 'grup maçı eleme değil');
+      m.score = ['g1', 'g2', 'g3'].includes(t.round) && played === 1 ? { my: 1, opp: 1 } : { my: 3, opp: 0 };
+      const r = completeCupMatch(s, m, { success: true });
+      assert.equal(s.pending.cupTie, null);
+      if (['g1', 'g2', 'g3'].includes(t.round)) assert.equal(r.pens, null, 'grupta penaltı yok');
+      played++;
+    }
+    if (week === 9) {
+      // gruplar bitti: 6 × (1. + 2.) + en iyi 4 üçüncü = 16
+      assert.equal(cup.stage, 'r16');
+      const teams = cup.rounds.r16.flatMap((x) => [x.h, x.a]);
+      assert.equal(new Set(teams).size, 16);
+      assert.equal(cup.thirds.length, 4);
+      for (const g of cup.groups) { const tb = groupTable(s.world, g); assert.ok(teams.includes(tb[0].id) && teams.includes(tb[1].id)); }
+    }
   }
+  assert.ok(cup.winner, 'final oynandı');
+  assert.equal(cup.winner, me, 'hep kazanan kulübümüz şampiyon');
+  assert.ok(played >= 8, `grup + eleme maçları oynandı: ${played}`);
   const pair = cupSeasonEnd(s, s.career.clubId, 'xx');
   assert.ok(s.lastCup && s.lastCup.winner);
-  assert.ok(scheduleSuperCup(s, pair) && s.pending.cupTie.kind === 'super');
+  assert.ok(pair && scheduleSuperCup(s, pair) && s.pending.cupTie.kind === 'super');
+  setRandom(Math.random);
+});
+
+test('kupa: sezon ortasında kurulursa geçmiş turlar simüle edilir', () => {
+  setRandom(seeded(77));
+  const s = newGame({ name: 'Kupa Geç', position: 'MF' });
+  s.calendar.week = 14;
+  s.cup = null;
+  const cup = createCup(s);
+  assert.equal(cup.stage, 'qf', 'Son 16 haftası (13) geçti');
+  assert.ok(cup.groups.every((g) => g.fx.every((f) => f.hg != null)));
   setRandom(Math.random);
 });
 

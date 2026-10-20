@@ -86,14 +86,14 @@ export function hubScreen(app) {
         ${meter('Kondisyon', 'run', ensureGym(s).cond, 100, ensureGym(s).cond < 45 ? 'var(--bad)' : ensureGym(s).cond < 60 ? 'var(--warn)' : '#4ade80', Math.round(ensureGym(s).cond))}
       </div>
 
-      ${cupTie ? `<div class="h-sec">${cupTie.kind === 'makeup' ? 'Hafta içi ertelenen maç' : 'Hafta içi kupa maçı'} <span>${esc(cupTie.kind === 'super' ? 'Süper Kupa' : cupTie.kind === 'makeup' ? `${cupTie.week}. hafta` : ROUND_LABEL[cupTie.round] || '')}</span></div>
+      ${cupTie ? `<div class="h-sec">${cupTie.kind === 'makeup' ? 'Hafta içi ertelenen maç' : 'Hafta içi kupa maçı'} <span>${esc(cupTie.kind === 'super' ? 'Süper Kupa' : cupTie.kind === 'makeup' ? `${cupTie.week}. hafta` : cupTie.group ? `Grup ${cupTie.group} · ${cupTie.round[1]}. maç` : ROUND_LABEL[cupTie.round] || '')}</span></div>
       <div class="card glow cup-next">
         <div class="fixture">
           <div class="team">${crestSVG(CLUB_BY_ID[cupTie.h])}<span>${esc(CLUB_BY_ID[cupTie.h].name)}</span></div>
           <div class="col" style="align-items:center;gap:6px"><span class="vs">VS</span><span class="chip gold">${icon('trophy', 'ico xs')} Kupa</span></div>
           <div class="team">${crestSVG(CLUB_BY_ID[cupTie.a])}<span>${esc(CLUB_BY_ID[cupTie.a].name)}</span></div>
         </div>
-        <p class="muted small center" style="margin:10px 0 0">${cupTie.kind === 'makeup' ? 'Hava muhalefeti nedeniyle ertelenen lig maçı. Sonuç tabloya işlenir; lig maçından önce oynanır.' : `${esc(cupTie.name)} · tek maç eleme, berabere biterse penaltılar. Lig maçından önce oynanır.`}</p>
+        <p class="muted small center" style="margin:10px 0 0">${cupTie.kind === 'makeup' ? 'Hava muhalefeti nedeniyle ertelenen lig maçı. Sonuç tabloya işlenir; lig maçından önce oynanır.' : cupTie.group ? `${esc(cupTie.name)} · grup maçı, beraberlik de puan. Lig maçından önce oynanır.` : `${esc(cupTie.name)} · tek maç eleme, berabere biterse penaltılar. Lig maçından önce oynanır.`}</p>
         <button class="btn primary block" style="margin-top:10px" data-act="cup">${icon('whistle')} Kupa Maçına Çık</button>
       </div>` : ''}
 

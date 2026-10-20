@@ -119,7 +119,7 @@ export function leagueScreen(app, params = {}) {
         <button class="${view.tab === 'europe' ? 'on' : ''}" data-mode="europe">🏆 Avrupa</button>
         <button class="${view.tab === 'rank' ? 'on' : ''}" data-mode="rank">📊 Sıra</button>
       </div>
-      ${view.tab === 'rank' ? rankingSection(app, view) : view.tab === 'cup' ? cupSection(s) : view.tab === 'europe' ? europeSection(app) : `
+      ${view.tab === 'rank' ? rankingSection(app, view) : view.tab === 'cup' ? cupSection(s, view) : view.tab === 'europe' ? europeSection(app) : `
       <div class="country-row" data-countries>${countries.map((c) => `<button class="country ${c.id === view.country ? 'on' : ''}" data-country="${c.id}"><span class="flag">${c.flag}</span><span>${esc(c.name)}</span></button>`).join('')}</div>
       <div class="seg wrap" style="margin:10px 0">
         ${leaguesOf(view.country).filter((l) => !l.youth || myLeague === l.id).map((l) => `<button class="${view.league === l.id ? 'on' : ''}" data-lg="${l.id}">${esc(l.name)}</button>`).join('')}
@@ -134,6 +134,9 @@ export function leagueScreen(app, params = {}) {
       <p class="muted small" style="margin-top:12px">Lider sezon sonunda şampiyon olur. Her ligden son 3 takım düşer; alt ligin ilk 2'si doğrudan yükselir, 3–6. sıralar play-off oynar. Avrupa kupalarına yalnız 1. liglerin üst sıraları katılır.</p>`}`,
     mount(el) {
       el.querySelector('.country.on')?.scrollIntoView({ inline: 'center', block: 'nearest' });
+      // kupa ağacı: oynanan tura kaydır
+      const cur = el.querySelector('[data-brk-cur]');
+      if (cur) cur.parentElement.scrollLeft = Math.max(0, cur.offsetLeft - 8);
       el.addEventListener('click', (e) => {
         const t = e.target.closest('button');
         if (!t) return;
