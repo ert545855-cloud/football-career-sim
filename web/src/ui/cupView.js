@@ -215,7 +215,8 @@ export function cupSection(state, view = {}) {
   const hasGroups = cup.groups?.length > 0;
   const grpStarted = hasGroups && cup.groups.some((g) => g.fx.some((f) => f.hg != null));
   const def = cup.stage && KO_ROUNDS.includes(cup.stage) ? 'bracket' : isGroupStage(cup.stage) || (hasGroups && !KO_ROUNDS.includes(cup.stage)) ? 'groups' : cup.pre && cup.stage?.startsWith('pre') ? 'pre' : 'bracket';
-  const tab = ['path', 'pre', 'groups', 'bracket'].includes(view.cup) ? view.cup : def;
+  // not: Avrupa sekmesi view.cup'ı kullanır; yerli kupanın alt sekmesi ayrı anahtarda (view.dcup)
+  const tab = ['path', 'pre', 'groups', 'bracket'].includes(view.dcup) ? view.dcup : def;
   const tabs = [['path', 'Yolum'], cup.pre ? ['pre', 'Ön eleme'] : null, cup.format.groups ? ['groups', 'Gruplar'] : null, ['bracket', 'Eleme ağacı']].filter(Boolean);
   let body = '';
   if (tab === 'path') body = pathCard(state, cup);
@@ -236,7 +237,7 @@ export function cupSection(state, view = {}) {
   } else body = `${bracketHTML(state, cup)}<p class="muted small" style="margin-top:6px">Kazanan ağaçta sağa ilerler. İlk eleme turunun eşleşmeleri grup sonuçlarına göre kurayla yerleşir.</p>`;
   return `<div class="card cup-head">${spriteOr('cup_gold', icon('trophy'), { size: 40 })}<div class="grow"><b>${esc(cup.name)}</b><div class="muted small">Sezon ${cup.season} · ${esc(status || '')}</div></div>${cup.winner ? `<span class="chip gold">${esc(short(cup.winner))}</span>` : ''}</div>
     ${cupSteps(cup, me)}
-    <div class="seg" style="margin:10px 0">${tabs.map(([k, l]) => `<button class="${tab === k ? 'on' : ''}" data-cup="${k}">${l}</button>`).join('')}</div>
+    <div class="seg" style="margin:10px 0">${tabs.map(([k, l]) => `<button class="${tab === k ? 'on' : ''}" data-dcup="${k}">${l}</button>`).join('')}</div>
     ${body}
     ${state.lastCup && state.lastCup.season !== cup.season ? `<p class="muted small" style="margin-top:10px">Geçen sezon ${esc(state.lastCup.name)}: ${esc(CLUB_BY_ID[state.lastCup.winner]?.name || '–')}</p>` : ''}`;
 }

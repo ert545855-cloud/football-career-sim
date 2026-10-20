@@ -151,6 +151,7 @@ export function leagueScreen(app, params = {}) {
         if (t.dataset.lg) view.league = t.dataset.lg;
         if (t.dataset.tab) view.tab = t.dataset.tab;
         if (t.dataset.cup) view.cup = t.dataset.cup;
+        if (t.dataset.dcup) view.dcup = t.dataset.dcup;
         app.go('league');
       });
     },

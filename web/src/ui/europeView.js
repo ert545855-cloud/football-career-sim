@@ -23,7 +23,7 @@ export function europeSection(app) {
   const view = app.leagueView;
   const myId = s.career.clubId;
   const myCup = cupOf(s.world, myId);
-  if (!view.cup) view.cup = myCup || 'cl';
+  if (!view.cup || !eu.cups[view.cup]) view.cup = myCup || 'cl';
   const cup = eu.cups[view.cup];
   const meta = CUPS[view.cup];
 
