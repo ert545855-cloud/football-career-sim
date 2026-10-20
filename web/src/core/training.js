@@ -118,6 +118,11 @@ export function coachTip(game, r = {}) {
     if (ok) return { tone: 'good', text: c === n ? `Kusursuz! ${n} sıranın hepsini temiz geçtin.` : `${n} sıranın ${c} tanesini temiz geçtin. Rakibe yaklaşınca daha erken yüklen.` };
     return { tone: 'bad', text: `${n} sıranın ${c} tanesini geçebildin. Rakip seni kolluyor: bir yana yüklen, o gelince sert şekilde öbür yana kır.` };
   }
+  if (game === 'interval') {
+    if (ok) return { tone: 'good', text: `Nabız bölgesinde %${r.zone}. ${r.hits ? `${r.hits} engele takıldın ama ` : ''}tempoyu iyi yönettin; kondisyonun arttı.` };
+    if ((r.hits || 0) >= 3) return { tone: 'bad', text: 'Engellerde çok takıldın. ZIPLA\'ya engele bir adım kala bas.' };
+    return { tone: 'bad', text: `Bölgede %${r.zone} kaldın. Nabız hızın arkasından gelir: sprintte tam gaz gitme, tempo bölümünde KOŞ\'u kısa kısa bas.` };
+  }
   if (game === 'shuttle') {
     if (ok) return { tone: 'good', text: `Seviye ${r.level}! ${r.perfectTurns ? `${r.perfectTurns} süper dönüş.` : ''} Tempo ayarın iyiydi.` };
     if (r.gassed) return { tone: 'bad', text: 'Nefesin bitti. Hep basılı tutma: bip\'e yetişecek kadar koş, erken varınca nefes topla.' };

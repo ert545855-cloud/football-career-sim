@@ -57,6 +57,7 @@ export const GAME_WEIGHTS = {
   dribble: { speed: 1 },
   attack: { passing: 0.35, speed: 0.3, shooting: 0.35 },
   shuttle: { stamina: 1 },
+  interval: { stamina: 0.85, speed: 0.15 },
 };
 
 /** Antrenmanda hangi stat hangi mini oyunla çalışılır. */
@@ -65,7 +66,7 @@ export const TRAINING = {
   passing: { game: 'pass', title: 'Pas Antrenmanı', hint: 'Topa dokun ve arkadaşına doğru çiz; zaman yavaşlar. Kavis falsoya döner, uzun çizgi havadan gider. Rakibin etrafından dolaş ama oyalanma!' },
   defending: { game: 'tackle', title: 'Pas Arası Antrenmanı', hint: 'Rakipler paslaşıyor. Top sahibinin bakış çizgisi pasın nereye gideceğini gösterir (bazen sahte!). Sürükleyerek koridoru kapat, top yanından geçerken dokun: ayağını uzat.' },
   speed: { game: 'dribble', title: 'Adamı Geç', hint: 'Top ayağında ileri koşuyorsun. Sürükleyerek dubaların arasındaki boşluktan geç; rakip gelince bir yana yüklen, o gelince öbür yana kır!' },
-  stamina: { game: 'shuttle', title: 'Mekik Koşusu (Bip Testi)', hint: 'KOŞ\'a basılı tut, bip\'ten önce çizgiye var. Çizgiye yaklaşınca DÖN\'e bas. Hızlı koşmak nefesi bitirir: tempoyu ayarla, erken varırsan bip\'i bekle.' },
+  stamina: { game: 'interval', title: 'Kondisyon Parkuru (Nabız Koşusu)', hint: 'KOŞ\'a basılı tut: hızlan, bırak: yavaşla. Nabzını bölümün aralığında tut: TEMPO 115–145, SPRİNT 158–182. Kondisyonun düşükse nabız çabuk yükselir; sprintte tam gaz gidersen nefesin kesilir. Engellerde ZIPLA!' },
 };
 
 // Kurgusal kulüpler. rating = kulübün genel gücü (oyuncu OVR'si ile aynı ölçek).

@@ -1,7 +1,7 @@
 // Otomatik oyuncu: denge testleri ve simülasyon için oyunu baştan sona oynar.
 import { GAME_WEIGHTS, POSITIONS, SHOP_ITEMS } from '../src/core/data.js';
 import { chance, rand } from '../src/core/rng.js';
-import { canDoAction, chooseEvent, completeMatch, declineOffers, doAction, endSeason, finishTraining, getMatch, takeOffer, trainingSetup } from '../src/core/game.js';
+import { canDoAction, chooseEvent, completeMatch, declineOffers, doAction, endSeason, finishTraining, getMatch, postponeMatch, takeOffer, trainingSetup } from '../src/core/game.js';
 import { applyAiEvent, resolveMoment } from '../src/core/match.js';
 import { getEvent } from '../src/core/events.js';
 import { chooseLocker } from '../src/core/locker.js';
@@ -72,7 +72,7 @@ export function playWeek(state, humanSkill = 0.5) {
       resolveMoment(match, item.m, fakeGame((s / tw / 100) * (match.big?.skillMult ?? 1), humanSkill), state.player.name);
     }
   }
-  const out = completeMatch(state, match);
+  const out = match.postponed ? postponeMatch(state, match) : completeMatch(state, match);
 
   if (state.pending.event) {
     const ev = getEvent(state.pending.event.id);

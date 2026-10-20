@@ -7,7 +7,7 @@ import { chance, pick, randInt, round1, roundTo } from './rng.js';
 import {
   addProgress, ageUp, changeEnergy, changeFame, changeMorale, changeRel, createPlayer, effectiveSkill, form, ovr, trainingAmount,
 } from './player.js';
-import { DEFAULT_FOCUS, addFocus, aiTopScorerGoals, clubRating, createWorld, evolveRatings, leagueIdIn, leagueOf, positionOf, simulateWeek, sortedTable, useWorld } from './league.js';
+import { DEFAULT_FOCUS, addFocus, aiTopScorerGoals, clubRating, createWorld, evolveRatings, flushPostponed, leagueIdIn, leagueOf, positionOf, simulateWeek, sortedTable, useWorld } from './league.js';
 import { acceptOffer, generateOffers, itemEffects, wageFor, weeklyFinance } from './economy.js';
 import { finalizeMatch, planMatch, selection } from './match.js';
 import { pickEvent, resolveEvent } from './events.js';
@@ -44,7 +44,7 @@ import { ambitionMorale, characterOnWeek, doDrill, ensureCharacter, potentialSea
 import { ensureMarket, interestOffers, loanOffer, priceOffers, recordTransfer, rumorsOnWeek } from './market.js';
 import { archiveOnMatch, ensureArchive, monthlyAward, teamOfSeason } from './archive.js';
 import { investOnWeek } from './invest.js';
-import { canGym, gymOnRest, gymOnWeek } from './gym.js';
+import { canGym, condFromTraining, gymOnRest, gymOnWeek } from './gym.js';
 import { questsOn } from './quests.js';
 import { canShoot, sponsorsOnMatch, sponsorsOnWeek } from './sponsors.js';
 import { businessOnWeek } from './business.js';
@@ -296,6 +296,8 @@ export function finishTraining(state, stat, result, diff = state.training?.diff 
   const stars = starsFor(result);
   const rec = recordDrill(state, stat, diff, stars);
   const game = TRAINING[stat].game;
+  // Kondisyon parkuru salon kondisyonunu da yükseltir (maç içi yorgunluk ve mini oyunlarda ağırlık azalır)
+  const condGain = game === 'interval' ? condFromTraining(state, result.success ? 0.4 + 0.6 * (result.accuracy || 0) : 0.15) : 0;
   changeEnergy(player, -18);
   if (result.success) changeMorale(player, 1);
   state.calendar.slots -= 1;
@@ -304,7 +306,7 @@ export function finishTraining(state, stat, result, diff = state.training?.diff 
   questsOn(state, 'train', { stat, stars });
   return {
     stat, name: STATS[stat].name, before, after: player.stats[stat], gained, progress: player.progress[stat], progressBefore, success: result.success, mentorMult,
-    diff, diffName: DIFFICULTY[diff]?.name || 'Normal', diffMult, fatigue, stars, best: rec.best, newBest: rec.newBest, tip: coachTip(game, result), result,
+    diff, diffName: DIFFICULTY[diff]?.name || 'Normal', diffMult, fatigue, stars, best: rec.best, newBest: rec.newBest, tip: coachTip(game, result), result, condGain,
   };
 }
 
@@ -317,8 +319,11 @@ export function getMatch(state) {
   if (!state.pending.match || state.pending.match.id !== id) {
     ensureCoach(state);
     state.pending.match = planMatch(state);
+    // Ağır kar / dondurucu soğuk: maç ertelenebilir (sezonun son haftalarında ertelenmez)
+    const wx = state.pending.match.weather;
+    if (wx?.postpone && state.calendar.week <= SEASON_WEEKS - 3) state.pending.match.postponed = wx.id === 'storm' ? 'storm' : wx.temp <= -8 && wx.id !== 'snow' ? 'frost' : 'snow';
     // Basın toplantısı (büyük maç, yeni hoca, formsuzluk, gol yağmuru)
-    state.pending.match.press = planPress(state, state.pending.match);
+    state.pending.match.press = state.pending.match.postponed ? null : planPress(state, state.pending.match);
   }
   return state.pending.match;
 }
@@ -394,6 +399,22 @@ export function completeMatch(state, match) {
   if (summary.ban?.ban) addNews(state, summary.ban.reason === 'yellows' ? `${4} sarı kart sınırına ulaştın: 1 maç cezalısın.` : `Kırmızı kart cezası: ${summary.ban.ban} maç forma giyemeyeceksin.`, 'bad');
   const weekEnd = endWeek(state, { summary, yellow: match.tally?.yellow || 0, red: match.tally?.red ? 1 : 0 });
   return { summary, results, weekEnd, europe, chirp: [...chirp, ...euroTweets, ...weekEnd.chirp] };
+}
+
+/**
+ * Hava muhalefeti: maç ertelendi. Lig haftası senin maçın olmadan oynanır; maç 2 hafta sonra hafta içine alınır.
+ */
+export function postponeMatch(state, match) {
+  const results = simulateWeek(state.world, match.week, null, { skip: { h: match.homeId, a: match.awayId } });
+  state.pending.match = null;
+  (state.pending.makeups ||= []).push({ h: match.homeId, a: match.awayId, week: match.week, season: state.calendar.season, due: match.week + 2, why: match.postponed });
+  const why = { snow: 'yoğun kar yağışı', frost: 'dondurucu soğuk ve buzlanan zemin', storm: 'şiddetli fırtına' }[match.postponed] || 'hava muhalefeti';
+  addNews(state, `${CLUB_BY_ID[match.homeId].short}-${CLUB_BY_ID[match.awayId].short} maçı ${why} nedeniyle ertelendi. Maç hafta içine alınacak.`, 'info');
+  const europe = europeWeek(state, match.week);
+  const euroTweets = chirpOnEurope(state, europe);
+  state.career.lastRole = match.role;
+  const weekEnd = endWeek(state, { summary: null, postponed: true });
+  return { summary: null, postponed: true, results, weekEnd, europe, chirp: [...euroTweets, ...weekEnd.chirp] };
 }
 
 function endWeek(state, ctx) {
@@ -491,7 +512,16 @@ function endWeek(state, ctx) {
   if (national) addNews(state, `Milli takım çağrısı: ${national.level === 'A' ? 'A Milli Takım' : national.level === 'U21' ? 'U-21' : 'U-19'} kadrosundasın!`, 'good');
 
   // Kupa: bu hafta tur varsa diğer maçlar oynanır, senin eşleşmen hafta içi oynanır (pending.cupTie)
-  const cupTie = cupOnWeekEnd(state, calendar.week);
+  const cupTie0 = cupOnWeekEnd(state, calendar.week);
+  // Ertelenen lig maçı: vakti gelince (kupa maçı yoksa) hafta içi maç olarak bekler
+  if (!state.pending.cupTie && state.pending.makeups?.length) {
+    const i = state.pending.makeups.findIndex((m) => m.season === calendar.season && m.due <= calendar.week + 1);
+    if (i >= 0) {
+      const mk = state.pending.makeups.splice(i, 1)[0];
+      state.pending.cupTie = { kind: 'makeup', round: 'makeup', h: mk.h, a: mk.a, week: mk.week, name: 'Ertelenen lig maçı', season: mk.season };
+    }
+  }
+  const cupTie = cupTie0 || (state.pending.cupTie?.kind === 'makeup' ? state.pending.cupTie : null);
 
   const seasonOver = calendar.week >= SEASON_WEEKS;
   if (seasonOver) calendar.phase = 'seasonEnd';
@@ -511,6 +541,10 @@ function endWeek(state, ctx) {
 
 export function endSeason(state) {
   const { player, career, world, calendar, flags } = state;
+  // Oynanamayan ertelenmiş maçlar simüle edilir (tablo tamamlanır)
+  if (state.pending.cupTie?.kind === 'makeup') state.pending.cupTie = null;
+  state.pending.makeups = [];
+  flushPostponed(world);
   const leagueId = leagueOf(career.clubId);
   const league = LEAGUES[leagueId];
   const position = positionOf(world, career.clubId);
@@ -697,6 +731,7 @@ export function takeOffer(state, offer) {
     if (m.ended) addNews(state, `Mentorun ${m.ended} ile yolların ayrıldı.`, 'info');
     // Yeni kulüp: kupa yolu sıfırlanır (yeni ülkenin kupası), Süper Kupa hakkı eski kulüpte kalır
     if (state.pending.cupTie) state.pending.cupTie = null;
+    state.pending.makeups = [];
     state.cup = null;
     ensureCup(state);
     const n = ensureNumberAfterMove(state);

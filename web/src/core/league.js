@@ -218,10 +218,14 @@ export function weekResults(world, leagueId, week) {
  * Haftanın tüm maçlarını oynatır. Oyuncunun maçı (myResult) verilirse o skor kullanılır.
  * @returns {{[leagueId]: Array<{h,a,hg,ag}>}}
  */
-export function simulateWeek(world, week, myResult = null) {
+export function simulateWeek(world, week, myResult = null, { skip = null } = {}) {
   const out = {};
   for (const lg of Object.values(world.leagues)) {
-    const round = fixturesOf(lg)[week - 1] || [];
+    const round = (fixturesOf(lg)[week - 1] || []).filter(([h, a]) => {
+      // ertelenen maç: bu hafta oynanmaz, tabloya sonra işlenir
+      if (skip && skip.h === h && skip.a === a) { (lg.postponed ||= []).push({ h, a, week }); return false; }
+      return true;
+    });
     const results = round.map(([h, a]) => {
       let hg;
       let ag;
@@ -243,6 +247,32 @@ export function simulateWeek(world, week, myResult = null) {
     out[lg.id] = results;
   }
   return out;
+}
+
+/** Sezon sonu: oynanamayan ertelenmiş maçlar simüle edilir */
+export function flushPostponed(world) {
+  for (const lg of Object.values(world.leagues)) {
+    for (const p of lg.postponed || []) {
+      if (!lg.table[p.h] || !lg.table[p.a]) continue;
+      const [hg, ag] = simulateScore(world, p.h, p.a);
+      applyResult(lg.table, p.h, p.a, hg, ag);
+    }
+    lg.postponed = [];
+  }
+}
+
+/** Ertelenen maçın sonucunu tabloya ve o haftanın sonuçlarına işler */
+export function applyMakeup(world, h, a, hg, ag) {
+  for (const lg of Object.values(world.leagues)) {
+    if (!lg.table[h] || !lg.table[a]) continue;
+    const i = (lg.postponed || []).findIndex((p) => p.h === h && p.a === a);
+    const wk = i >= 0 ? lg.postponed[i].week : null;
+    if (i >= 0) lg.postponed.splice(i, 1);
+    applyResult(lg.table, h, a, hg, ag);
+    if (wk && lg.results?.[wk - 1]) lg.results[wk - 1].push({ h, a, hg, ag, makeup: true });
+    return true;
+  }
+  return false;
 }
 
 export function sortedTable(league) {

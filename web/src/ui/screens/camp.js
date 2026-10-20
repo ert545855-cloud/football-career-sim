@@ -1,6 +1,7 @@
 // MİLLİ KAMP EKRANI — milli takımın kendi ana ekranı: Türkiye U-19 vs rakip kartı, kamp hakları,
 // hoca güveni / uyum / enerji, kadro, grup tablosu (turnuva) ve "Maça çık".
 import { NATIONAL_TEAMS, HOME_NATION, nationByShort } from '../../core/national.js';
+import { condOf } from '../../core/gym.js';
 import {
   CAMP_ACTIONS, activeCamp, campRole, campTrainingSetup, doCampAction, fixtureCard, planCampMatch, simulateCampMatch, sortedGroup, squadFor, teamLabel,
 } from '../../core/nationalCamp.js';
@@ -109,6 +110,7 @@ export function campScreen(app) {
           if (b.dataset.camp === 'train') {
             const st = campTrainingSetup(s);
             result = await runMiniGame({
+              cond: condOf(s),
               type: st.type,
               skill: effectiveSkill(s.player, st.weights),
               context: st.context,

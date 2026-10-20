@@ -21,7 +21,11 @@ export function playShot(host, opts) {
     const skill = clamp(opts.skill ?? 0.3, 0.02, 1);
     const kq = clamp(opts.keeper ?? 0.5, 0, 1);
     const fk = type === 'freekick';
-    const sigma = lerp(0.3, 0.05, skill) * (type === 'edge' ? 1.25 : type === 'penalty' ? 0.7 : fk ? 1.1 : 1);
+    // Yorgunluk/kondisyon: nişan dairesi büyür (şut daha dağınık gider)
+    const heavy = clamp(opts.heavy ?? 0, 0, 0.8);
+    const sigma = lerp(0.3, 0.05, skill) * (type === 'edge' ? 1.25 : type === 'penalty' ? 0.7 : fk ? 1.1 : 1) * (1 + heavy * 1.1);
+    // Kar/buz: topa tam vuramama (kayma) riski
+    const whiffP = opts.frozen && !opts.target ? 0.12 + ((opts.weather?.temp ?? 0) <= -5 ? 0.08 : 0) : 0;
     const timeLimit = opts.timeLimit ?? (type === 'penalty' || fk ? 0 : 6);
     const myKit = opts.myKit?.colors || ['#2563eb', '#fff'];
     const oppKit = opts.oppKit?.colors || ['#b91c1c', '#fff'];
@@ -155,6 +159,12 @@ export function playShot(host, opts) {
     }
 
     function shoot(aim) {
+      // KAR: ayak kaydı, topa tam vuramadın — zayıf ve yana kaçan vuruş
+      if (whiffP && Math.random() < whiffP) {
+        aim = { ...aim, power: Math.min(aim.power, 0.22), u: aim.u + gaussian() * 0.55, v: Math.min(aim.v, 0.15), curl: 0 };
+        S.whiff = true;
+        big.show('AYAK KAYDI!', '#93c5fd', 46);
+      }
       // PANENKA: penaltıda kısa ve yavaş, ortaya doğru kaydırma → yumuşak aşırtma
       const panenka = type === 'penalty' && aim.power < 0.4 && Math.abs(aim.u) < 0.35;
       S.panenka = panenka;
@@ -244,7 +254,7 @@ export function playShot(host, opts) {
       const accuracy = success ? clamp(0.35 + Math.abs(sh.u) * 0.5 + (sh.v > 0.6 ? 0.15 : 0), 0, 1) : 0;
       setTimeout(() => {
         stage.stop();
-        resolve({ success, accuracy, outcome: o, panenka: !!S.panenka && success, panenkaTry: !!S.panenka, rebound: !!S.rebound, freekick: fk, curl: S.shot?.curl || 0 });
+        resolve({ success, accuracy, outcome: o, whiff: !!S.whiff, panenka: !!S.panenka && success, panenkaTry: !!S.panenka, rebound: !!S.rebound, freekick: fk, curl: S.shot?.curl || 0 });
       }, 50);
     }
 

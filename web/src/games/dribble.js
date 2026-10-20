@@ -54,7 +54,9 @@ export function playDribble(host, opts = {}) {
     function layout(W, H) {
       const k = Math.min(W / 390, H / 700);
       const first = !L;
-      L = { W, H, k, py: H * 0.76, pr: 14 * k, cr: 10 * k, spacing: 46 * k, v0: lerp(165, 205, e) * k, lat: lerp(330, 480, e) * k, ph: 46 * k };
+      // yorgunluk/kondisyon: koşu ve yana kaçış yavaşlar
+      const hv = clamp(opts.heavy ?? 0, 0, 0.8);
+      L = { W, H, k, py: H * 0.76, pr: 14 * k, cr: 10 * k, spacing: 46 * k, v0: lerp(165, 205, e) * k * (1 - hv * 0.28), lat: lerp(330, 480, e) * k * (1 - hv * 0.45), ph: 46 * k };
       if (first) {
         S.x = W / 2;
         S.speed = L.v0;

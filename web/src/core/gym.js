@@ -129,6 +129,14 @@ const dim = (v) => clamp(1 - v / 140, 0.15, 1); // değer yükseldikçe kazanç 
  * Seansı uygular. q: mini oyun başarısı 0..1 (esnemede yok sayılır).
  * @returns {{ok:boolean, text?:string, cond:number, power:number, dCond:number, dPower:number, sore:number, record?:boolean, stat?:string}}
  */
+/** Takım antrenmanındaki kondisyon parkuru: salon kondisyonunu da artırır. @returns {number} artış */
+export function condFromTraining(state, q = 0) {
+  const g = ensureGym(state);
+  const c0 = g.cond;
+  g.cond = clamp(g.cond + (0.8 + 2.4 * clamp(q, 0, 1)) * dim(g.cond), GYM_RULES.floorCond, 100);
+  return Math.round((g.cond - c0) * 10) / 10;
+}
+
 export function finishGym(state, station, q = 0, detail = {}) {
   const chk = canGym(state, station);
   if (!chk.ok) return { ok: false, text: chk.reason };

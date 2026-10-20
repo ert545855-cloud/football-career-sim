@@ -8,6 +8,7 @@ import { loadSettings } from '../core/storage.js';
 import { playIntercept } from './intercept.js';
 import { playDribble } from './dribble.js';
 import { playShuttle } from './shuttle.js';
+import { playInterval } from './interval.js';
 import { playHeader } from './header.js';
 import { playAttack } from './attack.js';
 import { playUnityMoment, unityBuildAvailable } from './unity3d.js';
@@ -28,11 +29,17 @@ export async function runMiniGame(o) {
   // Kalp atışı hızı heyecanla artar; Soğukkanlı mentor yavaşlatır
   const beat = big ? Math.max(0.45, 1.1 / big.tempo - big.nerves) : 1;
   const w = o.weather || null;
-  const fat = Math.max(0, Math.min(0.65, o.fatigue || 0));
-  const cond = Math.round(100 - fat * 100);
+  const fat0 = Math.max(0, Math.min(0.65, o.fatigue || 0));
+  // Kondisyon (spor salonu) düşükse maçın ilk dakikasından itibaren ağırlık: koşu yavaş, şut dairesi büyük, pas hata payı
+  const gymCond = o.cond ?? 62;
+  const condPen = Math.max(0, 62 - gymCond) / 62 * 0.32;
+  const fat = Math.min(0.8, fat0 + condPen);
+  const cond = Math.round(100 - fat0 * 100);
+  // Kar/eksi derece: topa tam vuramama riski
+  const frozen = !!o.weather && (o.weather.surface === 'snow' || (o.weather.temp ?? 10) <= 0);
   const wChip = w ? `<span class="chip wx-chip" title="${esc(w.note)}">${w.emoji} ${w.temp}°${w.windKmh >= 12 ? ` · ${windArrow(w.wind)} ${w.windKmh}` : ''}</span>` : '';
   const tip = o.auto ? null : gameTip(o.type, o.context);
-  const fChip = fat > 0.04 ? `<span class="chip ${cond < 60 ? 'bad' : cond < 78 ? 'warn' : ''} fat-chip">${icon('bolt', 'ico sm')} %${cond}</span>` : '';
+  const fChip = fat > 0.04 ? `<span class="chip ${fat > 0.4 ? 'bad' : fat > 0.22 ? 'warn' : ''} fat-chip">${icon('bolt', 'ico sm')} %${Math.round(100 - fat * 100)}</span>` : '';
   const layer = el(`
     <div class="game-layer ${big ? 'nervous' : ''}" ${big ? `style="--nerves:${big.nerves};--beat:${beat.toFixed(2)}s"` : ''}>
       ${big ? '<div class="nerves-vignette" aria-hidden="true"></div>' : ''}
@@ -52,7 +59,8 @@ export async function runMiniGame(o) {
           <p class="lead" style="margin:6px 0 12px;color:var(--muted);line-height:1.45">${esc(o.text)}</p>
           ${tip ? `<div class="tut-tip"><b>💡 ${esc(ASSISTANT)}</b><span>${esc(tip)}</span></div>` : ''}
           ${w && w.id !== 'clear' && w.id !== 'cloudy' ? `<div class="wx-note"><span>${w.emoji}</span><div><b>${esc(w.name)} · ${w.temp}°C${w.windKmh >= 12 ? ` · rüzgâr ${windArrow(w.wind)} ${w.windKmh} km/sa` : ''}</b><span>${esc(w.note)}</span></div></div>` : ''}
-          ${fat > 0.12 ? `<div class="wx-note fat"><span>🫁</span><div><b>Kondisyon %${cond}</b><span>${cond < 60 ? 'Bacakların ağırlaştı: nişan sallanıyor, adımların yavaş.' : 'Biraz yoruldun: hareketlerin hafif ağırlaştı.'}</span></div></div>` : ''}
+          ${fat > 0.12 ? `<div class="wx-note fat"><span>🫁</span><div><b>${condPen > 0.06 ? `Kondisyon düşük (salon %${Math.round(gymCond)})` : `Kondisyon %${cond}`}</b><span>${fat > 0.4 ? 'Bacakların ağırlaştı: koşun yavaş, şut dairen büyük, paslarında hata payı var.' : 'Biraz ağırsın: koşu biraz yavaş, şut dairesi geniş, pas sapabilir.'}</span></div></div>` : ''}
+          ${frozen && ['shot', 'pass', 'attack'].includes(o.type) ? `<div class="wx-note fat"><span>🥶</span><div><b>Buz gibi zemin</b><span>Ayağın kayabilir: topa tam vuramama riski var.</span></div></div>` : ''}
           ${big ? `<div class="nerves-note ${big.cool ? 'cool' : ''}">${icon(big.cool ? 'snow' : 'fire', 'ico sm')}<div><b>${esc(big.title)}: heyecan %${nervesPct}</b><span>${big.cool ? 'Soğukkanlı mentorun sayesinde heyecanın %20 az, nişangah daha yavaş.' : 'Kalbin hızlı atıyor: nişangah titriyor, oyun daha hızlı akıyor.'}</span></div></div>` : ''}
           <div class="meter" style="margin-bottom:14px">
             <div class="meter-top"><span class="lbl">${icon('target')} Etkin yetenek</span><span>%${pct}</span></div>
@@ -82,7 +90,7 @@ export async function runMiniGame(o) {
     const success = Math.random() < 0.3 + o.skill * 0.5;
     result = { success, accuracy: success ? Math.random() : 0, outcome: success ? 'goal' : 'save' };
   } else {
-    const common = { skill: o.skill, context: o.context, myKit: o.myKit, oppKit: o.oppKit, me: o.me, number: o.number, tempo: big ? big.tempo : 1, nerves: big ? big.nerves : 0, weather: w, fatigue: fat };
+    const common = { skill: o.skill, context: o.context, myKit: o.myKit, oppKit: o.oppKit, me: o.me, number: o.number, tempo: big ? big.tempo : 1, nerves: big ? big.nerves : 0, weather: w, fatigue: fat, heavy: fat, frozen };
     // Karlı maçta turuncu top
     setBallVariant(w?.surface === 'snow' ? 'orange' : 'white');
     // 3B mod (Ayarlar): pas ve şut anları Unity WebGL derlemesinde oynanır; yüklenemezse 2B oyuna düşer
@@ -102,6 +110,8 @@ export async function runMiniGame(o) {
       case 'dribble': case 'sprint': result = await playDribble(host, { ...common, rows: 8 }); break;
       // Dayanıklılık: mekik koşusu (bip testi)
       case 'shuttle': case 'endurance': result = await playShuttle(host, common); break;
+      // Kondisyon parkuru: nabız bölgesi + engeller (kondisyon seviyesi nabzı etkiler)
+      case 'interval': result = await playInterval(host, { ...common, cond: gymCond }); break;
       default: result = { success: false, accuracy: 0, outcome: 'none' };
     }
   }

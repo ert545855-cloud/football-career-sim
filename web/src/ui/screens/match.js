@@ -4,7 +4,7 @@ import { applyAiEvent, MOMENT_INTRO, momentFatigue, momentTitle, resolveMoment }
 import { conditionPct, windArrow } from '../../core/weather.js';
 import { effectiveSkill } from '../../core/player.js';
 import { characterSkillMult } from '../../core/character.js';
-import { gymSkillMult } from '../../core/gym.js';
+import { condOf, gymSkillMult } from '../../core/gym.js';
 import { sponsorSkillMult } from '../../core/sponsors.js';
 import { foundationHomeMult } from '../../core/foundation.js';
 import { clubRating } from '../../core/league.js';
@@ -64,7 +64,7 @@ const WX_KICKOFF = {
 const WX_MID = {
   rain: ['Yağmur şiddetini artırdı, oyuncular kaymamak için dikkatli.', 'Islak zeminde top hızlı akıyor; uzun pas riskli.'],
   storm: ['Şimşek çaktı, tribünlerden uğultu yükseldi!', 'Rüzgâr ortaları yolundan saptırıyor.'],
-  snow: ['Görevliler çizgileri temizlemek için sahaya girdi.', 'Kar kalınlaştı, top zor yuvarlanıyor.'],
+  snow: ['Görevliler çizgileri temizlemek için sahaya girdi.', 'Kar kalınlaştı, top zor yuvarlanıyor.', 'Forvetin ayağı kaydı, topa tam vuramadı! Karlı zemin affetmiyor.', 'Stoper buzlu zeminde kayıp topu kaçırdı, tribünlerden uğultu.', 'Kaleci kar yüzünden topu ayağının altından kaçırıyordu, son anda kurtardı.'],
   mud: ['Bir oyuncu çamurda kaydı, forması kahverengiye döndü.', 'Ağır zeminde pas trafiği yavaşladı.'],
   hot: ['Hakem su molası verdi. Oyuncular gölgeye koştu.', 'Sıcak bacakları ağırlaştırdı, tempo düştü.'],
   windy: ['Rüzgâr kale vuruşunu geri itti!', 'Uzun top rüzgârla taca gitti.'],
@@ -92,6 +92,7 @@ export function matchScreen(app, { match }) {
   if (match.subOff) timeline.push({ minute: match.subOff, order: 5, kind: 'subOff' });
   const w = match.weather;
   if (w && w.id !== 'clear' && w.id !== 'cloudy') timeline.push({ minute: 20 + Math.floor(Math.random() * 45), order: 1, kind: 'wx' });
+  if (w && (w.id === 'snow' || w.temp <= 0)) timeline.push({ minute: 50 + Math.floor(Math.random() * 35), order: 1, kind: 'wx' });
   timeline.push({ minute: 45, order: 4, kind: 'ht' });
   // Tribün tezahüratları
   [8 + Math.floor(Math.random() * 12), 30 + Math.floor(Math.random() * 12), 58 + Math.floor(Math.random() * 12), 80 + Math.floor(Math.random() * 6)].forEach((m) => timeline.push({ minute: m, order: 1, kind: 'chant' }));
@@ -336,6 +337,7 @@ export function matchScreen(app, { match }) {
 
       line(0, `Hakemin düdüğüyle maç başladı! ${home.name} - ${away.name}.`, 'whistle');
       if (match.big) line(0, `${match.big.title}! Tribünler ayakta, atmosfer elektrik yüklü.`, 'big');
+      else if (match.cup?.kind === 'makeup') line(0, `${match.cup.name}: hava muhalefeti yüzünden ertelenen maç bu akşam oynanıyor.`, 'big');
       else if (match.cup) line(0, `${match.cup.name}: tek maç, kaybeden veda ediyor!`, 'big');
       if (w && w.id !== 'clear' && w.id !== 'cloudy') line(0, WX_KICKOFF[w.id]?.(w) || `Hava: ${w.name.toLowerCase()}, ${w.temp}°C.`, '');
       sfx('whistle');
@@ -371,6 +373,7 @@ export function matchScreen(app, { match }) {
           big: match.big,
           weather: match.weather,
           fatigue,
+          cond: condOf(s),
         });
         bc.resume();
         const g0 = (match.goals || []).length;

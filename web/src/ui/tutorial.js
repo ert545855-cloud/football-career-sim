@@ -67,6 +67,7 @@ export const GAME_TIPS = {
   dribble: 'Rakip gelince bir yana yüklen, öbür yana kır. Parmağını sürükleyerek yön ver.',
   corner: 'Topun ineceği halkaya koş, halka kapanınca zıpla ve kafayı vur.',
   shuttle: 'Bip sesiyle koş; çizgiye geç kalırsan elenirsin. Temponu koru.',
+  interval: 'Nabız hızının arkasından gelir. Bölgeye girince KOŞ\'u kısa kısa bas; engel gelince ZIPLA.',
 };
 
 function prog(app) {

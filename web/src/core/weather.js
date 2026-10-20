@@ -115,9 +115,12 @@ export function weatherFor({ season = 1, week = 1, homeId = '', country, tier } 
   let temp = Math.round(base + (r() - 0.5) * 6);
   if (id === 'snow') temp = Math.min(temp, Math.round(-1 - r() * 5));
   if (id === 'hot') temp = Math.max(temp, 31 + Math.round(r() * 6));
+  // Ağır kar / dondurucu soğuk / fırtına: hakem ve federasyon maçı erteleyebilir (alt liglerin sahası daha kötü)
+  const pPost = id === 'snow' ? (temp <= -4 ? 0.38 : 0.12) + Math.max(0, lvl - 1) * 0.08 : id === 'storm' ? 0.1 : temp <= -8 ? 0.15 : 0;
+  const postpone = pPost > 0 && r() < pPost;
   return {
     id, name: w.name, emoji: w.emoji, surface: w.surface, note: w.note,
-    temp, wind, windKmh: Math.round(speed * 3.6),
+    temp, wind, windKmh: Math.round(speed * 3.6), postpone,
     fatigue: FATIGUE[id] || 1,
     goals: GOALS[id] || 1,
     winter, month: MONTHS[m],

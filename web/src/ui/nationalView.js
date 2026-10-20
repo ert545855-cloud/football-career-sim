@@ -1,5 +1,6 @@
 // MİLLİ TAKIM ARAYÜZÜ — arma, çağrı/maç akışı, turnuva akışı.
 import { GAME_WEIGHTS } from '../core/data.js';
+import { condOf } from '../core/gym.js';
 import { effectiveSkill } from '../core/player.js';
 import { MOMENT_INTRO, MOMENT_TITLE } from '../core/match.js';
 import {
@@ -43,6 +44,7 @@ async function playMoment(app, title, minute, oppShort) {
   return runMiniGame({
     type: mom.type,
     skill,
+    cond: condOf(s),
     context: mom.context,
     title: `${title} · ${MOMENT_TITLE[mom.type]}`,
     text: MOMENT_INTRO[mom.type][mom.context],

@@ -22,6 +22,9 @@ export function playDrawPass(host, opts) {
     const skill = clamp(opts.skill ?? 0.3, 0.02, 1);
     const sk = passSkill(skill);
     const nerves = clamp(opts.nerves ?? 0, 0, 1);
+    // Kondisyon/yorgunluk: pasın hata payı büyür (ucu sapar); karda ayak kayabilir
+    const heavy = clamp(opts.heavy ?? 0, 0, 0.8);
+    const whiffP = opts.frozen && opts.context !== 'tryout' ? 0.1 : 0;
     const scenario = opts.context === 'final' ? 'final' : opts.context === 'tryout' ? 'tryout' : 'buildup';
     const final = scenario === 'final';
     const tryout = scenario === 'tryout';
@@ -188,6 +191,8 @@ export function playDrawPass(host, opts) {
     }
 
     // ─────────────── Pas ───────────────
+    /** Pasın ucundaki yanal hata payı (px): yetenek, heyecan ve yorgunluk/kondisyon */
+    const errFor = (len) => (sk.error + nerves * 18 + heavy * 48) * L.k * clamp(len / (300 * L.k), 0.3, 1.5);
     function release() {
       if (!path.valid || Math.hypot(path.p3.x - path.p0.x, path.p3.y - path.p0.y) < L.minLen) {
         S.phase = 'aim';
@@ -204,8 +209,16 @@ export function playDrawPass(host, opts) {
       S.ball.x = L.me.x;
       S.ball.y = L.me.y - 14 * L.k;
       const len = Math.hypot(path.p3.x - path.p0.x, path.p3.y - path.p0.y);
-      const err = (sk.error + nerves * 18) * L.k * clamp(len / (300 * L.k), 0.3, 1.5);
-      if (err > 0.01) {
+      const err = errFor(len);
+      if (whiffP && Math.random() < whiffP) {
+        // ayak kaydı: pas kısa kalır ve yana kaçar
+        const nx = -(path.p3.y - path.p0.y) / len;
+        const ny = (path.p3.x - path.p0.x) / len;
+        const e = (Math.random() < 0.5 ? -1 : 1) * (26 + Math.random() * 30) * L.k;
+        path.shiftEnd((path.p0.x - path.p3.x) * 0.42 + nx * e, (path.p0.y - path.p3.y) * 0.42 + ny * e);
+        big.show('AYAK KAYDI!', '#93c5fd', 40);
+        S.whiff = true;
+      } else if (err > 0.01) {
         const nx = -(path.p3.y - path.p0.y) / len;
         const ny = (path.p3.x - path.p0.x) / len;
         const e = (Math.random() - Math.random()) * err;
@@ -679,6 +692,31 @@ export function playDrawPass(host, opts) {
             ctx.lineTo(e.x - tg.x * a * 0.6 + tg.y * a * 0.8, e.y - tg.y * a * 0.6 - tg.x * a * 0.8);
             ctx.closePath();
             ctx.fill();
+            // hata payı: yorgunken pasın ucu bu aralıkta sapar
+            const len = Math.hypot(e.x - path.p0.x, e.y - path.p0.y) || 1;
+            const er = errFor(len);
+            if (heavy > 0.08 && er > 7 * k) {
+              const nx = -(e.y - path.p0.y) / len;
+              const ny = (e.x - path.p0.x) / len;
+              ctx.strokeStyle = 'rgba(255,170,60,.9)';
+              ctx.lineWidth = 2.5 * k;
+              ctx.setLineDash([5 * k, 4 * k]);
+              ctx.beginPath();
+              ctx.moveTo(e.x - nx * er, e.y - ny * er);
+              ctx.lineTo(e.x + nx * er, e.y + ny * er);
+              ctx.stroke();
+              ctx.setLineDash([]);
+              for (const sg of [-1, 1]) {
+                ctx.beginPath();
+                ctx.moveTo(e.x + nx * er * sg - tg.x * 6 * k, e.y + ny * er * sg - tg.y * 6 * k);
+                ctx.lineTo(e.x + nx * er * sg + tg.x * 6 * k, e.y + ny * er * sg + tg.y * 6 * k);
+                ctx.stroke();
+              }
+              ctx.font = `800 ${Math.round(9 * Math.min(1.3, k))}px system-ui, sans-serif`;
+              ctx.fillStyle = 'rgba(255,170,60,.95)';
+              ctx.textAlign = 'center';
+              ctx.fillText('HATA PAYI', e.x + nx * er + tg.x * 14 * k, e.y + ny * er + tg.y * 14 * k);
+            }
           }
         }
         // seçme: koşu yolu

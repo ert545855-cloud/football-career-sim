@@ -6,7 +6,7 @@
 //  • Süper Kupa: sezon başında lig şampiyonu ile kupa şampiyonu (aynıysa lig ikincisi) karşılaşır.
 import { CLUB_BY_ID, COUNTRY_BY_ID, LEAGUES } from './data.js';
 import { chance, clamp, poisson, randInt, shuffle } from './rng.js';
-import { clubRating, goalLambda, sortedTable } from './league.js';
+import { applyMakeup, clubRating, goalLambda, sortedTable } from './league.js';
 import { changeFame, changeMorale, changeRel } from './player.js';
 import { planMatch, finalizeMatch } from './match.js';
 
@@ -115,6 +115,10 @@ function advanceCup(state) {
 export function planCupMatch(state) {
   const tie = state.pending.cupTie;
   if (!tie) return null;
+  if (tie.kind === 'makeup') {
+    // ertelenen lig maçı: lig maçı gibi (beraberlik olabilir)
+    return planMatch(state, { homeId: tie.h, awayId: tie.a, id: `makeup-${tie.season}-${tie.week}`, cup: { kind: 'makeup', round: 'makeup', name: `Ertelenen maç · ${tie.week}. hafta` } });
+  }
   const isFinal = tie.round === 'f' || tie.kind === 'super';
   const title = tie.kind === 'super' ? superName(state.cup?.country || 'tr') : `${tie.name} · ${ROUND_LABEL[tie.round]}`;
   const m = planMatch(state, {
@@ -134,6 +138,14 @@ export function planCupMatch(state) {
 export function completeCupMatch(state, match, shootout = null) {
   const tie = state.pending.cupTie;
   const summary = finalizeMatch(state, match);
+  if (tie?.kind === 'makeup') {
+    const hg = match.isHome ? match.score.my : match.score.opp;
+    const ag = match.isHome ? match.score.opp : match.score.my;
+    applyMakeup(state.world, tie.h, tie.a, hg, ag);
+    state.pending.cupTie = null;
+    const won = match.score.my > match.score.opp;
+    return { summary, won, draw: match.score.my === match.score.opp, pens: null, award: null, round: 'makeup', makeup: true, out: false };
+  }
   const cup = ensureCup(state);
   const { my, opp } = match.score;
   let pens = null;
@@ -218,5 +230,5 @@ export const myCupStatus = (state) => {
 };
 
 /** Bekleyen (hafta içi) kupa maçı için kısa etiket */
-export const cupTieLabel = (tie) => (tie?.kind === 'super' ? 'Süper Kupa' : `${tie?.name || 'Kupa'} · ${ROUND_LABEL[tie?.round] || ''}`);
+export const cupTieLabel = (tie) => (tie?.kind === 'super' ? 'Süper Kupa' : tie?.kind === 'makeup' ? 'ertelenen lig maçı' : `${tie?.name || 'Kupa'} · ${ROUND_LABEL[tie?.round] || ''}`);
 

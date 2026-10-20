@@ -20,19 +20,20 @@ export async function cupFlow(app) {
   const home = CLUB_BY_ID[match.homeId];
   const away = CLUB_BY_ID[match.awayId];
   const sup = tie.kind === 'super';
+  const mk = tie.kind === 'makeup';
   sfx('whistle');
   await sheet({
     center: true,
     dismissable: false,
     html: `<div class="center">${spriteOr('cup_gold', icon('trophy'), { size: 64 })}</div>
-      <div class="center"><span class="chip gold">${sup ? 'SEZON AÇILIŞI' : 'HAFTA İÇİ KUPA MAÇI'}</span></div>
+      <div class="center"><span class="chip ${mk ? '' : 'gold'}">${sup ? 'SEZON AÇILIŞI' : mk ? 'HAFTA İÇİ · ERTELENEN LİG MAÇI' : 'HAFTA İÇİ KUPA MAÇI'}</span></div>
       <h3 class="center" style="margin-top:8px">${esc(match.cup.name)}</h3>
       <div class="fixture" style="margin:12px 0">
         <div class="team">${crestSVG(home, 'crest lg')}<span>${esc(home.name)}</span></div>
         <span class="vs">VS</span>
         <div class="team">${crestSVG(away, 'crest lg')}<span>${esc(away.name)}</span></div>
       </div>
-      <p class="lead center">${sup ? 'Lig şampiyonu ile kupa şampiyonu karşı karşıya. Sezonun ilk kupası seni bekliyor!' : 'Tek maç eleme: berabere biterse penaltılar. Kaybeden kupaya veda eder.'}</p>
+      <p class="lead center">${sup ? 'Lig şampiyonu ile kupa şampiyonu karşı karşıya. Sezonun ilk kupası seni bekliyor!' : mk ? `${tie.week}. haftada hava muhalefeti yüzünden ertelenen maç. Sonuç lig tablosuna işlenecek.` : 'Tek maç eleme: berabere biterse penaltılar. Kaybeden kupaya veda eder.'}</p>
       <div class="chips" style="justify-content:center"><span class="chip">${icon('bolt', 'ico xs')} Enerji ${s.player.energy}</span><span class="chip ${match.role === 'starter' ? 'good' : 'warn'}">${match.role === 'starter' ? 'İlk 11' : match.role === 'out' ? 'Kadro dışı' : 'Yedek'}</span></div>
       <button class="btn primary lg block" style="margin-top:14px" data-close>${icon('whistle')} Maça çık</button>`,
   });
@@ -44,7 +45,8 @@ export async function cupFlow(app) {
 export async function finishCupMatch(app, match) {
   const s = app.state;
   let shootout = null;
-  if (match.score.my === match.score.opp && match.role !== 'out' && (match.role === 'starter' || match.subMinute)) {
+  const mk = match.cup?.kind === 'makeup';
+  if (!mk && match.score.my === match.score.opp && match.role !== 'out' && (match.role === 'starter' || match.subMinute)) {
     await sheet({ center: true, dismissable: false, html: `<h3 class="center">Seri penaltılar!</h3><p class="lead center">Normal süre ${match.score.my}-${match.score.opp} bitti. Teknik direktör beşinci penaltıyı sana verdi. Tüm stat nefesini tuttu…</p><button class="btn primary lg block" style="margin-top:12px" data-close>Topun başına geç</button>` });
     const opp = CLUB_BY_ID[match.oppId];
     shootout = await runMiniGame({
@@ -60,13 +62,13 @@ export async function finishCupMatch(app, match) {
   const sm = r.summary;
   if (r.won) { sfx('levelup'); buzz([60, 40, 60]); } else sfx('miss');
   if (r.award) { confetti(); sfx('goal'); }
-  const head = r.won ? ['TUR ATLADIK', 'var(--good)'] : ['KUPAYA VEDA', 'var(--bad)'];
+  const head = mk ? (r.won ? ['GALİBİYET', 'var(--good)'] : r.draw ? ['BERABERLİK', 'var(--warn)'] : ['MAĞLUBİYET', 'var(--bad)']) : r.won ? ['TUR ATLADIK', 'var(--good)'] : ['KUPAYA VEDA', 'var(--bad)'];
   const sup = r.round === 'super';
   await sheet({
     center: true,
     dismissable: false,
     html: `${r.award ? `<div class="center">${spriteOr('cup_gold', icon('trophy'), { size: 84 })}</div>` : ''}
-      <div class="center"><span class="chip" style="background:transparent;color:${head[1]};font-size:14px;letter-spacing:.1em">${r.award ? 'ŞAMPİYON!' : sup ? (r.won ? 'ŞAMPİYON' : 'KAYBETTİK') : r.round === 'f' && !r.won ? 'FİNALİST' : head[0]}</span></div>
+      <div class="center"><span class="chip" style="background:transparent;color:${head[1]};font-size:14px;letter-spacing:.1em">${mk ? head[0] : r.award ? 'ŞAMPİYON!' : sup ? (r.won ? 'ŞAMPİYON' : 'KAYBETTİK') : r.round === 'f' && !r.won ? 'FİNALİST' : head[0]}</span></div>
       <h3 class="center" style="margin-top:6px">${esc(match.cup.name)}</h3>
       <h3 class="center">${esc(sm.scoreLine)}${r.pens ? ` <small class="muted">(P ${r.pens[0]}-${r.pens[1]})</small>` : ''}</h3>
       ${shootout ? `<p class="center small ${shootout.success ? '' : 'muted'}" style="margin:2px 0 8px">${shootout.success ? 'Penaltını gole çevirdin!' : 'Penaltını kaçırdın…'}</p>` : ''}

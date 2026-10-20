@@ -1,10 +1,12 @@
 // UYGULAMA DENETLEYİCİSİ — ekran yönetimi ve oyun akışları (antrenman, maç günü, sezon sonu…)
 import { setSocialLang } from '../core/chirp/lang.js';
+import { drawPostponeArt } from './postponeArt.js';
+import { condOf } from '../core/gym.js';
 import { attitudeBar } from './attitudeView.js';
 import { attitudeOf } from '../core/attitude.js';
 import { ACTIONS, CLUB_BY_ID, LEAGUES, POSITIONS, STATS, STAT_KEYS, TRAINING } from '../core/data.js';
 import {
-  canDoAction, chooseEvent, completeMatch, declineOffers, doAction, endSeason, finishTraining, getMatch, newGame, retire, takeOffer, trainingSetup,
+  canDoAction, chooseEvent, completeMatch, declineOffers, doAction, endSeason, finishTraining, getMatch, newGame, postponeMatch, retire, takeOffer, trainingSetup,
 } from '../core/game.js';
 import { getEvent } from '../core/events.js';
 import { money } from '../core/economy.js';
@@ -444,6 +446,7 @@ export function createApp(rootEl) {
       const result = await runMiniGame({
         type: setup.game,
         skill: setup.skill,
+        cond: condOf(s),
         // Şut antrenmanında bazen serbest vuruş çalışması (baraj + falso)
         context: setup.game === 'shot' ? (Math.random() < 0.3 ? 'freekick' : 'box') : setup.game === 'pass' ? 'buildup' : 'duel',
         title: `${setup.title} · ${DIFFICULTY[diff].name}`,
@@ -468,6 +471,7 @@ export function createApp(rootEl) {
       if (r.level != null && r.target != null) facts.push(`seviye ${r.level} / hedef ${r.target}`);
       if (r.turns) facts.push(`${r.perfectTurns || 0}/${r.turns} süper dönüş`);
       if (r.rows) facts.push(`${r.clean}/${r.rows} temiz geçiş`);
+      if (r.zone != null && setup.game === 'interval') facts.push(`nabız bölgesinde %${r.zone}`, `${r.cleared || 0}/${(r.cleared || 0) + (r.hits || 0)} engel`);
       if (r.passes != null && setup.game === 'tackle') facts.push(r.success ? `${r.passes + 1}. pasta kestin` : `${r.passes} pas yedin`);
       await sheet({
         center: true,
@@ -482,6 +486,7 @@ export function createApp(rootEl) {
           <div class="center" style="margin:2px 0 6px">${starsHTML(res.stars, 'big')}</div>
           ${res.newBest ? `<div class="center" style="margin-bottom:6px"><span class="chip gold">${icon('trophy', 'ico sm')} Yeni rekor · ${esc(res.diffName)}</span></div>` : ''}
           <p class="lead center">${res.gained ? `<b style="color:var(--accent)">${res.name} +${res.gained}!</b> Çalışmanın karşılığını aldın.` : `${res.name} gelişiyor. Bir sonraki puana az kaldı.`}</p>
+          ${res.condGain ? `<div class="center" style="margin:-4px 0 8px"><span class="chip accent">${icon('heart', 'ico sm')} Kondisyon +${res.condGain}</span></div>` : ''}
           <div class="coach-tip ${res.tip.tone}">${icon('mentor', 'ico sm')}<div><b>Hoca</b><span>${esc(res.tip.text)}</span>${facts.length ? `<em>${esc(facts.join(' · '))}</em>` : ''}</div></div>
           <div class="card">
             <div class="row between"><b>${res.name}</b><b class="big-num" data-val style="color:${STATS[stat].color}">${res.after}</b></div>
@@ -508,6 +513,7 @@ export function createApp(rootEl) {
       }
       const match = getMatch(s);
       this.save();
+      if (match.postponed) return this.postponedFlow(match);
       // Maç öncesi basın toplantısı (büyük maç, yeni hoca, formsuzluk…)
       if (match.press && !match.pressDone) await pressFlow(this, match);
       const my = CLUB_BY_ID[match.myId];
@@ -550,6 +556,35 @@ export function createApp(rootEl) {
       this.go('match', { match: clone(match) });
     },
 
+    /** Hava muhalefeti: maç ertelendi → lig haftası senin maçın olmadan biter, maç hafta içine alınır */
+    async postponedFlow(match) {
+      const s = this.state;
+      const home = CLUB_BY_ID[match.homeId];
+      const away = CLUB_BY_ID[match.awayId];
+      const w = match.weather;
+      const why = { snow: ['YOĞUN KAR', 'Saha kar altında, çizgiler görünmüyor. Hakem ve federasyon temsilcisi sahayı oynanamaz buldu.'], frost: ['DONDURUCU SOĞUK', 'Zemin buz tuttu; oyuncuların sağlığı için maç oynatılmayacak.'], storm: ['FIRTINA', 'Şiddetli fırtına ve şimşek nedeniyle güvenlik kararıyla maç ertelendi.'] }[match.postponed] || ['HAVA MUHALEFETİ', 'Maç oynanamayacak.'];
+      sfx('whistle');
+      await sheet({
+        center: true,
+        dismissable: false,
+        html: `<div class="postpone-art ${match.postponed}"><canvas data-pp></canvas></div>
+          <div class="center"><span class="chip bad">${icon('shield', 'ico xs')} MAÇ ERTELENDİ · ${why[0]}</span></div>
+          <div class="fixture" style="margin:12px 0">
+            <div class="team">${crestSVG(home, 'crest lg')}<span>${esc(home.name)}</span></div>
+            <span class="vs">${w ? `${w.emoji} ${w.temp}°` : 'VS'}</span>
+            <div class="team">${crestSVG(away, 'crest lg')}<span>${esc(away.name)}</span></div>
+          </div>
+          <p class="lead center">${esc(why[1])}</p>
+          <p class="muted small center">Maç iki hafta sonra hafta içine alınacak. Bu hafta sonu dinlen: enerji toplarsın.</p>
+          <button class="btn primary block" style="margin-top:14px" data-close>Tamam</button>`,
+        onMount: (n) => drawPostponeArt(n.querySelector('[data-pp]'), match.postponed),
+      });
+      const out = postponeMatch(s, match);
+      this.save();
+      await this.weekEndSheet(out, match.week);
+      await this.runPending();
+    },
+
     async finishCupMatch(match) {
       return finishCupMatch(this, match);
     },
@@ -586,12 +621,19 @@ export function createApp(rootEl) {
           <button class="btn primary block" style="margin-top:16px" data-close>Devam</button>`,
       });
 
+      await this.weekEndSheet(out, match.week);
+      await this.runPending();
+      if (s.chirp?.pendingPost) setTimeout(() => toast('Maç bitti! Ana ekrandan Chirp\'te paylaşabilirsin.'), 500);
+    },
+
+    async weekEndSheet(out, week) {
+      const s = this.state;
       const we = out.weekEnd;
       const f = we.finance;
       await sheet({
         center: true,
         html: `
-          <h3>Hafta ${match.week} tamamlandı</h3>
+          <h3>Hafta ${week} tamamlandı</h3>
           <p class="lead">Maaşın yattı, vücudun toparlandı.</p>
           <div class="card">
             <div class="row between small"><span class="muted">Maaş</span><b style="color:var(--good)">+${money(f.income)}</b></div>
@@ -616,8 +658,6 @@ export function createApp(rootEl) {
           ${we.mentor?.legacy ? `<div class="card" style="margin-top:10px"><b class="small">${icon('sprout', 'ico sm')} Akıl hocalığı</b><div class="muted small" style="margin:4px 0 8px">${esc(we.mentor.legacy.note)}</div>${changeChips(we.mentor.legacy.changes)}</div>` : ''}
           <button class="btn primary block" style="margin-top:16px" data-close>Devam</button>`,
       });
-      await this.runPending();
-      if (s.chirp?.pendingPost) setTimeout(() => toast('Maç bitti! Ana ekrandan Chirp\'te paylaşabilirsin.'), 500);
     },
 
     // ── Bekleyen akışlar: olay → teklifler → sezon sonu ──

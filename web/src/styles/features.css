@@ -1026,3 +1026,6 @@ canvas.bld { flex: none; image-rendering: pixelated; }
 .att-log span { display: flex; justify-content: space-between; color: var(--muted); }
 .att-log span.e b { color: #fb923c; }
 .att-log span.h b { color: #38bdf8; }
+/* ertelenen maç */
+.postpone-art { display: grid; place-items: center; margin: -4px auto 10px; }
+.postpone-art canvas { display: block; image-rendering: pixelated; border-radius: 8px; box-shadow: 0 0 0 2px #000, 0 8px 22px rgba(0, 0, 0, 0.45); }
