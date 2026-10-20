@@ -35,6 +35,7 @@ export function settingsScreen(app) {
         ${st.vibrate ? `<div class="li"><span class="ic"></span><div class="grow"><b>Titreşim gücü</b><div class="seg" style="margin-top:8px">${[['soft', 'Hafif'], ['normal', 'Normal'], ['strong', 'Güçlü']].map(([k, l]) => `<button class="${(st.haptic || 'normal') === k ? 'on' : ''}" data-haptic-level="${k}">${l}</button>`).join('')}</div><div class="muted small" style="margin-top:6px">Seçince gol titreşimini dener.</div></div></div>` : ''}
         <div class="li"><span class="ic" style="color:#bfdbfe">❄️</span><div class="grow"><b>Kış teması</b><div class="muted small">Otomatik: giriş ekranında ve takvimde Aralık–Şubat haftalarında kar yağar.</div><div class="seg" style="margin-top:8px">${[['auto', 'Otomatik'], ['on', 'Hep açık'], ['off', 'Kapalı']].map(([k, l]) => `<button class="${(st.winter || 'auto') === k ? 'on' : ''}" data-winter="${k}">${l}</button>`).join('')}</div></div></div>
         <div class="li"><span class="ic" style="color:#38bdf8">${icon('chirp')}</span><div class="grow"><b>Sosyal medya dili</b><div class="muted small">Türkçe: tüm gönderi ve yorumlar Türkçe. Orijinal: yabancı taraftarlar kendi dillerinde yazar.</div><div class="seg" style="margin-top:8px">${[['tr', 'Türkçe'], ['orig', 'Orijinal']].map(([k, l]) => `<button class="${(st.socialLang || 'tr') === k ? 'on' : ''}" data-social-lang="${k}">${l}</button>`).join('')}</div></div></div>
+        <div class="li"><span class="ic" style="color:#a78bfa">📺</span><div class="grow"><b>Siyah Show</b><div class="muted small">Maç önü ve devre arası yorum programı (kurgusal parodi). Otomatik: büyük maçlarda ve bazı maçlarda.</div><div class="seg" style="margin-top:8px">${[['auto', 'Otomatik'], ['on', 'Her maçta'], ['off', 'Kapalı']].map(([k, l]) => `<button class="${(st.siyahShow || 'auto') === k ? 'on' : ''}" data-siyah="${k}">${l}</button>`).join('')}</div></div></div>
         <div class="li"><span class="ic" style="color:var(--accent)">${icon('user')}</span><div class="grow"><b>Eğitici asistan</b><div class="muted small">Asistan Hoca Selin ekranları ve mini oyunları ilk seferde anlatır.</div></div><button class="btn sm ${st.tutorial?.off ? 'ghost' : 'primary'}" data-act="tut-toggle">${st.tutorial?.off ? 'Kapalı' : 'Açık'}</button></div>
         <div class="li"><span class="ic"></span><div class="grow"><b>Eğitimi baştan başlat</b><div class="muted small">Tüm anlatımlar yeniden gösterilir.</div></div><button class="btn sm ghost" data-act="tut-reset">Başlat</button></div>
         <div class="li"><span class="ic" style="color:var(--accent)">${icon('play')}</span><div class="grow"><b>Giriş hikâyesi</b><div class="muted small">Babandan gizli seçmelere gittiğin o sabah.</div></div><button class="btn sm ghost" data-act="story">İzle</button></div>
@@ -74,6 +75,12 @@ export function settingsScreen(app) {
           st.musicVol = Number(t.dataset.mvol);
           saveSettings(st);
           configureMusic(st);
+          app.go('settings');
+          return;
+        }
+        if (t.dataset.siyah) {
+          st.siyahShow = t.dataset.siyah;
+          saveSettings(st);
           app.go('settings');
           return;
         }

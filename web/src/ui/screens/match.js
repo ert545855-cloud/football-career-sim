@@ -1,5 +1,7 @@
 // MAÇ EKRANI — canlı anlatım, skor tabelası, oyuncunun anlarında mini oyun.
 import { CLUB_BY_ID, GAME_WEIGHTS } from '../../core/data.js';
+import { playSiyahShow } from '../siyahShow.js';
+import { showAirs } from '../../core/siyahShow.js';
 import { applyAiEvent, MOMENT_INTRO, momentFatigue, momentTitle, resolveMoment } from '../../core/match.js';
 import { conditionPct, windArrow } from '../../core/weather.js';
 import { effectiveSkill } from '../../core/player.js';
@@ -305,6 +307,18 @@ export function matchScreen(app, { match }) {
         while (j < timeline.length && timeline[j].minute <= at) j++;
         timeline.splice(j, 0, { minute: at, order: 2.5, tension: t });
       };
+      // Siyah Show: maç önü ve devre arası (kurgusal parodi yorum programı)
+      const siyah = async (phase) => {
+        if (app.autoplay || !showAirs(match, phase, app.settings.siyahShow || 'auto')) return;
+        bc.pause();
+        try {
+          await playSiyahShow({
+            phase, match, state: s, score: scoreText().replace(' - ', '-'),
+            names: { home: home.name, away: away.name, hs, as, my: my?.name || my?.short || '' },
+            colors: { home: home.colors, away: away.colors },
+          });
+        } finally { bc.resume(); last = performance.now(); }
+      };
       const onPitchNow = () => match.sentOff == null && !offPitch && (match.role === 'starter' || (match.subMinute && minute >= match.subMinute));
       async function playTension(t) {
         if (t.done || !onPitchNow()) return;
@@ -397,6 +411,7 @@ export function matchScreen(app, { match }) {
           line(45, `İlk yarı sona erdi. ${scoreText()}`, 'whistle');
           sfx('shortWhistle');
           if (skipTo === null) await bc.halfTime();
+          if (skipTo === null) await siyah('ht');
           phase = 'h2';
           minute = 45;
           minEl.textContent = '45:00';
@@ -501,7 +516,7 @@ export function matchScreen(app, { match }) {
       bc.start();
       // (ilk maçta) eğitici asistan → tünel çıkışı → başlama vuruşu
       busy = true;
-      runTutorial(app, 'match').catch(() => {}).then(() => bc.intro()).catch(() => {}).finally(() => { busy = false; last = performance.now(); raf = requestAnimationFrame(tick); });
+      runTutorial(app, 'match').catch(() => {}).then(() => siyah('pre')).catch(() => {}).then(() => bc.intro()).catch(() => {}).finally(() => { busy = false; last = performance.now(); raf = requestAnimationFrame(tick); });
 
       // Tam ekran yatay yayın (dikey telefonda 90° döner)
       const fsBtn = el0.querySelector('[data-fs]');
