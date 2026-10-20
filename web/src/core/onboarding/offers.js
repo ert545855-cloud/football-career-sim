@@ -6,8 +6,8 @@
 //   A · Alt Lig Takımı        : en alt ligden (1. Lig, alt yarı) rastgele kulüp, ilk 11 garantisi
 //   B · Üst Lig Takımı (kiralık): Süper Lig kulübü sözleşme imzalar, 1 yıl 1. Lig'e kiralar (forma şartıyla)
 //   C · Dev Kulüp Altyapısı    : büyük kulübün U-17 takımı; gelişim bonusu, sezon sonunda A takıma yükselme
-import { CLUBS, CLUB_BY_ID } from '../data.js';
-import { clubRating } from '../league.js';
+import { CLUBS, CLUB_BY_ID, LEAGUES, leagueAt } from '../data.js';
+import { clubRating, leagueIdIn } from '../league.js';
 
 /** @typedef {'A'|'B'|'C'} OfferKind */
 /**
@@ -33,9 +33,9 @@ export const OFFER_KINDS = {
   B: {
     id: 'B',
     title: 'Üst Lig Takımı · Kiralık',
-    badge: 'Süper Lig sözleşmesi',
+    badge: '{top} sözleşmesi',
     minScore: 4,
-    pros: ['Süper Lig kulübüyle 3 yıllık sözleşme', '1 yıl 1. Lig\'de forma şartlı kiralık', 'Sezon sonunda ana kulübe dönüş'],
+    pros: ['{top} kulübüyle 3 yıllık sözleşme', '1 yıl {second} kulübüne forma şartlı kiralık', 'Sezon sonunda ana kulübe dönüş'],
     cons: ['Ana kulüpte forma rekabeti zor', 'Kiralıkken transfer yapılamaz'],
   },
   C: {
@@ -43,10 +43,18 @@ export const OFFER_KINDS = {
     title: 'Dev Kulüp Altyapısı',
     badge: 'U-17 takımı',
     minScore: 7,
-    pros: ['Dev kulübün altyapısı: antrenman gelişimi +%25', 'U-17 Gelişim Ligi\'nde düzenli forma', 'Sezon sonunda A takım sözleşmesi'],
+    pros: ['Dev kulübün altyapısı: antrenman gelişimi +%25', '{youth}: düzenli forma', 'Sezon sonunda A takım sözleşmesi'],
     cons: ['Altyapı bursu: maaş çok düşük', 'A takıma yükselmek için kendini kanıtlaman lazım'],
   },
 };
+
+/** Teklif metinlerindeki lig adları: vatandaşlığın ülkesine göre */
+export function offerText(t, cc = 'tr') {
+  const top = LEAGUES[leagueAt(cc, 1)]?.name || 'Süper Lig';
+  const second = LEAGUES[leagueAt(cc, 2)]?.name || '1. Lig';
+  const youth = LEAGUES[cc === 'tr' ? 'u17' : `${cc}u17`]?.name || 'U-17 Gelişim Ligi';
+  return String(t).replace(/\{top\}/g, top).replace(/\{second\}/g, second).replace(/\{youth\}/g, youth);
+}
 
 /** Skora göre açılan seçenekler */
 export function unlockedOptions(score) {
@@ -54,11 +62,14 @@ export function unlockedOptions(score) {
   return (SCORE_TIERS.find((t) => s >= t.min && s <= t.max) || SCORE_TIERS[SCORE_TIERS.length - 1]).options;
 }
 
-/** Kulüp havuzları (dünyadaki güncel güçlere göre) */
-export function offerPools(world) {
+/** Kulüp havuzları (dünyadaki güncel güçlere göre). cc: vatandaşlık = başlangıç ülkesi */
+export function offerPools(world, cc = 'tr') {
   const r = (id) => clubRating(world, id);
-  const supers = CLUBS.filter((c) => c.league === 'super').sort((a, b) => r(b.id) - r(a.id));
-  const firsts = CLUBS.filter((c) => c.league === 'first').sort((a, b) => r(b.id) - r(a.id));
+  const inLeague = (lid) => (world?.leagues?.[lid]?.teams || CLUBS.filter((c) => c.league === lid).map((c) => c.id)).map((id) => CLUB_BY_ID[id]).filter(Boolean);
+  const top = leagueAt(cc, 1);
+  const second = LEAGUES[leagueAt(cc, 2)] ? leagueAt(cc, 2) : 'first';
+  const supers = inLeague(LEAGUES[top] ? top : 'super').sort((a, b) => r(b.id) - r(a.id));
+  const firsts = inLeague(second).sort((a, b) => r(b.id) - r(a.id));
   const half = Math.ceil(firsts.length / 2);
   return {
     /** A: en alt lig, alt yarı */
@@ -67,8 +78,8 @@ export function offerPools(world) {
     parentsB: supers.slice(4, supers.length - 1).map((c) => c.id),
     /** B kiralık adresi: 1. Lig üst yarısı */
     loanClubs: firsts.slice(0, half).map((c) => c.id),
-    /** C: ilk 4 dev kulübün altyapısı */
-    giants: supers.slice(0, 4).map((c) => c.id),
+    /** C: ilk 4 dev kulübün altyapısı (altyapı takımı olanlar) */
+    giants: supers.filter((c) => CLUB_BY_ID[`${c.id}-u17`]).slice(0, 4).map((c) => c.id),
   };
 }
 
@@ -90,9 +101,9 @@ function wageFor(clubR, playerOvr) {
  * @param {() => number} rnd
  * @returns {StarterOffer[]}
  */
-export function buildStarterOffers(world, score, player, rnd = Math.random) {
+export function buildStarterOffers(world, score, player, rnd = Math.random, cc = 'tr') {
   const open = unlockedOptions(score);
-  const pools = offerPools(world);
+  const pools = offerPools(world, cc);
   const r = (id) => clubRating(world, id);
 
   const aClub = pickFrom(pools.lower, rnd);
@@ -106,7 +117,7 @@ export function buildStarterOffers(world, score, player, rnd = Math.random) {
       ...base('A'),
       clubId: aClub,
       parentId: null,
-      leagueId: CLUB_BY_ID[aClub].league,
+      leagueId: leagueIdIn(world, aClub) || CLUB_BY_ID[aClub].league,
       wage: wageFor(r(aClub), player.ovr),
       years: 2,
       signingBonus: 0,
@@ -119,7 +130,7 @@ export function buildStarterOffers(world, score, player, rnd = Math.random) {
       ...base('B'),
       clubId: bLoan,
       parentId: bParent,
-      leagueId: CLUB_BY_ID[bLoan].league,
+      leagueId: leagueIdIn(world, bLoan) || CLUB_BY_ID[bLoan].league,
       wage: round50(wageFor(r(bParent), player.ovr) * 0.6),
       years: 3,
       signingBonus: round50(wageFor(r(bParent), player.ovr) * 2),
@@ -132,7 +143,7 @@ export function buildStarterOffers(world, score, player, rnd = Math.random) {
       ...base('C'),
       clubId: `${cParent}-u17`,
       parentId: cParent,
-      leagueId: 'u17',
+      leagueId: CLUB_BY_ID[`${cParent}-u17`]?.league || 'u17',
       wage: 300,
       years: 1,
       signingBonus: 0,

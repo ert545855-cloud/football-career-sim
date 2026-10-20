@@ -221,8 +221,8 @@ export function createApp(rootEl) {
       if (this.draft) saveDraft(this.draft);
     },
 
-    startTryouts(name) {
-      this.draft = { name, avatar: randomAvatar(), tryout: new TryoutSession().toJSON(), stage: 'camp', position: null, offers: null, score: 0 };
+    startTryouts(name, nationality = 'tr') {
+      this.draft = { name, nationality, avatar: randomAvatar(), tryout: new TryoutSession().toJSON(), stage: 'camp', position: null, offers: null, score: 0 };
       this.nameDraft = null;
       this.saveDraft();
       this.go('tryouts');
@@ -285,7 +285,7 @@ export function createApp(rootEl) {
         const stats = { ...pos.stats };
         for (const [k, v] of Object.entries(bonus)) stats[k] += v;
         const o = Math.round(Object.entries(pos.ovr).reduce((sum, [k, w]) => sum + stats[k] * w, 0));
-        d.offers = buildStarterOffers(createWorld(1), report.score, { ovr: o });
+        d.offers = buildStarterOffers(createWorld(1), report.score, { ovr: o }, Math.random, d.nationality || 'tr');
       }
       d.stage = 'offers';
       this.saveDraft();
@@ -297,7 +297,7 @@ export function createApp(rootEl) {
       const offer = d.offers?.[index];
       if (!offer || offer.locked) return;
       const report = new TryoutSession(d.tryout).report();
-      this.state = newGame({ name: d.name, position: d.position || report.position, avatar: d.avatar, statBonus: tryoutStatBonus(report), start: offer, tryout: { score: report.score, stations: report.stations } });
+      this.state = newGame({ name: d.name, nationality: d.nationality || 'tr', position: d.position || report.position, avatar: d.avatar, statBonus: tryoutStatBonus(report), start: offer, tryout: { score: report.score, stations: report.stations } });
       this.draft = null;
       clearDraft();
       this.save();
@@ -310,11 +310,12 @@ export function createApp(rootEl) {
       const club = CLUB_BY_ID[s.career.clubId];
       const st = s.career.start || { kind: 'A' };
       const parent = st.parentId ? CLUB_BY_ID[st.parentId] : null;
-      const headline = { A: 'İLK PROFESYONEL SÖZLEŞME', B: 'SÜPER LİG SÖZLEŞMESİ · KİRALIK', C: 'ALTYAPI SÖZLEŞMESİ' }[st.kind];
+      const topName = (LEAGUES[leagueOf(st.parentId || club.id)]?.name || 'Süper Lig').toLocaleUpperCase('tr');
+      const headline = { A: 'İLK PROFESYONEL SÖZLEŞME', B: `${topName} SÖZLEŞMESİ · KİRALIK`, C: 'ALTYAPI SÖZLEŞMESİ' }[st.kind];
       const body = st.kind === 'B'
         ? `${esc(parent.name)} seninle ${s.career.contract.yearsLeft} yıllık sözleşme imzaladı ve gelişmen için seni 1 yıllığına <b>${esc(club.name)}</b> takımına kiraladı. Sözleşmedeki forma şartı sayesinde ilk 11'desin.`
         : st.kind === 'C'
-          ? `${esc(parent.name)} altyapısına hoş geldin! <b>${esc(club.name)}</b> takımında ${LEAGUES.u17.name}'nde oynayacaksın. Sezon sonunda A takım sözleşmesi seni bekliyor.`
+          ? `${esc(parent.name)} altyapısına hoş geldin! <b>${esc(club.name)}</b> takımında ${esc(LEAGUES[club.league]?.name || LEAGUES.u17.name)} maçlarında oynayacaksın. Sezon sonunda A takım sözleşmesi seni bekliyor.`
           : `${esc(club.city)} · ${esc(leagueLabel(club.league))}<br>Kulüp sana ilk 11 garantisi verdi. Şimdi formanın hakkını ver!`;
       confetti();
       sfx('levelup');

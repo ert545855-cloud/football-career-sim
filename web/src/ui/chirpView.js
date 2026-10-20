@@ -234,7 +234,7 @@ export async function composeFlow(app, opts = {}) {
   buzz(out.trending ? 'celebrate' : 'tap');
   if (out.trending) {
     confetti({ count: 70 });
-    toast(`${out.trending} Türkiye'de gündem oldu! 🔥`, 'good');
+    toast(`${out.trending} gündemin zirvesinde! 🔥`, 'good');
   }
   await sheet({
     html: `

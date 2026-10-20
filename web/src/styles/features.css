@@ -1126,3 +1126,9 @@ canvas.bld { flex: none; image-rendering: pixelated; }
 /* piksel portre (avatar halkası içinde) */
 .px-portrait { display: block; width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; image-rendering: crisp-edges; transform: translateY(6%) scale(1.04); }
 .avatar-ring .px-portrait, .avatar-big .px-portrait { background: radial-gradient(circle at 50% 38%, rgba(198, 255, 61, 0.14), transparent 62%); }
+/* vatandaşlık seçimi */
+.nat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; max-height: 236px; overflow-y: auto; padding: 2px; border-radius: 12px; }
+.nat-opt { display: flex; align-items: center; gap: 6px; min-height: 38px; padding: 6px 8px; border-radius: 10px; color: var(--text); font: inherit; font-size: 12px; font-weight: 700; text-align: left; background: var(--card, #142019); border: 1px solid rgba(255, 255, 255, 0.08); cursor: pointer; }
+.nat-opt .fl { font-size: 18px; line-height: 1; }
+.nat-opt span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nat-opt.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; background: rgba(198, 255, 61, 0.08); }

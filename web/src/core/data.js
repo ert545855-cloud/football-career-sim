@@ -118,18 +118,24 @@ export const LEAGUES = {
   ...Object.fromEntries(WORLD.leagues.map((l) => [l.id, l])),
   /** Dev kulüplerin altyapı takımlarından oluşan gelişim ligi (Seçenek C) */
   u17: { id: 'u17', name: 'U-17 Gelişim Ligi', short: 'U17', tier: 3, level: 9, youth: true, country: 'tr' },
+  // diğer ülkelerin U-17 ligleri (vatandaşlığa göre başlangıçta altyapı seçeneği)
+  ...Object.fromEntries(COUNTRIES.filter((c) => c.id !== 'tr').map((c) => [`${c.id}u17`, { id: `${c.id}u17`, name: `${c.name} U-17 Ligi`, short: 'U17', tier: 3, level: 9, youth: true, country: c.id }])),
 };
+
+/** Ülkenin n. kademe ligi ve altyapı ligi */
+export const leagueAt = (cc, level) => (cc === 'tr' ? ['super', 'first', 'tr2', 'tr3'][level - 1] : `${cc}${level}`);
+export const youthLeagueOf = (cc) => (cc === 'tr' ? 'u17' : `${cc}u17`);
 
 
 /**
  * Altyapı (U-17) takımları: Süper Lig kulüplerinin gençleri. Kendi liglerinde oynarlar,
  * transfer tekliflerine ve büyük kulüp listelerine girmezler (CLUBS yalnızca A takımları içerir).
  */
-export const YOUTH_CLUBS = CLUBS.filter((c) => c.league === 'super').map((c) => ({
+export const YOUTH_CLUBS = CLUBS.filter((c) => LEAGUES[c.league]?.tier === 1).map((c) => ({
   ...c,
   id: `${c.id}-u17`,
   name: `${c.name} U-17`,
-  league: 'u17',
+  league: youthLeagueOf(c.country),
   rating: Math.round(16 + (c.rating - 50) * 0.35),
   parentId: c.id,
   youth: true,

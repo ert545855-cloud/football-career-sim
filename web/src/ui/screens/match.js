@@ -18,6 +18,7 @@ import { confetti, el, esc, sleep } from '../dom.js';
 import { sprite } from '../../assets/sprites.js';
 import { FEED_SPRITES } from '../spriteMap.js';
 import { nationalCrest } from '../nationalView.js';
+import { COUNTRY_OF_NATION } from '../../core/national.js';
 import { createBroadcast } from '../broadcast.js';
 import { celebrationChoices, pickCelebration } from '../celebPick.js';
 import { pickTension } from '../tensionPick.js';
@@ -179,7 +180,13 @@ export function matchScreen(app, { match }) {
         weather: match.weather,
         speed: () => app.settings.speed || 1,
         auto: app.autoplay,
-        names: { home: home.name, away: away.name, homeShort: hs, awayShort: as, homeFan: fanName(home), awayFan: fanName(away), city: CLUB_BY_ID[match.homeId]?.city || '' },
+        names: {
+          home: home.name, away: away.name, homeShort: hs, awayShort: as, homeFan: fanName(home), awayFan: fanName(away), city: CLUB_BY_ID[match.homeId]?.city || '',
+          // stadyum dili: ev sahibi kulübün (milli maçta ev sahibi ülkenin) ülkesi
+          homeCountry: CLUB_BY_ID[match.homeId]?.country || COUNTRY_OF_NATION[match.homeId] || 'tr',
+          awayCountry: CLUB_BY_ID[match.awayId]?.country || COUNTRY_OF_NATION[match.awayId] || 'tr',
+          myCountry: CLUB_BY_ID[match.myId]?.country || s.player.nationality || 'tr',
+        },
         coach: { name: match.national ? 'Milli Takım T.D.' : s.coach?.clubId === match.myId && s.coach?.name ? `T.D. ${s.coach.name}` : 'Teknik Direktör' },
         // golden sonra süreli sevinç seçimi (sahip olduğun en fazla 3 sevinç)
         pickCelebration: () => pickCelebration(bcEl, {
@@ -309,7 +316,7 @@ export function matchScreen(app, { match }) {
       };
       // Siyah Show: maç önü ve devre arası (kurgusal parodi yorum programı)
       const siyah = async (phase) => {
-        if (app.autoplay || !showAirs(match, phase, app.settings.siyahShow || 'auto')) return;
+        if (app.autoplay || !showAirs(match, phase, app.settings.siyahShow || 'auto', { country: CLUB_BY_ID[match.homeId]?.country || 'tr', nationality: s.player.nationality || 'tr' })) return;
         bc.pause();
         try {
           await playSiyahShow({

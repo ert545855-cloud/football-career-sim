@@ -1,6 +1,7 @@
 // ALTIN TOP ARAYÜZÜ — tören (3.→2.→1. açıklama) ve sıralama ekranı.
 import { BALLON_RULES, ballonRank, ballonStandings, ensureBallon, visibility } from '../core/ballondor.js';
 import { buzz, sfx } from '../audio.js';
+import { nationByShort } from '../core/national.js';
 import { spriteOr } from '../assets/sprites.js';
 import { icon } from './art.js';
 import { confetti, esc, sheet, sleep } from './dom.js';
@@ -13,7 +14,7 @@ const NAT_COLORS = {
   USA: ['#1e3a8a', '#dc2626'], AUT: ['#ef4444', '#ffffff'], SUI: ['#dc2626', '#ffffff'],
 };
 const flagOf = (nat) => {
-  const c = NAT_COLORS[nat] || ['#475569', '#cbd5e1'];
+  const c = NAT_COLORS[nat] || nationByShort(nat)?.colors || ['#475569', '#cbd5e1'];
   return `<span class="nat-dot" style="--a:${c[0]};--b:${c[1]}" title="${esc(nat)}"></span>`;
 };
 

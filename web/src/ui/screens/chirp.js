@@ -1,5 +1,5 @@
 // CHIRP EKRANI — akış, keşfet (gündem + #etiket sayfaları), takımım, gazeteciler, magazin, ben.
-import { CLUB_BY_ID } from '../../core/data.js';
+import { CLUB_BY_ID, COUNTRY_BY_ID } from '../../core/data.js';
 import { playerAuthor, timelineOf } from '../../core/chirp/index.js';
 import { chirpAvatar, icon } from '../art.js';
 import { esc } from '../dom.js';
@@ -47,14 +47,14 @@ export function chirpScreen(app, params = {}) {
     body = `
       <div class="tag-head">
         <button class="icon-btn" data-back-tag aria-label="Geri">${icon('back')}</button>
-        <div class="grow" style="min-width:0"><b class="ellipsis" style="font-size:20px;display:block">${esc(tag)}</b><span class="muted small">${trend ? `${compact(trend.count)} gönderi · Türkiye gündeminde` : 'Gündemde değil'}</span></div>
+        <div class="grow" style="min-width:0"><b class="ellipsis" style="font-size:20px;display:block">${esc(tag)}</b><span class="muted small">${trend ? `${compact(trend.count)} gönderi · gündemde` : 'Gündemde değil'}</span></div>
         <button class="btn sm primary" data-post-tag="${esc(tag)}">${icon('plus', 'ico sm')} Paylaş</button>
       </div>
       <div class="feed-tweets">${own.map((t) => tweetCard(s, t)).join('')}${eph.map((t) => tweetCard(s, t, { eph: true })).join('')}</div>`;
   } else if (view.filter === 'explore') {
     const popular = tl.list().filter((t) => t.authorId !== 'me').sort((a, b) => b.likes - a.likes).slice(0, 6);
     body = `
-      <div class="h-sec">Türkiye gündemi <span>Hafta ${s.calendar.week}</span></div>
+      <div class="h-sec">${esc(COUNTRY_BY_ID[s.player.nationality || 'tr']?.name || 'Türkiye')} gündemi <span>Hafta ${s.calendar.week}</span></div>
       <div class="card trends">${trends.length ? trends.map((t, i) => `<button class="trend" data-tag="${esc(t.tag)}">
           <span class="muted small">${i + 1} · ${t.kind === 'me' ? 'Senin hakkında' : t.kind === 'mine' ? 'Senin başlattığın' : t.kind === 'match' ? 'Maç' : t.kind === 'world' ? 'Avrupa' : 'Futbol · Gündem'}</span>
           <b>${esc(t.tag)}</b><span class="muted small">${compact(t.count)} gönderi</span></button>`).join('') : '<p class="muted small" style="margin:0">Gündem oluşuyor… Maç oynadıkça burası dolacak.</p>'}</div>

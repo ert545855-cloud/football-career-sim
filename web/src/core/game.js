@@ -1,13 +1,13 @@
 // OYUN AKIŞI — hafta, aksiyonlar, maç günü, sezon sonu. Arayüz sadece bu fonksiyonları çağırır.
 import {
-  CLUBS, CLUB_BY_ID, GAME_WEIGHTS, LEAGUES, MAX_TRAININGS_PER_WEEK, MID_WINDOW_WEEK,
+  CLUBS, CLUB_BY_ID, GAME_WEIGHTS, LEAGUES, MAX_TRAININGS_PER_WEEK, MID_WINDOW_WEEK, leagueAt,
   SEASON_WEEKS, START_MONEY, STATS, TRAINING, WEEK_SLOTS,
 } from './data.js';
 import { chance, pick, randInt, round1, roundTo } from './rng.js';
 import {
   addProgress, ageUp, changeEnergy, changeFame, changeMorale, changeRel, createPlayer, effectiveSkill, form, ovr, trainingAmount,
 } from './player.js';
-import { DEFAULT_FOCUS, addFocus, aiTopScorerGoals, clubRating, createWorld, evolveRatings, flushPostponed, leagueIdIn, leagueOf, positionOf, simulateWeek, sortedTable, useWorld } from './league.js';
+import { DEFAULT_FOCUS, addFocus, countryFocus, aiTopScorerGoals, clubRating, createWorld, evolveRatings, flushPostponed, leagueIdIn, leagueOf, positionOf, simulateWeek, sortedTable, useWorld } from './league.js';
 import { acceptOffer, generateOffers, itemEffects, wageFor, weeklyFinance } from './economy.js';
 import { finalizeMatch, planMatch, selection } from './match.js';
 import { pickEvent, resolveEvent } from './events.js';
@@ -66,9 +66,12 @@ export const emptySeasonStats = () => ({ apps: 0, starts: 0, goals: 0, assists: 
  */
 export function newGame(setup) {
   const player = createPlayer(setup);
-  const world = useWorld(createWorld(1));
+  const cc = player.nationality || 'tr';
+  const world = useWorld(createWorld(1, null, { focus: countryFocus(cc) }));
   world.europe = createEurope(1, world, null);
-  const pool = CLUBS.filter((c) => c.league === 'first').sort((a, b) => a.rating - b.rating).slice(0, 4);
+  // vatandaşlık: kariyer o ülkenin 2. kademesinde başlar (Türkiye: 1. Lig)
+  const second = LEAGUES[leagueAt(cc, 2)] ? leagueAt(cc, 2) : 'first';
+  const pool = CLUBS.filter((c) => c.league === second).sort((a, b) => a.rating - b.rating).slice(0, 4);
   const club = pick(pool);
   const state = {
     version: SAVE_VERSION,
@@ -651,7 +654,7 @@ export function endSeason(state) {
   const superPair = LEAGUES[leagueId]?.tier === 1 ? cupSeasonEnd(state, myTable[0]?.id, myTable[1]?.id) : (cupSeasonEnd(state, null, null), null);
   const cupWinner = state.lastCup?.winner;
   if (cupWinner) addNews(state, `${state.lastCup.name}: ${CLUB_BY_ID[cupWinner].name} şampiyon!`, cupWinner === career.clubId ? 'good' : 'info');
-  const nextWorld = createWorld(calendar.season + 1, evolveRatings(world), { prev: world, focus: DEFAULT_FOCUS });
+  const nextWorld = createWorld(calendar.season + 1, evolveRatings(world), { prev: world, focus: countryFocus(CLUB_BY_ID[career.clubId]?.country || 'tr', state.player.nationality) });
   // Avrupa: bu sezonun kazananları, gelecek sezonun katılımcıları (bu sezonun tablolarından)
   const euroWinners = europeWinners(world);
   nextWorld.europe = createEurope(calendar.season + 1, nextWorld, world);

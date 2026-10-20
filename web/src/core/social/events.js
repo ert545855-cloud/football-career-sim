@@ -225,7 +225,7 @@ export const SOCIAL_EVENTS = [
       fx(state, changes, 'fame', 1, 'Ün');
       fx(state, changes, 'sponsor', 2, 'Sponsor');
       if (state.chirp) state.chirp.followers = (state.chirp.followers || 0) + 2500;
-      return { id: 'viral', icon: 'phone', tone: 'good', title: 'Viral oldun', text: 'Melis buluşmanızdan kısa bir video paylaştı; bir gecede milyonlarca izlendi. Chirp takipçilerin +2.500!', short: 'Viral video', changes };
+      return { id: 'viral', icon: 'phone', tone: 'good', title: 'Viral oldun', text: `${PERSON_BY_ID.melis.name} buluşmanızdan kısa bir video paylaştı; bir gecede milyonlarca izlendi. Chirp takipçilerin +2.500!`, short: 'Viral video', changes };
     },
   },
   {

@@ -17,7 +17,9 @@ export const NATIONAL_TEAMS = {
   A: { id: 'A', name: 'A Milli Takım', short: 'A Milli', maxAge: 99, minScore: 64, base: 72, fame: 3, fans: 3 },
 };
 
-export const HOME_NATION = { name: 'Türkiye', short: 'TÜR', colors: ['#e30a17', '#ffffff'] };
+/** Oyuncunun milli takımı: vatandaşlığa göre (setHomeNation). Varsayılan Türkiye. */
+export const HOME_NATION = { country: 'tr', name: 'Türkiye', short: 'TÜR', colors: ['#e30a17', '#ffffff'], r: 74, conf: 'UEFA' };
+const TEAM_BASE = Object.fromEntries(Object.entries(NATIONAL_TEAMS).map(([k, t]) => [k, { minScore: t.minScore, base: t.base }]));
 
 /** Rakip ülkeler (A takım gücü; gençlerde aynı sıra korunur, ölçek düşer) */
 export const NATIONS = [
@@ -51,13 +53,76 @@ export const NATIONS = [
   { name: 'Yunanistan', short: 'YUN', r: 68, colors: ['#1d4ed8', '#ffffff'] },
   { name: 'Gürcistan', short: 'GÜR', r: 67, colors: ['#ffffff', '#dc2626'] },
   { name: 'Norveç', short: 'NOR', r: 72, colors: ['#ba0c2f', '#00205b'] },
+  // oyundaki diğer ülkeler ve kıta turnuvaları için ek takımlar
+  { name: 'Türkiye', short: 'TÜR', r: 74, colors: ['#e30a17', '#ffffff'] },
+  { name: 'Galler', short: 'GAL', r: 69, colors: ['#c8102e', '#ffffff'] },
+  { name: 'Rusya', short: 'RUS', r: 70, colors: ['#ffffff', '#1d4ed8'] },
+  { name: 'Romanya', short: 'ROM', r: 68, colors: ['#facc15', '#1e3a8a'] },
+  { name: 'Çin', short: 'ÇİN', r: 60, colors: ['#dc2626', '#facc15'] },
+  { name: 'Suudi Arabistan', short: 'SUU', r: 64, colors: ['#ffffff', '#15803d'] },
+  { name: 'Güney Kore', short: 'KOR', r: 71, colors: ['#dc2626', '#1e3a8a'] },
+  { name: 'İran', short: 'İRA', r: 70, colors: ['#ffffff', '#dc2626'] },
+  { name: 'Avustralya', short: 'AVS', r: 70, colors: ['#facc15', '#15803d'] },
+  { name: 'Katar', short: 'KAT', r: 63, colors: ['#7f1d1d', '#ffffff'] },
+  { name: 'Güney Afrika', short: 'GAF', r: 63, colors: ['#facc15', '#15803d'] },
+  { name: 'Mısır', short: 'MIS', r: 67, colors: ['#dc2626', '#ffffff'] },
+  { name: 'Nijerya', short: 'NİJ', r: 70, colors: ['#15803d', '#ffffff'] },
+  { name: 'Fildişi Sahili', short: 'FİL', r: 71, colors: ['#f97316', '#ffffff'] },
+  { name: 'Cezayir', short: 'CEZ', r: 69, colors: ['#ffffff', '#15803d'] },
+  { name: 'Kamerun', short: 'KAM', r: 68, colors: ['#15803d', '#dc2626'] },
+  { name: 'Gana', short: 'GAN', r: 67, colors: ['#ffffff', '#111827'] },
+  { name: 'Ekvador', short: 'EKV', r: 70, colors: ['#facc15', '#1e3a8a'] },
+  { name: 'Şili', short: 'ŞİL', r: 69, colors: ['#dc2626', '#1e3a8a'] },
+  { name: 'Paraguay', short: 'PAR', r: 67, colors: ['#dc2626', '#ffffff'] },
+  { name: 'Peru', short: 'PER', r: 66, colors: ['#ffffff', '#dc2626'] },
+  { name: 'Kanada', short: 'KAN', r: 68, colors: ['#dc2626', '#ffffff'] },
+  { name: 'Kosta Rika', short: 'KOS', r: 65, colors: ['#dc2626', '#1e3a8a'] },
+  { name: 'Panama', short: 'PAN', r: 63, colors: ['#dc2626', '#ffffff'] },
+  { name: 'Jamaika', short: 'JAM', r: 62, colors: ['#facc15', '#15803d'] },
 ];
+const CONF_OF = {
+  ARG: 'CONMEBOL', BRA: 'CONMEBOL', URU: 'CONMEBOL', KOL: 'CONMEBOL', EKV: 'CONMEBOL', ŞİL: 'CONMEBOL', PAR: 'CONMEBOL', PER: 'CONMEBOL',
+  FAS: 'CAF', SEN: 'CAF', GAF: 'CAF', MIS: 'CAF', NİJ: 'CAF', FİL: 'CAF', CEZ: 'CAF', KAM: 'CAF', GAN: 'CAF',
+  JAP: 'AFC', ÇİN: 'AFC', SUU: 'AFC', KOR: 'AFC', İRA: 'AFC', AVS: 'AFC', KAT: 'AFC',
+  ABD: 'CONCACAF', MEK: 'CONCACAF', KAN: 'CONCACAF', KOS: 'CONCACAF', PAN: 'CONCACAF', JAM: 'CONCACAF',
+};
+for (const n of NATIONS) n.conf = CONF_OF[n.short] || 'UEFA';
+
+/** Oyundaki ülke kimliği → milli takım kısaltması */
+export const NATION_OF_COUNTRY = {
+  tr: 'TÜR', en: 'İNG', es: 'İSP', de: 'ALM', it: 'İTA', fr: 'FRA', pt: 'POR', sc: 'İSK', wa: 'GAL', dk: 'DAN', ru: 'RUS', ua: 'UKR', gr: 'YUN', ro: 'ROM',
+  ch: 'İSV', pl: 'POL', cn: 'ÇİN', sa: 'SUU', jp: 'JAP', kr: 'KOR', za: 'GAF', eg: 'MIS', ng: 'NİJ', ma: 'FAS', br: 'BRA', ar: 'ARG', us: 'ABD', ca: 'KAN',
+};
+export const COUNTRY_OF_NATION = Object.fromEntries(Object.entries(NATION_OF_COUNTRY).map(([c, n]) => [n, c]));
+
+/** Kıta şampiyonası adı */
+export const CONTINENTAL = { UEFA: 'Avrupa Şampiyonası', CONMEBOL: 'Copa América', AFC: 'Asya Kupası', CAF: 'Afrika Uluslar Kupası', CONCACAF: 'Gold Cup' };
+
+/**
+ * Vatandaşlığa göre milli takımı ayarlar: ad, renkler, güç; çağrı eşikleri ülkenin gücüne göre kayar
+ * (güçlü ülkede milli formayı giymek daha zor).
+ */
+export function setHomeNation(countryId = 'tr') {
+  const short = NATION_OF_COUNTRY[countryId] || 'TÜR';
+  const nat = NATIONS.find((x) => x.short === short) || NATIONS.find((x) => x.short === 'TÜR');
+  Object.assign(HOME_NATION, { country: COUNTRY_OF_NATION[nat.short] || countryId, name: nat.name, short: nat.short, colors: nat.colors.slice(), r: nat.r, conf: nat.conf });
+  const adj = nat.r - 74;
+  for (const [k, t] of Object.entries(NATIONAL_TEAMS)) {
+    t.minScore = Math.round(TEAM_BASE[k].minScore + adj * 0.7);
+    t.base = TEAM_BASE[k].base + adj;
+  }
+  return HOME_NATION;
+}
+
+/** Rakip olabilecek milli takımlar (kendi ülken hariç) */
+export const rivalNations = (filter = () => true) => NATIONS.filter((x) => x.short !== HOME_NATION.short && filter(x));
 const NATION_BY_SHORT = Object.fromEntries(NATIONS.map((n) => [n.short, n]));
 export const nationByShort = (s) => NATION_BY_SHORT[s] || null;
 
 const MOMENT_BY_POS = { FW: { type: 'shot', context: 'box' }, MF: { type: 'pass', context: 'final' }, DF: { type: 'tackle', context: 'threat' } };
 
 export function ensureNational(state) {
+  setHomeNation(state.player?.nationality || 'tr');
   const n = state.national || (state.national = {});
   n.caps = { U19: 0, U21: 0, A: 0, ...(n.caps || {}) };
   n.goals = { U19: 0, U21: 0, A: 0, ...(n.goals || {}) };
@@ -114,7 +179,7 @@ export function nationalWindow(state) {
   const level = callUpLevel(state);
   if (!level) return null;
   const team = NATIONAL_TEAMS[level];
-  const pool = NATIONS.filter((x) => x.r <= 82);
+  const pool = rivalNations((x) => x.r <= 82);
   const opp = pick(pool);
   const comp = level === 'A' ? pick(['Uluslar Ligi', 'Eleme Grubu', 'Hazırlık Maçı']) : 'Eleme Grubu';
   const role = callUpScore(state) >= team.minScore + 8 ? 'starter' : chance(0.6) ? 'starter' : 'sub';
@@ -206,7 +271,7 @@ export function playNationalMatch(state, result) {
 // ─────────────────────────── Büyük turnuva ───────────────────────────
 
 export function tournamentName(season) {
-  return season % 4 === 2 ? 'Avrupa Şampiyonası' : 'Dünya Kupası';
+  return season % 4 === 2 ? CONTINENTAL[HOME_NATION.conf] || 'Avrupa Şampiyonası' : 'Dünya Kupası';
 }
 
 /** Sezon sonunda turnuvaya gidiyor mu? (çift sezon + bu sezon A takımda oynadı ya da puanı yetiyor) */

@@ -6,6 +6,7 @@
 //   + milli takım (turnuva derecesi, milli gol).
 // Gerçekçi olsun diye 1. Lig'de puanlar yarı, altyapıda çok küçük sayılır: Altın Top için büyük sahne gerekir.
 import { LEAGUES } from './data.js';
+import { HOME_NATION } from './national.js';
 import { leagueOf, leaguePrestige } from './league.js';
 import { clamp, pick, rand, randInt, round1 } from './rng.js';
 import { changeFame, changeMorale, changeRel, ovr } from './player.js';
@@ -89,7 +90,7 @@ export function visibility(state) {
 /** Sıralama: [{name, pts, me?}] */
 export function ballonStandings(state) {
   const b = ensureBallon(state);
-  const me = { id: 'me', name: state.player.name, nat: 'TÜR', pos: state.player.position, pts: b.me, me: true };
+  const me = { id: 'me', name: state.player.name, nat: HOME_NATION.short, pos: state.player.position, pts: b.me, me: true };
   return [...b.pool, me].sort((x, y) => y.pts - x.pts);
 }
 

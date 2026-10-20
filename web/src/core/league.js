@@ -95,6 +95,16 @@ export const countryOf = (clubId) => CLUB_BY_ID[clubId]?.country || 'tr';
 /** Varsayılan odak: Türkiye ligleri */
 export const DEFAULT_FOCUS = ['super', 'first', 'tr2', 'tr3', 'u17'];
 
+/** Odak ligler (tüm sonuçları saklanır): Türkiye + oynadığın ülke + vatandaşı olduğun ülke */
+export function countryFocus(...ccs) {
+  const out = new Set(DEFAULT_FOCUS);
+  for (const cc of ccs) {
+    if (!cc || cc === 'tr') continue;
+    for (const lg of Object.values(LEAGUES)) if (lg.country === cc) out.add(lg.id);
+  }
+  return [...out];
+}
+
 /**
  * Yeni sezon dünyası.
  * @param {number} season

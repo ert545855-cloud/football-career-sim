@@ -44,7 +44,7 @@ export function nationalScreen(app) {
       </div>
 
       ${tours ? `<div class="h-sec">Turnuvalar</div><div class="card list">${tours}</div>` : ''}
-      ${log ? `<div class="h-sec">Milli maçlar</div><div class="card list">${log}</div>` : '<div class="card muted small" style="margin-top:14px">Henüz milli forma giymedin. U-19 çağrısı için çağrı puanın 28 olmalı.</div>'}`,
+      ${log ? `<div class="h-sec">Milli maçlar</div><div class="card list">${log}</div>` : '<div class="card muted small" style="margin-top:14px">Henüz milli forma giymedin. U-19 çağrısı için çağrı puanın ${NATIONAL_TEAMS.U19.minScore} olmalı.</div>'}`,
     mount(node) {
       animateBars(node);
       node.addEventListener('click', (e) => {

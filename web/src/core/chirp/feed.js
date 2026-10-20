@@ -453,17 +453,22 @@ export class FeedEngine {
     const sizes = { K: 3, D: 8, O: 7, F: 5 };
     const taken = new Set();
     if (call) { groups[posKey].push(s.player.name); taken.add(s.player.name); }
-    // Türk kulüplerinde oynayan takım arkadaşları + kurgusal isimler
-    const mates = this.club.country === 'tr' ? this.mates(6) : [];
+    // vatandaşı olduğun ülkenin kulüplerinde oynayan takım arkadaşları + o ülkeden kurgusal isimler
+    const nat = s.player.nationality || 'tr';
+    const mates = this.club.country === nat ? this.mates(6) : [];
+    const lang = COUNTRY_BY_ID[nat]?.lang || 'tr';
     for (const k of Object.keys(groups)) {
       while (groups[k].length < sizes[k]) {
-        const n = mates.length && this.chance(0.3) ? mates.pop() : randomName('tr', this.rnd);
+        const n = mates.length && this.chance(0.3) ? mates.pop() : randomName(lang, this.rnd);
         if (taken.has(n)) continue;
         taken.add(n);
         groups[k].push(n);
       }
     }
-    const text = call ? `${title} aday kadrosu açıklandı! 🇹🇷 Kampa çağrılan isimler arasında ${s.player.name} de var. #MilliTakım` : `${title} aday kadrosu açıklandı 🇹🇷 #MilliTakım`;
+    const flag = COUNTRY_BY_ID[nat]?.flag || '🇹🇷';
+    const nation = COUNTRY_BY_ID[nat]?.name || 'Türkiye';
+    const title2 = nat === 'tr' ? title : `${nation} ${title}`;
+    const text = call ? `${title2} aday kadrosu açıklandı! ${flag} Kampa çağrılan isimler arasında ${s.player.name} de var. #MilliTakım` : `${title2} aday kadrosu açıklandı ${flag} #MilliTakım`;
     return this.publish({
       author: MILLI, text, topic: 'national', ctx: call ? 'squad_in' : 'squad_out', count: 4, likes: [8000, 40000],
       card: { kind: 'squad', title, groups, highlight: call ? s.player.name : null, week: s.calendar.week },

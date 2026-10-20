@@ -10,7 +10,7 @@ import { chance, clamp, pick, round1, shuffle } from '../rng.js';
 import { changeEnergy, changeFame, changeMorale, changeRel } from '../player.js';
 import { MentorManager } from '../mentor/index.js';
 import {
-  FRIEND_STAGES, PEOPLE, PERSON_BY_ID, ROMANCE_STAGES, SOCIAL_RULES, TONES, VENUES,
+  FRIEND_STAGES, PEOPLE, PERSON_BY_ID, ROMANCE_STAGES, SOCIAL_RULES, TONES, VENUES, localizePeople,
 } from './data.js';
 import { BEATS, OPENERS } from './dialogues.js';
 import { BEATS2, CLOSERS2, CONTEXT_BEATS, OPENER_SETS, OPENERS2, REACTIONS2 } from './dialogues2.js';
@@ -26,6 +26,7 @@ export { BEATS } from './dialogues.js';
 const weekIndex = (s) => (s.calendar.season - 1) * 100 + s.calendar.week;
 
 export function ensureSocial(state) {
+  localizePeople(state.player?.nationality || 'tr', String(state.player?.name || '').split(' ')[0]);
   const s = state.social || (state.social = {});
   s.rel = s.rel || {};
   for (const p of PEOPLE) {

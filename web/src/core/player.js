@@ -1,18 +1,21 @@
-import { STAT_KEYS, POSITIONS, GROWTH } from './data.js';
+import { COUNTRIES, STAT_KEYS, POSITIONS, GROWTH } from './data.js';
 import { clamp, lerp } from './rng.js';
 import { RELATION_DEFAULTS } from './chirp/relationships.js';
 import { potentialMult, styleGrowth } from './character.js';
+const COUNTRY_IDS = new Set(COUNTRIES.map((c) => c.id));
 
 /**
  * @param {{name:string, position:string, avatar?:object, number?:number, statBonus?:Record<string, number>}} setup
  *   statBonus: seçme kampından gelen başlangıç katkısı (istasyonda kalan her hak +1)
  */
-export function createPlayer({ name, position, avatar, number, statBonus }) {
+export function createPlayer({ name, position, avatar, number, statBonus, nationality }) {
   const pos = POSITIONS[position] || POSITIONS.FW;
   const stats = { ...pos.stats };
   for (const [k, v] of Object.entries(statBonus || {})) if (k in stats) stats[k] = clamp(stats[k] + v, 1, 99);
   return {
     name: cleanName(name) || 'Yeni Oyuncu',
+    /** Vatandaşlık (ülke kimliği): başlangıç ülkesi ve milli takım */
+    nationality: COUNTRY_IDS.has(nationality) ? nationality : 'tr',
     position: pos.id,
     number: clamp(Number(number) || 9, 1, 99),
     avatar: avatar || { skin: 1, hair: 'short', hairColor: 1 },

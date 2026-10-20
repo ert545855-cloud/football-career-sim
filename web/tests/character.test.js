@@ -73,6 +73,8 @@ test('piyasa: bonservis, bütçe, serbest kalma; kiralık sözleşmeyi ana kulü
 test('söylentiler: formdaki oyuncuya kulüpler ilgi gösterir', () => {
   const s = fresh();
   s.player.ratings = [8.4, 8.2, 8.6, 8.1, 8.5];
+  // kulübünden biraz güçlü bir oyuncu: üst kulüplerin radarına girer
+  for (const k of Object.keys(s.player.stats)) s.player.stats[k] += 12;
   let news = 0;
   for (let i = 0; i < 40; i++) news += rumorsOnWeek(s, { played: true, rating: 8.3, goals: 2 }).length;
   assert.ok(news > 0 && s.market.interest.length > 0);

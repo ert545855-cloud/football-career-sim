@@ -1,4 +1,5 @@
 // SOSYAL YAŞAM VERİSİ — mekânlar, kişiler (arkadaş, takım arkadaşı, flört), mobilyalar.
+import { localPerson } from '../world/locale.js';
 // Mekân ve kişi isimleri kurgusaldır.
 
 /** Mekân türleri ve seviyeleri. price: tek çıkış ücreti; energy: enerji maliyeti; morale: taban moral. */
@@ -75,6 +76,34 @@ export const PEOPLE = [
   },
 ];
 export const PERSON_BY_ID = Object.fromEntries(PEOPLE.map((p) => [p.id, p]));
+
+/**
+ * Memleket: çocukluk arkadaşı, kuzen ve tanışılabilecek kişiler oyuncunun vatandaşı olduğu ülkeden.
+ * Türkiye dışında adlar ve İstanbul'a özgü ayrıntılar yerelleşir (kimlikler aynı kalır).
+ */
+let PEOPLE_CC = 'tr';
+export function localizePeople(cc = 'tr', avoid = '') {
+  const key = `${cc}|${avoid}`;
+  if (key === PEOPLE_CC || (cc === 'tr' && PEOPLE_CC === 'tr')) return;
+  PEOPLE_CC = cc === 'tr' ? 'tr' : key;
+  const used = new Set([avoid]);
+  PEOPLE.forEach((p, i) => {
+    p.baseName ||= p.name;
+    p.baseFull ||= p.full;
+    p.baseJob ||= p.job;
+    // oyuncunun adıyla ya da birbirleriyle aynı ad olmasın
+    let L = localPerson({ ...p, fem: !!p.look?.fem }, cc, i);
+    for (let k = 1; k < 6 && used.has(L.name); k++) L = localPerson({ ...p, fem: !!p.look?.fem }, cc, i + k * 3);
+    used.add(L.name);
+    p.name = L.name;
+    p.full = L.full;
+    p.job = cc === 'tr' ? p.baseJob : p.baseJob.replace('Boğaz manzaralı kafeleri sever', 'deniz manzaralı kafeleri sever');
+  });
+  for (const v of Object.values(VENUES)) for (const t of v.tiers) {
+    t.baseName ||= t.name;
+    t.name = cc === 'tr' ? t.baseName : ({ cafe3: 'Liman Teras', bar3: 'Rooftop Sky' }[t.id] || t.baseName);
+  }
+}
 
 /** Romantik ilişki aşamaları (eşikler) */
 export const ROMANCE_STAGES = [

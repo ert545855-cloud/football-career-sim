@@ -232,11 +232,13 @@ export function showScript(ctx, o = {}) {
 }
 
 /**
- * Program bu maçta yayında mı? mode: 'auto' (büyük maçlar + maçların ~%40'ı), 'on', 'off'
+ * Program bu maçta yayında mı? mode: 'auto' (büyük maçlar + maçların ~%40'ı), 'on', 'off'. o: {country, nationality}
  */
-export function showAirs(match, phase, mode = 'auto') {
+export function showAirs(match, phase, mode = 'auto', o = {}) {
   if (mode === 'off' || !match) return false;
   if (mode === 'on') return true;
+  // Türk televizyonu: otomatikte Türkiye'de oynanan maçlarda ya da Türk oyuncunun maçlarında yayında
+  if (o.country && o.country !== 'tr' && o.nationality && o.nationality !== 'tr') return false;
   if (match.big) return true;
   const r = seeded(hash(`${match.id}|${phase}|airs`))();
   return r < (phase === 'pre' ? 0.4 : 0.3);

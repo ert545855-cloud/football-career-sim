@@ -5,10 +5,12 @@
 //  • Büyük turnuva: çift sezon sonunda A Milli (Avrupa Şampiyonası / Dünya Kupası), tek sezon sonunda
 //    U-21/U-19 Avrupa Şampiyonası. Grup (3 maç, puan tablosu) → çeyrek → yarı → final. Her maçı oynayabilir
 //    ya da hızlı simüle edebilirsin.
-import { FIRST_NAMES, LAST_NAMES, GAME_WEIGHTS } from './data.js';
+import { GAME_WEIGHTS } from './data.js';
+import { randomName } from './world/names.js';
+import { nameLangOf } from './world/locale.js';
 import { chance, clamp, pick, poisson, rand, randInt, round1, shuffle } from './rng.js';
 import { addProgress, changeEnergy, changeFame, changeMorale, changeRel, form, ovr } from './player.js';
-import { HOME_NATION, NATIONAL_TEAMS, NATIONS, callUpScore, ensureNational, nationByShort } from './national.js';
+import { CONTINENTAL, HOME_NATION, NATIONAL_TEAMS, NATIONS, callUpScore, ensureNational, nationByShort, rivalNations } from './national.js';
 import { buildEvents, buildMoments } from './match.js';
 import { fatigueAt, weatherFor } from './weather.js';
 import { nationLineup } from './lineups.js';
@@ -42,12 +44,13 @@ export function squadFor(state, level) {
   n.squads = n.squads || {};
   if (!n.squads[level]) {
     const used = new Set();
+    const lang = nameLangOf(state.player?.nationality || 'tr');
     const name = () => {
       for (let i = 0; i < 20; i++) {
-        const nm = `${pick(FIRST_NAMES)} ${pick(LAST_NAMES)}`;
+        const nm = randomName(lang);
         if (!used.has(nm)) { used.add(nm); return nm; }
       }
-      return `${pick(FIRST_NAMES)} ${pick(LAST_NAMES)}`;
+      return randomName(lang);
     };
     const base = NATIONAL_TEAMS[level].base;
     const shape = ['GK', 'DF', 'DF', 'DF', 'DF', 'MF', 'MF', 'MF', 'FW', 'FW', 'FW', 'GK', 'DF', 'DF', 'MF', 'MF', 'FW'];
@@ -83,7 +86,7 @@ function newCamp(state, level, extra) {
 
 /** Milli ara çağrısını kampa çevirir (2 maç) */
 export function startCamp(state, call) {
-  const pool = NATIONS.filter((x) => x.r <= 84 && x.short !== call.opp);
+  const pool = rivalNations((x) => x.r <= 84 && x.short !== call.opp);
   const second = pick(pool);
   const comp2 = call.level === 'A' ? pick(['Hazırlık Maçı', 'Uluslar Ligi', 'Eleme Grubu']) : 'Eleme Grubu';
   const camp = newCamp(state, call.level, {
@@ -105,11 +108,11 @@ export function tournamentFor(state) {
   const capsThisSeason = n.seasonCaps?.[s] || 0;
   const lvl = n.current;
   if (s % 2 === 0) {
-    if (capsThisSeason > 0 || lvl === 'A') return { level: 'A', name: s % 4 === 2 ? 'Avrupa Şampiyonası' : 'Dünya Kupası' };
+    if (capsThisSeason > 0 || lvl === 'A') return { level: 'A', name: s % 4 === 2 ? CONTINENTAL[HOME_NATION.conf] : 'Dünya Kupası', continental: s % 4 === 2 };
     return null;
   }
   if ((lvl === 'U21' || lvl === 'U19') && (n.youthSeason?.[s] || 0) > 0) {
-    return { level: lvl, name: `${NATIONAL_TEAMS[lvl].short} Avrupa Şampiyonası` };
+    return { level: lvl, name: `${NATIONAL_TEAMS[lvl].short} ${CONTINENTAL[HOME_NATION.conf]}`, continental: true };
   }
   return null;
 }
@@ -117,10 +120,12 @@ export function tournamentFor(state) {
 /** Turnuva kampı: 4'lü grup → çeyrek → yarı → final */
 export function startTournamentCamp(state, tour = tournamentFor(state)) {
   if (!tour) return null;
-  const field = shuffle(NATIONS.filter((x) => x.r >= 68));
+  // kıta şampiyonası: aynı konfederasyondan en güçlüler; Dünya Kupası: dünyanın her yerinden
+  const conf = tour.continental ? rivalNations((x) => x.conf === HOME_NATION.conf).sort((a, b) => b.r - a.r).slice(0, 10) : [];
+  const field = shuffle(conf.length >= 6 ? conf : rivalNations((x) => x.r >= 68));
   const group = field.slice(0, 3).map((x) => x.short);
   const knock = field.slice(3, 6).map((x) => x.short).sort((a, b) => nationByShort(a).r - nationByShort(b).r);
-  const table = Object.fromEntries(['TÜR', ...group].map((id) => [id, { id, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 }]));
+  const table = Object.fromEntries([HOME_NATION.short, ...group].map((id) => [id, { id, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 }]));
   return newCamp(state, tour.level, {
     tournament: { name: tour.name, stage: 'group', group, knock, table, result: null, round: 0 },
     comp: tour.name,
@@ -233,15 +238,15 @@ export function planCampMatch(state) {
   const events = buildEvents(lMy, lOpp, clamp(0.5 + (myR - oppR) / 120, 0.2, 0.8));
   const moments = buildMoments(p.position, role, subMinute, subOff);
   const nerves = clamp((level === 'A' ? 0.22 : level === 'U21' ? 0.16 : 0.1) + (stage === 'final' ? 0.3 : stage === 'sf' || stage === 'qf' ? 0.15 : 0) - (camp.played.length ? 0.04 : 0), 0, 0.7);
-  const my = { name: teamLabel(level), short: 'TÜR', colors: HOME_NATION.colors, pattern: 'solid', national: level };
+  const my = { name: teamLabel(level), short: HOME_NATION.short, colors: HOME_NATION.colors, pattern: 'solid', national: level };
   const opp = { name: oppLabel(nation, level), short: nation.short, colors: nation.colors, pattern: 'solid' };
   return {
     id: `nat-${camp.season}-${camp.week}-${camp.idx}-${camp.tournament ? 't' : 'w'}`,
     national: true, level, season: camp.season, week: camp.week,
-    homeId: fx.home ? 'TÜR' : nation.short, awayId: fx.home ? nation.short : 'TÜR', isHome: fx.home,
-    myId: 'TÜR', oppId: nation.short,
+    homeId: fx.home ? HOME_NATION.short : nation.short, awayId: fx.home ? nation.short : HOME_NATION.short, isHome: fx.home,
+    myId: HOME_NATION.short, oppId: nation.short,
     teams: { home: fx.home ? my : opp, away: fx.home ? opp : my },
-    names: { my: my.name, opp: opp.name }, shorts: { my: 'TÜR', opp: nation.short },
+    names: { my: my.name, opp: opp.name }, shorts: { my: HOME_NATION.short, opp: nation.short },
     myKit: my, oppKit: opp,
     myR: Math.round(myR), oppR: Math.round(oppR), oppKeeper: Math.min(0.95, oppR / 92),
     role, reason: null, subMinute, subOff, weather, energy0: p.energy,
@@ -338,7 +343,7 @@ export function finishCampMatch(state, match) {
   const T = camp.tournament;
   if (T) {
     if (T.stage === 'group') {
-      updateTable(T.table, 'TÜR', match.oppId, my, opp);
+      updateTable(T.table, HOME_NATION.short, match.oppId, my, opp);
       // aynı turda gruptaki diğer maç
       const round = camp.idx;
       const [a, b] = round === 0 ? [T.group[1], T.group[2]] : round === 1 ? [T.group[0], T.group[2]] : [T.group[0], T.group[1]];
@@ -348,7 +353,7 @@ export function finishCampMatch(state, match) {
         updateTable(T.table, a, b, poisson(lambda(oppRating(ra, level), oppRating(rb, level))), poisson(lambda(oppRating(rb, level), oppRating(ra, level))));
       }
       if (camp.idx === 2) {
-        const rank = sortedGroup(T).findIndex((r) => r.id === 'TÜR');
+        const rank = sortedGroup(T).findIndex((r) => r.id === HOME_NATION.short);
         if (rank <= 1) {
           T.stage = 'qf';
           camp.fixtures.push({ opp: T.knock[0], home: true, comp: `${T.name} · Çeyrek final`, stage: 'qf' });

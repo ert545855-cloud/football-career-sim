@@ -1,13 +1,17 @@
 // KARAKTER OLUŞTURMA — yalnızca isim. Mevki seçmelerden sonra (scout önerisiyle), forma numarası
 // kulüp tarafından verilir, görünüş rastgele oluşturulur.
-import { FIRST_NAMES, LAST_NAMES } from '../../core/data.js';
+import { COUNTRIES } from '../../core/data.js';
 import { isValidName } from '../../core/player.js';
+import { randomName } from '../../core/world/names.js';
 import { icon } from '../art.js';
 import { esc } from '../dom.js';
 import { sprite } from '../../assets/sprites.js';
 
 export function createScreen(app) {
-  const d = (app.nameDraft ||= { name: '' });
+  const d = (app.nameDraft ||= { name: '', nationality: 'tr' });
+  d.nationality ||= 'tr';
+  const nat = () => COUNTRIES.find((c) => c.id === d.nationality) || COUNTRIES[0];
+  const natGrid = () => COUNTRIES.map((c) => `<button class="nat-opt ${c.id === d.nationality ? 'on' : ''}" data-nat="${c.id}" aria-pressed="${c.id === d.nationality}"><span class="fl">${c.flag}</span><span>${esc(c.name)}</span></button>`).join('');
   return {
     tabs: false,
     html: `
@@ -19,9 +23,12 @@ export function createScreen(app) {
       <p class="muted" style="margin:0 0 14px;line-height:1.5">17 yaşındasın ve babandan gizli buradasın. Bugün <b style="color:var(--text)">Seçmeler Kampı</b>'nda scoutların önüne çıkacaksın. Kamptaki performansın, sana hangi kulüplerin teklif yapacağını belirleyecek.</p>
       <label class="small muted" for="nm">Adın ve soyadın</label>
       <div class="row" style="margin:6px 0 14px">
-        <input id="nm" class="field grow" maxlength="20" autocomplete="off" placeholder="Örn. Arda Yılmaz" value="${esc(d.name)}">
+        <input id="nm" class="field grow" maxlength="20" autocomplete="off" placeholder="Örn. ${esc(randomName(nat().lang, () => 0.37))}" value="${esc(d.name)}">
         <button class="icon-btn" data-act="rand" aria-label="Rastgele isim">${icon('refresh')}</button>
       </div>
+      <div class="row between" style="margin:0 0 6px"><span class="small muted">Vatandaşlık</span><b class="small" data-natlabel>${nat().flag} ${esc(nat().name)}</b></div>
+      <div class="nat-grid" data-natgrid>${natGrid()}</div>
+      <p class="muted small" style="margin:6px 0 14px;line-height:1.45">Kariyerin bu ülkede başlar: ligler, kulüpler, hocalar, arkadaşların ve stattaki pankartlar bu ülkeden. Milli formayı da bu ülke için giyersin.</p>
       <div class="card small muted" style="display:grid;gap:6px;line-height:1.45">
         <div class="row" style="gap:8px">${icon('user', 'ico sm')} Forma numaranı kulübün verecek; büyük numaralar performansla kazanılır.</div>
         <div class="row" style="gap:8px">${icon('target', 'ico sm')} Mevkin, seçmelerdeki performansına göre scout önerisiyle belirlenir.</div>
@@ -45,12 +52,17 @@ export function createScreen(app) {
         if (t.dataset.act === 'back') {
           app.nameDraft = null;
           app.go('title');
+        } else if (t.dataset.nat) {
+          d.nationality = t.dataset.nat;
+          el.querySelectorAll('[data-nat]').forEach((b) => { const on = b.dataset.nat === d.nationality; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
+          el.querySelector('[data-natlabel]').textContent = `${nat().flag} ${nat().name}`;
+          input.placeholder = `Örn. ${randomName(nat().lang, () => 0.37)}`;
         } else if (t.dataset.act === 'rand') {
-          d.name = `${FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)]} ${LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)]}`;
+          d.name = randomName(nat().lang).slice(0, 20);
           input.value = d.name;
-          startBtn.disabled = false;
+          startBtn.disabled = !isValidName(d.name);
         } else if (t.dataset.act === 'start' && isValidName(d.name)) {
-          app.startTryouts(d.name);
+          app.startTryouts(d.name, d.nationality);
         }
       });
     },

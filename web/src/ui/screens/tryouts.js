@@ -2,7 +2,7 @@
 import { CLUB_BY_ID, LEAGUES, POSITIONS, STATS } from '../../core/data.js';
 import { money } from '../../core/economy.js';
 import {
-  MAX_SCORE, OFFER_KINDS, SCORE_TIERS, STATIONS, TryoutSession, tryoutStatBonus, unlockedOptions,
+  MAX_SCORE, OFFER_KINDS, offerText, SCORE_TIERS, STATIONS, TryoutSession, tryoutStatBonus, unlockedOptions,
 } from '../../core/onboarding/index.js';
 import { avatarSVG, crestSVG, icon } from '../art.js';
 import { animateBars, esc } from '../dom.js';
@@ -121,25 +121,26 @@ function reportView(d, session) {
     <button class="btn primary lg block" data-act="offers">${icon('briefcase')} Teklifleri Gör</button>`;
 }
 
-function offerCard(o, i, score) {
+function offerCard(o, i, score, cc = 'tr') {
   const k = OFFER_KINDS[o.kind];
+  const T = (t) => offerText(t, cc);
   const club = CLUB_BY_ID[o.clubId];
   const parent = o.parentId ? CLUB_BY_ID[o.parentId] : null;
   const crests = o.kind === 'B'
     ? `${crestSVG(parent, 'crest lg')}<span class="loan-arrow">${icon('chev')}<small>kiralık</small></span>${crestSVG(club, 'crest')}`
     : crestSVG(o.kind === 'C' ? parent : club, 'crest lg');
   const main = o.kind === 'B' ? parent : o.kind === 'C' ? parent : club;
-  const where = o.kind === 'B' ? `${club.name} (${LEAGUES[club.league].name}) · 1 yıl` : o.kind === 'C' ? `${club.name} · ${LEAGUES.u17.name}` : `${LEAGUES[club.league].name} · ${club.city}`;
+  const where = o.kind === 'B' ? `${club.name} (${LEAGUES[club.league].name}) · 1 yıl` : o.kind === 'C' ? `${club.name} · ${(LEAGUES[club.league] || LEAGUES.u17).name}` : `${LEAGUES[club.league].name} · ${club.city}`;
   return `<article class="starter-offer ${o.locked ? 'locked' : ''} k${o.kind}">
-    <div class="so-head"><span class="so-kind">${o.kind}</span><div class="grow"><b>${esc(k.title)}</b><div class="muted small">${esc(k.badge)}</div></div>${o.locked ? `<span class="chip">${icon('lock', 'ico sm')} Kilitli</span>` : ''}</div>
+    <div class="so-head"><span class="so-kind">${o.kind}</span><div class="grow"><b>${esc(k.title)}</b><div class="muted small">${esc(T(k.badge))}</div></div>${o.locked ? `<span class="chip">${icon('lock', 'ico sm')} Kilitli</span>` : ''}</div>
     <div class="so-crests">${crests}</div>
     <h3 class="center" style="margin:6px 0 2px">${esc(main.name)}</h3>
     <div class="muted small center">${esc(where)}</div>
     ${o.locked
     ? `<p class="center small" style="margin:12px 0 0"><b>${esc(o.requirement)}</b> · senin skorun ${score}</p>`
     : `<div class="chips" style="justify-content:center;margin:10px 0"><span class="chip gold">${money(o.wage)}/hf</span><span class="chip">${o.years} yıl</span>${o.signingBonus ? `<span class="chip gold">İmza ${money(o.signingBonus)}</span>` : ''}</div>
-      <ul class="so-list pros">${k.pros.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>
-      <ul class="so-list cons">${k.cons.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>
+      <ul class="so-list pros">${k.pros.map((p) => `<li>${esc(T(p))}</li>`).join('')}</ul>
+      <ul class="so-list cons">${k.cons.map((p) => `<li>${esc(T(p))}</li>`).join('')}</ul>
       <button class="btn primary block" data-offer="${i}">${icon('check')} Bu teklifi kabul et</button>`}
   </article>`;
 }
@@ -148,5 +149,5 @@ function offersView(d) {
   return `
     ${header('Teklifler', `Seçme skoru ${d.score}/${MAX_SCORE}`, 'back-report')}
     <p class="muted small" style="margin:0 0 12px;line-height:1.5">Scoutların raporu kulüplere ulaştı. Bir teklifi kabul ettiğinde kariyerin başlar.</p>
-    <div class="stack">${d.offers.map((o, i) => offerCard(o, i, d.score)).join('')}</div>`;
+    <div class="stack">${d.offers.map((o, i) => offerCard(o, i, d.score, d.nationality || 'tr')).join('')}</div>`;
 }

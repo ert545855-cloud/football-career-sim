@@ -2,6 +2,8 @@
 // LED reklam panoları (kurgusal sponsorlar), perspektifli çim, 22 oyuncu + hakem ve top. Akış kendi kendine oynar;
 // goller (rakip goller dahil) ve pozisyonlar senaryo olarak canlandırılır, istenirse yavaş çekim tekrar gösterilir.
 // Tüm kulüp, sponsor ve oyuncu isimleri kurgusaldır.
+import { awayBanner, bannerTexts as localBanners, brandTexts, nameLangOf } from '../core/world/locale.js';
+import { randomName } from '../core/world/names.js';
 import { drawPixelPlayer, drawPixelBall, dirFromVelocity, runFrame, setBallVariant } from '../games/pixel/sprites.js';
 import { npcLook, keeperLook, SKINS, HAIR_COLORS } from '../games/pixel/looks.js';
 import { defaultLook, shade } from '../games/pixel/playerPixels.js';
@@ -65,6 +67,8 @@ const REF_LOOK = defaultLook({
  * @param {object} o {myKit, oppKit, homeIsMy, lineups:{my,opp}, me:{look,num,name,pos,onPitch}, weather, speed():number, auto, names:{home,away,homeShort,awayShort,city}}
  */
 export function createBroadcast(root, o) {
+  // reklam panoları: ev sahibi ülkenin dilinde kurgusal markalar
+  const BOARDS = SPONSORS.map((sp, i) => ({ ...sp, t: brandTexts(o.names?.homeCountry || 'tr')[i] || sp.t }));
   const cv = root.querySelector('.bc-cv');
   const mini = root.querySelector('.bc-mini');
   const banner = root.querySelector('[data-goalbanner]');
@@ -131,7 +135,7 @@ export function createBroadcast(root, o) {
   // Sen sahada değilsen (yedek/sakat) senin yerinde yedek oynar
   let meOn = !!me.onPitch;
   const subLook = mePlayer ? npcLook(myClub, 911, 14) : null;
-  const SUB_NAME = ['Emre Kaya', 'Burak Şahin', 'Can Yıldız', 'Mert Aksoy', 'Deniz Kurt', 'Onur Çelik'][Math.floor(Math.random() * 6)];
+  const SUB_NAME = o.subName || randomName(nameLangOf(o.names?.myCountry || 'tr'));
   function applyMe() {
     if (!mePlayer) return;
     if (meOn) { mePlayer.look = mePlayer.meLook; mePlayer.name = me.name; mePlayer.num = me.num; }
@@ -208,14 +212,8 @@ export function createBroadcast(root, o) {
     addTier(roofH, upperBottom, 'up');
     addTier(lowerTop, hU - frontH + 2, 'low');
     const banners = [];
-    const bannerTexts = [
-      (o.names?.home || 'EV SAHİBİ').toUpperCase(),
-      'SONUNA KADAR',
-      `ŞAMPİYON ${up(o.names?.homeFan || o.names?.homeShort || '')}`.trim(),
-      'HEP SENİNLEYİZ',
-      `${(o.names?.city || 'ŞEHİR').toUpperCase()} BURADA`,
-      'BU TRİBÜN SUSMAZ',
-    ];
+    // pankartlar ev sahibi ülkenin dilinde (vatandaşlık/ülke değişince stadyum da değişir)
+    const bannerTexts = localBanners(o.names?.homeCountry || 'tr', { home: o.names?.home || 'EV SAHİBİ', fan: o.names?.homeFan || o.names?.homeShort || '', city: o.names?.city || '' });
     let bx = 18;
     let bi = 0;
     while (bx < awayFrom - 60) {
@@ -226,7 +224,7 @@ export function createBroadcast(root, o) {
       bx += w + 14 + Math.floor(r() * 18);
       bi++;
     }
-    banners.push({ x: awayFrom + 6, w: Math.min(80, (awayTo - awayFrom) - 10), text: `${up(o.names?.awayFan || o.names?.awayShort || 'DEPLASMAN')} DEPLASMANDA`, bg: awayFans[0], fg: awayFans[1] });
+    banners.push({ x: awayFrom + 6, w: Math.min(80, (awayTo - awayFrom) - 10), text: awayBanner(o.names?.awayCountry || o.names?.homeCountry || 'tr', o.names?.awayFan || o.names?.awayShort || 'DEPLASMAN'), bg: awayFans[0], fg: awayFans[1] });
     const flags = [];
     for (let i = 0; i < 12; i++) {
       const fxu = 24 + i * (wU / 12.5) + r() * 16;
@@ -1282,8 +1280,8 @@ export function createBroadcast(root, o) {
       const x0 = W / 2 + (i * pw - 12 - S.cam.x) * ppm() * s;
       const w = pw * ppm() * s - 2;
       if (x0 > W || x0 + w < 0) continue;
-      const sp = SPONSORS[((i + 2) * 3 + shift) % SPONSORS.length];
-      const nx = SPONSORS[((i + 2) * 3 + shift + 1) % SPONSORS.length];
+      const sp = BOARDS[((i + 2) * 3 + shift) % BOARDS.length];
+      const nx = BOARDS[((i + 2) * 3 + shift + 1) % BOARDS.length];
       const roll = S.boardT < 0.35 ? ease(1 - S.boardT / 0.35) : 0; // yeni reklama kayış
       g.save();
       g.beginPath();
@@ -1656,7 +1654,7 @@ export function createBroadcast(root, o) {
   function update(dt) {
     S.time += dt;
     S.boardT += dt;
-    if (S.boardT > 7) { S.boardT = 0; S.boardShift = (S.boardShift + 1) % SPONSORS.length; }
+    if (S.boardT > 7) { S.boardT = 0; S.boardShift = (S.boardShift + 1) % BOARDS.length; }
     if (S.crowdT > 0) S.crowdT -= dt;
     if (S.flash > 0) S.flash = Math.max(0, S.flash - dt * 2.5);
     if (S.bulge) { S.bulge.t += dt; if (S.bulge.t > 2.5) S.bulge = null; }

@@ -18,7 +18,18 @@ import { spriteOr } from '../assets/sprites.js';
 
 /** Ay-yıldızlı arma (kalkan) */
 export function nationalCrest(cls = 'crest', level = 'A') {
-  const label = level === 'A' ? 'TÜRKİYE' : NATIONAL_TEAMS[level]?.short || '';
+  const label = level === 'A' ? HOME_NATION.name.toLocaleUpperCase('tr') : NATIONAL_TEAMS[level]?.short || '';
+  if (HOME_NATION.short !== 'TÜR') {
+    // diğer ülkeler: ülke renklerinde sade kalkan + yıldız (federasyon logoları kullanılmaz)
+    const [c1, c2] = HOME_NATION.colors;
+    const fg = /^#f|^#e/i.test(c1) && c1 !== '#e30a17' ? '#0f172a' : '#fff';
+    return `<svg class="${cls}" viewBox="0 0 100 121" aria-label="${esc(HOME_NATION.name)} milli takım arması">
+    <path d="M50 4 L93 15 V56 C93 86 74 104 50 117 C26 104 7 86 7 56 V15 Z" fill="${c1}" stroke="${c2}" stroke-width="4"/>
+    <path d="M7 64 H93 V74 H7 Z" fill="${c2}" opacity=".85"/>
+    <path d="M50 26 l6.2 12.6 13.9 2 -10 9.8 2.4 13.8 -12.5 -6.6 -12.5 6.6 2.4 -13.8 -10 -9.8 13.9 -2z" fill="${fg}"/>
+    <text x="50" y="98" text-anchor="middle" font-size="${label.length > 9 ? 8.5 : 11}" font-weight="900" fill="${fg}" font-family="system-ui,sans-serif">${esc(label)}</text>
+  </svg>`;
+  }
   return `<svg class="${cls}" viewBox="0 0 100 121" aria-label="${HOME_NATION.name} milli takım arması">
     <path d="M50 4 L93 15 V56 C93 86 74 104 50 117 C26 104 7 86 7 56 V15 Z" fill="#e30a17" stroke="#fff" stroke-width="4"/>
     <circle cx="44" cy="54" r="21" fill="#fff"/><circle cx="50" cy="54" r="17" fill="#e30a17"/>
