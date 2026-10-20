@@ -11,6 +11,7 @@ import { goalBonusFor } from './clauses.js';
 import { clubLineup, pickScorer, shortName } from './lineups.js';
 import { cardEscapeChance } from './character.js';
 import { disciplineOnMatch, ensureDisc, refDecision, sendOff } from './discipline.js';
+import { attitudeMatchFx, attitudeOf, attitudeOnMatch, planTension } from './attitude.js';
 
 /** İlk 11 kararı: OVR + hoca ilişkisi + form + moral, rakip oyuncuya karşı. */
 export function selection(state) {
@@ -162,8 +163,14 @@ export function planMatch(state, o = {}) {
   const tactic = state.coach?.clubId === career.clubId ? { weights: momentWeights(state, POSITIONS[player.position].moments), ctx: contextWeights(state) } : {};
   const moments = buildMoments(player.position, role, subMinute, subOff, tactic);
 
+  const big = o.big || bigMatchSetup(state, { myId, oppId, week });
+  const lineups = { my: clubLineup(state, myId, { mine: true }), opp: clubLineup(state, oppId) };
+  // Karakter barı: egoist deplasmanda daha çok ıslıklanır (heyecan), rakipler daha çok gerginlik çıkarır
+  const att = attitudeMatchFx(state, { isHome, big });
+  if (big && att.nerves) big.nerves = clamp((big.nerves || 0) + att.nerves, 0, 0.9);
+  const mid = o.id || `${calendar.season}-${week}`;
   return {
-    id: o.id || `${calendar.season}-${week}`,
+    id: mid,
     cup: o.cup || null,
     knockout: !!o.knockout,
     season: calendar.season,
@@ -184,13 +191,16 @@ export function planMatch(state, o = {}) {
     sore0: soreFatigue(state), // spor salonundan kalan kas ağrısı
     stoppage: randInt(1, 5),
     /** Derbi / final / zirve / kader maçı: heyecan, etkin yetenek çarpanı ve mini oyun temposu */
-    big: o.big || bigMatchSetup(state, { myId, oppId, week }),
+    big,
     events,
     moments,
     /** Disiplin (kişilik): faulde karttan kurtulma şansı */
     discipline: player.persona?.discipline ?? 50,
+    /** Karakter barı (−100 mütevazı … +100 egoist): hakem sertliği, gerginlikler */
+    attitude: attitudeOf(state),
+    tension: planTension(state, { role, subMinute, subOff, isHome, big, id: mid, oppNames: lineups.opp.filter((x) => x.pos !== 'GK').map((x) => shortName(x.name)) }),
     /** Maç kadroları (golcü/asist isimleri) ve gol listesi (skor tabelasında gösterilir) */
-    lineups: { my: clubLineup(state, myId, { mine: true }), opp: clubLineup(state, oppId) },
+    lineups,
     goals: [],
     score: { my: 0, opp: 0 },
     tally: { rating: 0, goals: 0, assists: 0, won: 0, lost: 0, progress: [] },
@@ -561,6 +571,8 @@ export function finalizeMatch(state, match) {
   gymOnMatch(state, { played }); // maç kondisyonu + kas ağrısı
   // Disiplin: kırmızı kart cezası, sarı birikimi
   const ban = disciplineOnMatch(state, match);
+  // Karakter barı: gerginlik tepkileri ve gol sevinçleri
+  const att = attitudeOnMatch(state, match);
   if (t.red) {
     changeMorale(player, -6);
     changeRel(player, 'manager', -6);
@@ -600,5 +612,6 @@ export function finalizeMatch(state, match) {
     yellow: t.yellow || 0,
     red: t.red || null,
     ban,
+    attShift: att.shift,
   };
 }

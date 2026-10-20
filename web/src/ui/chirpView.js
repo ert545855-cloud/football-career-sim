@@ -1,6 +1,8 @@
 // Chirp görünüm parçaları: gönderi kartı (görselli kartlar, #etiketler, yanıtlar), paylaşım kartı,
 // serbest gönderi yazma, yanıtlama, keşfet için anlık (kaydedilmeyen) gönderiler.
 import { allTurkish, localizeText, showComment } from '../core/chirp/lang.js';
+import { attitudeBar } from './attitudeView.js';
+import { attitudeOf } from '../core/attitude.js';
 import { CLUB_BY_ID } from '../core/data.js';
 import { JOURNALISTS, PERSONAS, PlayerPostService, RELATIONS, Timeline, TweetModel, playerAuthor } from '../core/chirp/index.js';
 import { FOREIGN_POSTS, USER_POSTS } from '../core/chirp/content.js';
@@ -150,6 +152,7 @@ export async function shareFlow(app, styleId) {
       <p class="lead">Taraftarlar yorumlara akın etti 👇</p>
       ${tweetCard(s, out.tweet, { compactReplies: false })}
       <div class="chips" style="margin-top:12px">${changeChipsHTML(out.changes)}</div>
+      ${out.attShift ? `<div style="margin-top:12px">${attitudeBar(attitudeOf(s), { delta: out.attShift })}</div>` : ''}
       <div class="stack"><button class="btn primary block" data-close="chirp">${icon('chirp')} Chirp'e git</button><button class="btn ghost block" data-close="ok">Tamam</button></div>`,
   });
   return go === 'chirp' ? 'chirp' : true;

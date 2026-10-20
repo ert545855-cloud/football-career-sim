@@ -1,6 +1,7 @@
 // KARAKTER + YAŞAYAN DÜNYA arayüzü: özel çalışma, oyun tarzı, kişilik kartı, yaz kampı, ayın oyuncusu,
 // başkanlık seçimi, kariyer arşivi, rakip ve başkan kartları, jübile.
 import { CLUB_BY_ID, POSITIONS } from '../core/data.js';
+import { attitudeCard } from './attitudeView.js';
 import { DRILLS, PERKS, PERSONA, PERSONA_KEYS, PLAYSTYLES, drillNeed, ensureCharacter, hasPerk, perkPoints, personaLabel, potentialRange, styleById, unlockPerk } from '../core/character.js';
 import { CAMP_FOCUS, runSummerCamp } from '../core/summerCamp.js';
 import { resolveElection, presidentLabel, ensurePresident, ensureRival } from '../core/living.js';
@@ -89,6 +90,7 @@ export function characterCard(state) {
   const ad = state.adapt;
   const m = ensureMarket(state);
   return `
+    ${attitudeCard(state)}
     <div class="h-sec">Karakter <span>${esc(personaLabel(p.persona))}</span></div>
     <div class="card" style="display:grid;gap:10px">
       ${PERSONA_KEYS.map((k) => meter(PERSONA[k].name, k === 'professionalism' ? 'dumbbell' : k === 'leadership' ? 'flag' : k === 'ambition' ? 'fire' : 'shield', p.persona[k], 100, PERSONA[k].color)).join('')}

@@ -4,6 +4,7 @@
 // karşındakinin kişiliğine göre ilişki puanı değişir → çıkış sonunda para, enerji, moral ve ilişkiler işlenir;
 // rastgele sosyal olaylar (paparazzi, hayran, kavga, yeni biriyle tanışma…) socialEvents.js'ten gelir.
 import { questsOn } from '../quests.js';
+import { shiftAttitude } from '../attitude.js';
 import { CLUB_BY_ID } from '../data.js';
 import { chance, clamp, pick, round1, shuffle } from '../rng.js';
 import { changeEnergy, changeFame, changeMorale, changeRel } from '../player.js';
@@ -236,6 +237,7 @@ export function answerOuting(state, outing, optIndex) {
   const delta = toneDelta(outing.person, outing.kind, opt.tone, rel);
   outing.score += delta;
   outing.picks.push(opt.tone);
+  if (opt.tone === 'cocky' || opt.tone === 'humble') shiftAttitude(state, `social_${opt.tone}`);
   const mood = delta >= 4 ? 'positive' : delta >= 0 ? 'neutral' : 'negative';
   const pool = REACTIONS2[outing.kind] || REACTIONS2.friend;
   outing.i += 1;

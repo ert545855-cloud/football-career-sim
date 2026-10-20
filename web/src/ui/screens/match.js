@@ -18,6 +18,8 @@ import { FEED_SPRITES } from '../spriteMap.js';
 import { nationalCrest } from '../nationalView.js';
 import { createBroadcast } from '../broadcast.js';
 import { celebrationChoices, pickCelebration } from '../celebPick.js';
+import { pickTension } from '../tensionPick.js';
+import { TENSION_KINDS, attitudeKind, grudgeChance, resolveTension, tensionOptions, tensionSkillMult } from '../../core/attitude.js';
 import { runTutorial } from '../tutorial.js';
 import { playerCanvas } from '../../games/pixel/sprites.js';
 import { shortName as shortOf } from '../../core/lineups.js';
@@ -84,6 +86,8 @@ export function matchScreen(app, { match }) {
   const timeline = [{ minute: 0, order: 0, kind: 'kickoff' }];
   match.events.forEach((ev) => timeline.push({ minute: ev.minute, order: 2, ev }));
   match.moments.forEach((m) => timeline.push({ minute: m.minute, order: 3, m }));
+  // Maç içi gerginlikler (karakter barı ve rakip husumetine göre planlandı)
+  (match.tension || []).forEach((t) => timeline.push({ minute: t.minute, order: 2.5, tension: t }));
   if (match.subMinute) timeline.push({ minute: match.subMinute, order: 1, kind: 'sub' });
   if (match.subOff) timeline.push({ minute: match.subOff, order: 5, kind: 'subOff' });
   const w = match.weather;
@@ -253,6 +257,7 @@ export function matchScreen(app, { match }) {
       const push = (ln) => {
         line(ln.minute, ln.text, ln.kind);
         if (ln.kind?.startsWith('goal')) renderGoals();
+        if (ln.kind === 'goal-me') maybeGrudge(ln.minute);
         if (ln.kind === 'goal-my' || ln.kind === 'goal-me') {
           momentum = Math.min(85, momentum + 18);
           pop();
@@ -287,6 +292,42 @@ export function matchScreen(app, { match }) {
         el0.querySelector('[data-card]')?.classList.add('off');
         skipBtn.innerHTML = `${icon('chev')} Sona atla`;
       };
+      // Golünü yediremeyen rakip: birkaç dakika sonra gerginlik
+      const oppNames = (match.lineups?.opp || []).filter((x) => x.pos !== 'GK').map((x) => shortOf(x.name));
+      const maybeGrudge = (mm) => {
+        const at = Math.min(88, Math.round(mm) + 2 + Math.floor(Math.random() * 4));
+        if (match.sentOff != null || at >= 89 || Math.random() >= grudgeChance(s, match)) return;
+        if ((match.tension || []).some((t) => Math.abs(t.minute - at) < 6)) return;
+        const t = { minute: at, kind: 'grudge', opp: oppNames.length ? oppNames[Math.floor(Math.random() * oppNames.length)] : null, done: false };
+        (match.tension ||= []).push(t);
+        let j = idx;
+        while (j < timeline.length && timeline[j].minute <= at) j++;
+        timeline.splice(j, 0, { minute: at, order: 2.5, tension: t });
+      };
+      const onPitchNow = () => match.sentOff == null && !offPitch && (match.role === 'starter' || (match.subMinute && minute >= match.subMinute));
+      async function playTension(t) {
+        if (t.done || !onPitchNow()) return;
+        busy = true;
+        const opts = tensionOptions(t.kind, attitudeKind(match.attitude ?? 0));
+        const def = TENSION_KINDS[t.kind] || TENSION_KINDS.trash;
+        let choice = 'ignore';
+        if (!app.autoplay) {
+          sfx('whistle');
+          buzz([30, 40, 30]);
+          choice = await pickTension(bcEl, { title: def.title, text: def.text(t.opp || 'Rakip oyuncu'), options: opts, att: match.attitude ?? 0, onPick: (id, tapped) => { if (tapped) app.click(); } });
+        }
+        const out = resolveTension(s, match, t, choice);
+        const mom0 = { provoke: 9, jab: 4, ignore: -2, calm: 1, peace: 2, ref: 0 }[choice] || 0;
+        momentum = Math.max(10, Math.min(90, momentum + mom0));
+        for (const l of out.lines) {
+          line(l.minute, l.text, l.kind);
+          if (l.kind === 'card' || l.kind === 'red') { showCard(l.kind); await sleep(l.kind === 'red' ? 1400 : 700); }
+        }
+        if (choice === 'provoke' || choice === 'jab') sfx('chant');
+        if (match.sentOff != null) { sentOffUI(match.sentOff); insertInjected(); }
+        busy = false;
+        last = performance.now();
+      }
       const setMom = () => {
         momentum += (Math.random() - 0.5) * 6;
         momentum = Math.max(10, Math.min(90, momentum + (50 - momentum) * 0.02));
@@ -311,7 +352,7 @@ export function matchScreen(app, { match }) {
         // Maç içi yorgunluk: dakika ilerledikçe etkin yetenek düşer
         const fatigue = momentFatigue(s, match, m.minute);
         // Oyun tarzı, zayıf ayak, beceri ve yeni kulübe uyum
-        const skill = effectiveSkill(s.player, weights) * (match.big?.skillMult ?? 1) * (1 - fatigue * 0.3) * characterSkillMult(s, type, m.context) * gymSkillMult(s, type, m.context) * sponsorSkillMult(s, type) * foundationHomeMult(s, match.isHome);
+        const skill = effectiveSkill(s.player, weights) * (match.big?.skillMult ?? 1) * (1 - fatigue * 0.3) * characterSkillMult(s, type, m.context) * gymSkillMult(s, type, m.context) * sponsorSkillMult(s, type) * foundationHomeMult(s, match.isHome) * tensionSkillMult(match);
         await sleep(350);
         const result = await runMiniGame({
           type,
@@ -407,6 +448,12 @@ export function matchScreen(app, { match }) {
           await animate({ ...ln, ai: true, side: item.ev.side }, (match.goals || [])[g0]);
           return;
         }
+        if (item.tension) {
+          if (item.tension.done || !onPitchNow()) return;
+          skipTo = null;
+          await playTension(item.tension);
+          return;
+        }
         if (item.m) {
           if (item.m.skipped || match.sentOff != null) return; // kırmızı kart: kalan anlar yok
           skipTo = null;
@@ -471,7 +518,7 @@ export function matchScreen(app, { match }) {
       });
       skipBtn.addEventListener('click', () => {
         app.click();
-        const rest = timeline.slice(idx).filter((t) => t.m && !t.m.skipped && match.sentOff == null);
+        const rest = timeline.slice(idx).filter((t) => ((t.m && !t.m.skipped) || (t.tension && !t.tension.done)) && match.sentOff == null);
         skipTo = rest.length ? rest[0].minute : 90;
         if (rest.length <= 1) skipBtn.innerHTML = `${icon('chev')} Sona atla`;
       });

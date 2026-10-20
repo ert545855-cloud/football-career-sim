@@ -1,5 +1,7 @@
 // UYGULAMA DENETLEYİCİSİ — ekran yönetimi ve oyun akışları (antrenman, maç günü, sezon sonu…)
 import { setSocialLang } from '../core/chirp/lang.js';
+import { attitudeBar } from './attitudeView.js';
+import { attitudeOf } from '../core/attitude.js';
 import { ACTIONS, CLUB_BY_ID, LEAGUES, POSITIONS, STATS, STAT_KEYS, TRAINING } from '../core/data.js';
 import {
   canDoAction, chooseEvent, completeMatch, declineOffers, doAction, endSeason, finishTraining, getMatch, newGame, retire, takeOffer, trainingSetup,
@@ -580,6 +582,7 @@ export function createApp(rootEl) {
           <div class="chips" style="justify-content:center">${sm.goals ? `<span class="chip accent">${sm.goals} gol</span>` : ''}${sm.assists ? `<span class="chip accent">${sm.assists} asist</span>` : ''}${bonus}${statChips}</div>
           <div class="divider"></div>
           ${changeChips(Object.entries(sm.deltas).filter(([, v]) => v).map(([k, v]) => ({ key: k, label: { morale: 'Moral', energy: 'Enerji', manager: 'Hoca', teammates: 'Takım', fans: 'Taraftar', fame: 'Ün' }[k], delta: v })))}
+          ${Math.abs(sm.attShift || 0) >= 0.5 ? `<div style="margin-top:12px">${attitudeBar(attitudeOf(s), { delta: sm.attShift })}</div>` : ''}
           <button class="btn primary block" style="margin-top:16px" data-close>Devam</button>`,
       });
 

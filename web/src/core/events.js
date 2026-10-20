@@ -1,5 +1,6 @@
 // METİN OLAYLARI — NSS tarzı seçimli olaylar. Her hafta sonu bir olay çıkabilir.
 import { CLUB_BY_ID, STAT_KEYS, STATS } from './data.js';
+import { shiftAttitude } from './attitude.js';
 import { chance, clamp, pick, roundTo, weightedPick } from './rng.js';
 import { changeEnergy, changeFame, changeMorale, changeRel, form, ovr } from './player.js';
 import { positionOf } from './league.js';
@@ -28,7 +29,9 @@ export const EVENTS = [
     when: () => true, weight: 1.2,
     text: (s) => `Spor kanalı ${club(s).name} hakkında seninle röportaj yapmak istiyor.`,
     choices: [
-      { label: 'Kabul et', fx: { fans: 4, fame: 1, energy: -5, money: 400 }, note: 'Kameraların önünde rahattın, taraftar sevdi.' },
+      { label: 'Mütevazı konuş: "Takımım sayesinde"', fx: { fans: 3, manager: 2, teammates: 2, energy: -5, money: 400, attitude: 'tv_humble' }, note: 'Takım arkadaşlarını öne çıkardın. Soyunma odasında bu sözler konuşuldu.' },
+      { label: 'Kendini öv: "Bu ligin en iyisiyim"', fx: { fame: 2, sponsor: 3, teammates: -2, energy: -5, money: 400, attitude: 'tv_boast' }, note: 'Kendinden emin sözlerin klip olup yayıldı. Sponsorlar memnun, bazı takım arkadaşların değil.' },
+      { label: 'Rakibe laf sok', fx: { fame: 3, fans: 3, federation: -3, manager: -2, energy: -5, money: 400, attitude: 'tv_jab' }, note: 'Rakip taraftarlar çıldırdı, bizimkiler bayıldı. Bir sonraki maçta tansiyon yüksek olacak.' },
       { label: 'Kibarca reddet', fx: { fans: -2, energy: 3 }, note: 'Dinlenmeyi seçtin, bazı taraftarlar burun kıvırdı.' },
     ],
   },
@@ -403,6 +406,11 @@ export function applyFx(state, fx) {
       case 'fame': changeFame(player, val); break;
       case 'injuredWeeks': flags.injuredWeeks = Math.max(flags.injuredWeeks || 0, val); break;
       case 'trainBoostWeeks': flags.trainBoostWeeks = Math.max(flags.trainBoostWeeks || 0, val); break;
+      case 'attitude': {
+        const d = shiftAttitude(state, val);
+        if (d) changes.push({ key: 'attitude', label: d > 0 ? 'Karakter → Egoist' : 'Karakter → Mütevazı', delta: Math.abs(d) });
+        continue;
+      }
       case 'stat':
         for (const [k, d] of Object.entries(val)) {
           player.stats[k] = clamp(player.stats[k] + d, 1, 99);

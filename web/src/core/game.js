@@ -50,6 +50,7 @@ import { canShoot, sponsorsOnMatch, sponsorsOnWeek } from './sponsors.js';
 import { businessOnWeek } from './business.js';
 import { realtyOnWeek } from './realestate.js';
 import { foundationOnWeek } from './foundation.js';
+import { attitudeOnWeek } from './attitude.js';
 import { boardOnMatch, electionDue, ensurePresident, ensureRival, makeElection, rivalOnMatch, rivalSeasonEnd, withheldWage, worldStarsWindow } from './living.js';
 import { offerFor } from './economy.js';
 
@@ -416,6 +417,8 @@ function endWeek(state, ctx) {
   const realty = state.realty?.owned?.length ? realtyOnWeek(state) : null;
   for (const n of realty?.news || []) addNews(state, n.text, n.kind);
   for (const n of state.foundation?.name ? foundationOnWeek(state).news : []) addNews(state, n.text, n.kind);
+  // Karakter barı: egoist/mütevazı haftalık küçük etkiler
+  attitudeOnWeek(state);
   // Kişilik ve uyum: haftanın alışkanlıkları
   for (const n of characterOnWeek(state, { trainings: calendar.trainings, played: ctx?.summary?.played, rating: ctx?.summary?.rating, yellow: ctx?.yellow || 0 })) addNews(state, n, 'good');
   // Transfer söylentileri (ilgi aşaması)

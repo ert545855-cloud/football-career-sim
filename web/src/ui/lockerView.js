@@ -1,5 +1,7 @@
 // SOYUNMA ODASI, HOCA VE BASIN — ekran, ana sayfa kartı ve akışlar.
 import { CLUB_BY_ID } from '../core/data.js';
+import { attitudeBar } from './attitudeView.js';
+import { attitudeOf } from '../core/attitude.js';
 import { ROLES, STYLES, canAskRole, ensureCoach, requestRole, roleInfo, securityLabel } from '../core/coach.js';
 import { armband, canChat, chatWith, chooseLocker, ensureLocker, moodLabel, teamMood, teammates } from '../core/locker.js';
 import { TONES, answerPress } from '../core/press.js';
@@ -229,6 +231,7 @@ export async function pressFlow(app, match) {
       ${out.headline ? `<div class="press-headline"><small>MANŞET</small><b>“${esc(out.headline)}”</b></div>` : '<p class="lead center">Sözlerin dengeli bulundu.</p>'}
       ${changeChips(out.changes)}
       ${out.nerves ? `<p class="muted small center" style="margin:8px 0 0">${out.nerves < 0 ? 'Özgüvenin heyecanını azalttı.' : 'Sözlerin ortamı gerdi: maçta heyecan daha yüksek.'}</p>` : ''}
+      ${out.attShift ? `<div style="margin-top:12px">${attitudeBar(attitudeOf(s), { delta: out.attShift })}</div>` : ''}
       <button class="btn primary block" style="margin-top:14px" data-close>Devam</button>`,
   });
 }
