@@ -20,17 +20,55 @@ const G = {
   '&': ['010', '101', '010', '101', '011'], '€': ['011', '110', '100', '110', '011'], '#': ['101', '111', '101', '111', '101'],
   ' ': ['000', '000', '000', '000', '000'],
 };
-// Türkçe harfler: taban harf + işaret
-const MARK = { Ç: ['C', 'cedilla'], Ş: ['S', 'cedilla'], Ğ: ['G', 'breve'], Ü: ['U', 'dots'], Ö: ['O', 'dots'], İ: ['I', 'dot'] };
+// Türkçe ve Latin aksanlı harfler: taban harf + işaret
+const MARK = {
+  Ç: ['C', 'cedilla'], Ş: ['S', 'cedilla'], Ğ: ['G', 'breve'], Ü: ['U', 'dots'], Ö: ['O', 'dots'], İ: ['I', 'dot'],
+  Á: ['A', 'acute'], É: ['E', 'acute'], Í: ['I', 'acute'], Ó: ['O', 'acute'], Ú: ['U', 'acute'], Ý: ['Y', 'acute'],
+  À: ['A', 'grave'], È: ['E', 'grave'], Ì: ['I', 'grave'], Ò: ['O', 'grave'], Ù: ['U', 'grave'],
+  Â: ['A', 'circ'], Ê: ['E', 'circ'], Î: ['I', 'circ'], Ô: ['O', 'circ'], Û: ['U', 'circ'],
+  Ã: ['A', 'tilde'], Õ: ['O', 'tilde'], Ñ: ['N', 'tilde'], Ä: ['A', 'dots'], Ë: ['E', 'dots'], Ï: ['I', 'dots'],
+};
 
-const norm = (s) => String(s).toLocaleUpperCase('tr');
+let LOCALE = 'tr';
+/** Arayüz dili (büyük harf kuralları ve çeviri için): i18n kurulurken ayarlanır */
+let TX = (s) => s;
+export function setPixelLang(locale, translate) { LOCALE = locale || 'tr'; TX = translate || ((s) => s); }
+
+const norm = (s) => String(s).toLocaleUpperCase(LOCALE === 'tr' ? 'tr' : LOCALE);
+const supported = (s) => { for (const ch of s) if (!G[ch] && !MARK[ch]) return false; return true; };
+
+// piksel yazının taşıyamadığı yazılar (Çince, Arapça, Hintçe, Bengalce…) için normal yazı tipi
+let MEASURE = null;
+const FALLBACK_FONT = (px) => `700 ${px}px var(--script-font, system-ui), system-ui, sans-serif`;
+function fallbackWidth(s, scale) {
+  if (typeof document === 'undefined') return s.length * 4 * scale;
+  MEASURE ||= document.createElement('canvas').getContext('2d');
+  MEASURE.font = FALLBACK_FONT(Math.round(6.4 * scale));
+  return Math.ceil(MEASURE.measureText(s).width);
+}
 
 /** Yazının piksel genişliği (ölçek 1) */
-export const pixelTextWidth = (str) => Math.max(0, norm(str).length * 4 - 1);
+export const pixelTextWidth = (str) => {
+  const s = norm(TX(String(str)));
+  return supported(s) ? Math.max(0, s.length * 4 - 1) : fallbackWidth(s, 1);
+};
 
 export function drawPixelText(ctx, str, x, y, color = '#fff', { scale = 1, align = 'left', shadow = null } = {}) {
-  const s = norm(str);
-  const w = pixelTextWidth(s) * scale;
+  const s = norm(TX(String(str)));
+  if (!supported(s)) {
+    // yedek: sistem yazı tipi, piksel yazıyla aynı yükseklikte
+    ctx.save();
+    ctx.font = FALLBACK_FONT(Math.round(6.4 * scale));
+    ctx.textBaseline = 'top';
+    ctx.textAlign = align;
+    const yy = Math.round(y - scale * 0.9);
+    if (shadow) { ctx.fillStyle = shadow; ctx.fillText(s, Math.round(x) + scale, yy + scale); }
+    ctx.fillStyle = color;
+    ctx.fillText(s, Math.round(x), yy);
+    ctx.restore();
+    return;
+  }
+  const w = (s.length * 4 - 1) * scale;
   let cx = Math.round(align === 'center' ? x - w / 2 : align === 'right' ? x - w : x);
   const cy = Math.round(y);
   const plot = (px, py, col) => { ctx.fillStyle = col; ctx.fillRect(px, py, scale, scale); };
@@ -45,6 +83,10 @@ export function drawPixelText(ctx, str, x, y, color = '#fff', { scale = 1, align
         else if (m === 'breve') { plot(cx + ox, cy + oy - 2 * scale, col); plot(cx + ox + 2 * scale, cy + oy - 2 * scale, col); }
         else if (m === 'dots') { plot(cx + ox, cy + oy - 2 * scale, col); plot(cx + ox + 2 * scale, cy + oy - 2 * scale, col); }
         else if (m === 'dot') plot(cx + ox + scale, cy + oy - 2 * scale, col);
+        else if (m === 'acute') { plot(cx + ox + 2 * scale, cy + oy - 2 * scale, col); }
+        else if (m === 'grave') { plot(cx + ox, cy + oy - 2 * scale, col); }
+        else if (m === 'circ') { plot(cx + ox + scale, cy + oy - 2 * scale, col); plot(cx + ox, cy + oy - scale, col); plot(cx + ox + 2 * scale, cy + oy - scale, col); }
+        else if (m === 'tilde') { plot(cx + ox, cy + oy - 2 * scale, col); plot(cx + ox + scale, cy + oy - 2 * scale, col); plot(cx + ox + 2 * scale, cy + oy - 2 * scale, col); }
       }
     };
     if (shadow) draw(shadow, scale, scale);

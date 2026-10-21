@@ -7,12 +7,15 @@ import * as chirp from './core/chirp/index.js';
 import * as mentor from './core/mentor/index.js';
 import { runMiniGame } from './games/index.js';
 import { loadSprites } from './assets/sprites.js';
+import { setLang } from './i18n/index.js';
 
 // Sprite atlası (≈180 KB) ilk ekranla paralel yüklenir; hazır olana kadar SVG/çizim yedekleri görünür
 loadSprites();
 
 const root = document.getElementById('app');
 const app = createApp(root);
+// Arayüz dili (Türkçe dışında sözlük tembel yüklenir; ekran çevirisi DOM ve tuval katmanında)
+setLang(app.settings.lang || 'tr');
 configureAudio(app.settings);
 configureMusic(app.settings);
 

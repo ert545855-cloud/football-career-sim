@@ -1132,3 +1132,10 @@ canvas.bld { flex: none; image-rendering: pixelated; }
 .nat-opt .fl { font-size: 18px; line-height: 1; }
 .nat-opt span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nat-opt.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; background: rgba(198, 255, 61, 0.08); }
+/* dil seçimi */
+.lang-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px; }
+.lang-grid button { min-height: 36px; padding: 6px 8px; border-radius: 10px; color: var(--text); font: inherit; font-size: 13px; font-weight: 700; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); cursor: pointer; }
+.lang-grid button.on { border-color: var(--accent); background: rgba(198, 255, 61, 0.1); box-shadow: 0 0 0 1px var(--accent) inset; }
+/* yazı sistemi: CJK, Arap, Devanagari, Bengal */
+html[data-lang="zh"] body, html[data-lang="hi"] body, html[data-lang="bn"] body, html[data-lang="ar"] body, html[data-lang="ur"] body { font-family: var(--script-font), system-ui, sans-serif; }
+html[data-lang="ur"] body { line-height: 1.7; }
