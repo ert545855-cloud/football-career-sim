@@ -55,6 +55,7 @@ import { restructureLegacyWorld } from './restructure.js';
 import { attitudeOnWeek } from './attitude.js';
 import { boardOnMatch, electionDue, ensurePresident, ensureRival, makeElection, rivalOnMatch, rivalSeasonEnd, withheldWage, worldStarsWindow } from './living.js';
 import { offerFor } from './economy.js';
+import { brainNote, brainOnWeek, brainSeasonEnd, brainTrainMult, ensureBrain } from './brain/index.js';
 
 export const SAVE_VERSION = 1;
 
@@ -249,6 +250,7 @@ export function doAction(state, id, opt) {
       else if (sel.gap >= -5) text = `Hoca: "Çok yakınsın. Antrenmanda biraz daha göster." (Fark: ${-sel.gap} puan)`;
       else text = `Hoca: "Şu an rakibin önde. Gelişmen lazım." (Fark: ${-sel.gap} puan)`;
       if (sel.reason === 'tired') text += ' Ayrıca çok yorgun görünüyorsun.';
+      if (sel.reason === 'shape') text += ' Ayrıca biraz kilo almışsın, sahada ağırsın.';
       break;
     }
     case 'sponsor': {
@@ -273,6 +275,7 @@ export function doAction(state, id, opt) {
       return { ok: false, text: 'Bilinmeyen aksiyon.' };
   }
   mentorOnAction(state, id); // takım yemeği ve hocayla görüşme kulüp nüfuzunu artırır
+  brainNote(state, 'action', { id }); // beyin: haftanın defteri (uyku, sosyallik, kalori)
   state.calendar.slots -= 1;
   questsOn(state, 'action', { id });
   return { ok: true, title, text, changes: diffChanges(before, snapshot(state)) };
@@ -301,7 +304,8 @@ export function finishTraining(state, stat, result, diff = state.training?.diff 
   const diffMult = difficultyGain(diff, result.success);
   const fatigue = fatigueFactor(player.energy);
   // Profesyonellik: düzenli çalışan oyuncu antrenmandan daha çok alır
-  const gained = addProgress(player, stat, trainingAmount(result, bonus) * mentorMult * diffMult * fatigue * trainingPersonaMult(state));
+  // Beyin: odak ve uyku antrenman verimini değiştirir (Çalışkan özelliği +%5)
+  const gained = addProgress(player, stat, trainingAmount(result, bonus) * mentorMult * diffMult * fatigue * trainingPersonaMult(state) * brainTrainMult(state));
   const stars = starsFor(result);
   const rec = recordDrill(state, stat, diff, stars);
   const game = TRAINING[stat].game;
@@ -313,6 +317,7 @@ export function finishTraining(state, stat, result, diff = state.training?.diff 
   state.calendar.trainings += 1;
   achievementsOnTraining(state);
   questsOn(state, 'train', { stat, stars });
+  brainNote(state, 'train', { stat, stars });
   return {
     stat, name: STATS[stat].name, before, after: player.stats[stat], gained, progress: player.progress[stat], progressBefore, success: result.success, mentorMult,
     diff, diffName: DIFFICULTY[diff]?.name || 'Normal', diffMult, fatigue, stars, best: rec.best, newBest: rec.newBest, tip: coachTip(game, result), result, condGain,
@@ -354,6 +359,7 @@ export function completeMatch(state, match) {
   const summary = finalizeMatch(state, match);
   state.career.lastRole = match.role;
   summary.sponsorBonus = sponsorsOnMatch(state, summary); // gol primleri, imaj
+  brainNote(state, 'match', { summary, match, opp: CLUB_BY_ID[match.oppId]?.name }); // dakikalar, anılar, penaltılar
   questsOn(state, 'match', summary); // haftalık görevler
   const hg = match.isHome ? match.score.my : match.score.opp;
   const ag = match.isHome ? match.score.opp : match.score.my;
@@ -419,7 +425,7 @@ export function completeMatch(state, match) {
     if (rank <= 10) chirp.push(new ChirpTriggerEngine(state).post(FABRICIO, 'ballon', 'Altın Top yarışında ara sıralama: {player} {rank}. sırada! Avrupa devleri gözlerini Türkiye\'ye çevirdi.', { rank }));
   }
   if (summary.ban?.ban) addNews(state, summary.ban.reason === 'yellows' ? `${4} sarı kart sınırına ulaştın: 1 maç cezalısın.` : `Kırmızı kart cezası: ${summary.ban.ban} maç forma giyemeyeceksin.`, 'bad');
-  const weekEnd = endWeek(state, { summary, yellow: match.tally?.yellow || 0, red: match.tally?.red ? 1 : 0 });
+  const weekEnd = endWeek(state, { summary, match, yellow: match.tally?.yellow || 0, red: match.tally?.red ? 1 : 0 });
   return { summary, results, weekEnd, europe, chirp: [...chirp, ...euroTweets, ...weekEnd.chirp] };
 }
 
@@ -462,6 +468,9 @@ function endWeek(state, ctx) {
   if (held) career.money -= held;
   // Spor salonu: kondisyon/güç çalışılmazsa düşer, kas ağrısı geçer
   gymOnWeek(state, { trainings: calendar.trainings });
+  // Beyin: beden (kas/yağ/boy), zihin, alışkanlıklar, özellikler, çevredeki insanlar, iç ses
+  const brain = brainOnWeek(state, { summary: ctx?.summary, match: ctx?.match, red: !!ctx?.red });
+  for (const n of brain.news) addNews(state, n.text, n.kind);
   // Yatırım: fiyatlar değişir, maaştan otomatik yatırım, menajerin portföy notları
   const invest = investOnWeek(state, { summary: ctx?.summary, fin: { net: fin.net - (held || 0) } });
   for (const n of invest.news) addNews(state, n.text, n.kind);
@@ -503,6 +512,7 @@ function endWeek(state, ctx) {
   if (flags.injuredWeeks > 0) flags.injuredWeeks -= 1;
   // Sakatlık: iyileşme, dönüş ve kırılgan dönem
   const med = medicalOnWeekEnd(state);
+  if (med?.returned) brainNote(state, 'return');
   if (med?.returned) addNews(state, `${med.returned.name} geride kaldı: sahalara döndün!${med.lasting ? ' Ancak dizindeki ameliyat biraz hız kaybettirdi.' : ''}`, 'good');
   if (flags.suspendedWeeks > 0) flags.suspendedWeeks -= 1;
   if (flags.trainBoostWeeks > 0) flags.trainBoostWeeks -= 1;
@@ -522,6 +532,7 @@ function endWeek(state, ctx) {
   // Sosyal yaşam: sevgili ilişkisi, ev konforu (haftalık enerji/moral)
   const social = socialOnWeekEnd(state);
   if (social.breakup) addNews(state, `${social.breakup} ile yollarınız ayrıldı. Uzun süre görüşmediniz.`, 'bad');
+  if (social.breakup) brainNote(state, 'breakup', { name: social.breakup });
   garageOnWeekEnd(state); // modifiyeli araba: moral, taraftar ilgisi
 
   const event = pickEvent(state, ctx);
@@ -571,7 +582,7 @@ function endWeek(state, ctx) {
     // Chirp: yeni haftanın maç önü kartı, sakatlıklar, dünya futbolu, trendler
     chirpTweets.push(...chirpWeekStart(state));
   }
-  return { finance: fin, changes: diffChanges(before, snapshot(state)), event, offers: state.pending.offers, seasonOver, discipline, chirp: chirpTweets, mentor, national, social, cupTie, invest, sponsors, business, realty };
+  return { finance: fin, changes: diffChanges(before, snapshot(state)), event, offers: state.pending.offers, seasonOver, discipline, chirp: chirpTweets, mentor, national, social, cupTie, invest, sponsors, business, realty, brain: brain.report };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -750,6 +761,7 @@ export function endSeason(state) {
   report.mentor.start = mentorOnSeasonStart(state);
   state.pending.seasonReport = report;
   checkAchievements(state);
+  report.brain = brainSeasonEnd(state); // ödüller ve kupalar anılara, beden sezon özeti
   addNews(state, `Sezon ${report.season} bitti: ${league.name} ${position}. sıra.`, 'info');
   // Chirp: şampiyonlar, yükselenler; yeni sezonun ilk haftası (transferler, maç önü)
   chirpFeedSeasonEnd(state, report);
@@ -779,6 +791,7 @@ export function takeOffer(state, offer) {
     const n = ensureNumberAfterMove(state);
     if (n.changed) addNews(state, `Yeni kulübünde ${n.number} numaralı formayı giyeceksin.`, 'info');
     chirpWelcome(state, { ...offer, from: fromClubId });
+    brainNote(state, 'transfer', { club: CLUB_BY_ID[offer.clubId]?.name });
   }
   // Kiralık: sözleşme ana kulüpte kalır; sezon sonunda dönüş (ya da satın alma opsiyonu)
   if (offer.loan) {
@@ -822,6 +835,8 @@ export function chooseEvent(state, choiceIndex) {
   const injuredBefore = state.flags.injuredWeeks || 0;
   const out = resolveEvent(state, ev.id, choiceIndex);
   state.pending.event = null;
+  const dOf = (k) => (out.changes || []).find((c) => c.key === k)?.delta || 0;
+  brainNote(state, 'event', { id: ev.id, energy: dOf('energy'), morale: dOf('morale') });
   if ((state.flags.injuredWeeks || 0) > injuredBefore) chirpOnInjury(state, state.flags.injuredWeeks);
   return out;
 }

@@ -16,6 +16,24 @@ import { cupTieReady, roundLabel } from '../../core/cup.js';
 import { portfolioValue } from '../../core/invest.js';
 import { GYM_RULES, ensureGym } from '../../core/gym.js';
 import { questsCard, questsClick } from '../questsView.js';
+import { acwrLive, brainAdvice, brainSummary } from '../../core/brain/index.js';
+
+const ACT_NAMES = { rest: 'Dinlen', train: 'Antrenman', gym: 'Salon', team: 'Takımla yemek', media: 'Medya', manager: 'Hocayla görüş', drill: 'Özel çalışma' };
+
+/** Zihnin: iç ses, beynin önerisi ve bedenin özeti */
+function brainCard(s) {
+  let adv;
+  let sum;
+  try { adv = brainAdvice(s, (id) => canDoAction(s, id).ok); sum = brainSummary(s); } catch { return ''; }
+  const th = adv.thought;
+  const tone = th?.mood === 'bad' ? 'bad' : th?.mood === 'good' ? 'good' : 'info';
+  return `<button class="card thought hub-brain ${tone}" data-act="body">
+    <div class="row" style="gap:10px;align-items:flex-start"><span class="th-ic">${icon('brain')}</span>
+      <div class="grow" style="min-width:0"><div class="row between small"><span class="muted">İç sesin · ${sum.mood.emoji} ${esc(sum.mood.name)}</span><span class="muted">${String(sum.weight).replace('.', ',')} kg · %${String(sum.fat).replace('.', ',')} yağ</span></div>
+      <b class="th-text">“${esc(th?.text || '')}”</b></div></div>
+    ${adv.actions.length ? `<div class="chips" style="margin-top:8px">${adv.actions.slice(0, 2).map((a) => `<span class="chip accent">${esc(ACT_NAMES[a.id] || a.id)} · ${esc(a.why)}</span>`).join('')}<span class="chip">Beden & Zihin ${icon('chev', 'ico xs')}</span></div>` : ''}
+  </button>`;
+}
 
 
 /** Eski kayıt gerçek lig yapısına geçti: bir kez gösterilen bilgi kartı */
@@ -55,7 +73,8 @@ export function hubScreen(app) {
   const status = flags.injuredWeeks > 0
     ? `<span class="chip bad">${icon('bandage')} Sakat · ${flags.injuredWeeks} hf</span>`
     : flags.suspendedWeeks > 0 ? `<span class="chip bad">${icon('shield')} Cezalı · ${flags.suspendedWeeks} maç</span>`
-    : player.energy < 30 ? `<span class="chip warn">${icon('bolt')} Yorgun</span>` : '';
+    : player.energy < 30 ? `<span class="chip warn">${icon('bolt')} Yorgun</span>`
+    : acwrLive(s, { withMatch: false }) > 1.45 ? `<span class="chip warn" title="Bu haftaki yükün son haftaların çok üstünde: sakatlık riski arttı">${icon('bandage')} Aşırı yük</span>` : '';
 
   // Başlangıç yolu durumları: kiralık / altyapı / ilk 11 garantisi
   const startChips = [
@@ -101,6 +120,7 @@ export function hubScreen(app) {
         ${meter('Form', 'chart', (ov.form - 3) * 14.3, 100, ratingColor(ov.form), ov.form.toFixed(1).replace('.', ','))}
         ${meter('Kondisyon', 'run', ensureGym(s).cond, 100, ensureGym(s).cond < 45 ? 'var(--bad)' : ensureGym(s).cond < 60 ? 'var(--warn)' : '#4ade80', Math.round(ensureGym(s).cond))}
       </div>
+      ${brainCard(s)}
 
       ${cupTie ? `<div class="h-sec">${cupTie.kind === 'makeup' ? (cupTie.midweek ? 'Hafta içi lig maçı' : 'Hafta içi ertelenen maç') : 'Hafta içi kupa maçı'} <span>${esc(cupTie.kind === 'super' ? 'Süper Kupa' : cupTie.kind === 'makeup' ? `${cupTie.week}. hafta` : cupTie.group ? `Grup ${cupTie.group} · ${cupTie.round.slice(1)}. maç` : roundLabel(s.cup, cupTie.round))}</span></div>
       <div class="card glow cup-next">
@@ -201,6 +221,7 @@ export function hubScreen(app) {
         else if (t.dataset.act === 'locker') app.go('locker');
         else if (t.dataset.act === 'invest') app.go('invest', { from: 'hub' });
         else if (t.dataset.act === 'wealth') app.go('wealth', { from: 'hub' });
+        else if (t.dataset.act === 'body') app.go('body');
       });
     },
   };

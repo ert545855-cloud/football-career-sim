@@ -12,6 +12,7 @@ import { clubLineup, pickScorer, shortName } from './lineups.js';
 import { cardEscapeChance } from './character.js';
 import { disciplineOnMatch, ensureDisc, refDecision, sendOff } from './discipline.js';
 import { attitudeMatchFx, attitudeOf, attitudeOnMatch, planTension } from './attitude.js';
+import { brainFatigueMult, brainSelectionAdj } from './brain/index.js';
 
 /** İlk 11 kararı: OVR + hoca ilişkisi + form + moral, rakip oyuncuya karşı. */
 export function selection(state) {
@@ -23,6 +24,10 @@ export function selection(state) {
   // Hocanın sana bakışı (iyi notlar, rolüne uyum) ilk 11 kararını etkiler
   let score = o + (player.rel.manager - 50) * 0.2 + (form(player) - 6.5) * 3 + (player.morale - 50) * 0.04 + (state.coach?.clubId === career.clubId ? (state.coach.likes || 0) * 0.35 : 0);
   let reason = null;
+  // Beden & Zihin: hoca kilolu oyuncuyu ağır bulur; sözünü tutmadıysan bir süre şüpheyle bakar
+  const shape = brainSelectionAdj(state);
+  score += shape;
+  if (shape <= -3) reason = 'shape';
   if (player.energy < 30) {
     score -= 12;
     reason = 'tired';
@@ -143,7 +148,7 @@ export function planMatch(state, o = {}) {
   // Maç içi yorgunluk: ilk 11'de başlayıp kondisyonu çok düşerse hoca oyundan alır
   let subOff = null;
   if (role === 'starter') {
-    const f75 = fatigueAt({ minute: 75, energy: player.energy, stamina: player.stats.stamina, weather, cond: condOf(state), sore: soreFatigue(state) });
+    const f75 = fatigueAt({ minute: 75, energy: player.energy, stamina: player.stats.stamina, weather, cond: condOf(state), sore: soreFatigue(state), mult: brainFatigueMult(state) });
     if (f75 > 0.36 && chance(clamp((f75 - 0.36) * 2.6, 0, 0.8))) subOff = randInt(64, 80);
   }
 
@@ -309,7 +314,7 @@ export function applyAiEvent(match, ev) {
 /** Anın oynandığı dakikadaki yorgunluk (0..0.65) */
 export function momentFatigue(state, match, minute) {
   if (!match) return 0;
-  const f = fatigueAt({ minute, energy: match.energy0 ?? state.player.energy, stamina: state.player.stats.stamina, weather: match.weather, from: match.role === 'starter' ? 0 : match.subMinute || 0, cond: condOf(state), sore: match.sore0 ?? soreFatigue(state) });
+  const f = fatigueAt({ minute, energy: match.energy0 ?? state.player.energy, stamina: state.player.stats.stamina, weather: match.weather, from: match.role === 'starter' ? 0 : match.subMinute || 0, cond: condOf(state), sore: match.sore0 ?? soreFatigue(state), mult: brainFatigueMult(state) });
   return state.player.perks?.includes('engine') ? f * 0.85 : f; // Motor uzmanlığı
 }
 

@@ -65,6 +65,7 @@ import { ballonCeremony, ballonScreen } from './ballonView.js';
 import { afterCareerClick, afterCareerSection, coachScreen, punditScreen } from './screens/afterCareer.js';
 import { campMatchFlow, nationalFlow, tournamentFlow } from './nationalView.js';
 import { campScreen } from './screens/camp.js';
+import { bodyScreen } from './screens/body.js';
 import { coachChangeFlow, lockerFlow, lockerScreen, pressFlow } from './lockerView.js';
 import { cupFlow, finishCupMatch } from './cupView.js';
 import { cupTieLabel, cupTieReady } from '../core/cup.js';
@@ -120,6 +121,7 @@ export function createApp(rootEl) {
     garage: garageScreen,
     national: nationalScreen,
     camp: campScreen,
+    body: bodyScreen,
     locker: lockerScreen,
     ballon: ballonScreen,
     coach: coachScreen,
@@ -542,7 +544,7 @@ export function createApp(rootEl) {
       else if (match.role === 'starter') decision = `<span class="chip accent">${icon('check')} İlk 11'desin</span><p class="lead" style="margin-top:10px">Hoca: "Bugün sana güveniyorum. Fırsat geldiğinde değerlendir."</p>`;
       else if (match.role === 'out' && match.reason === 'suspended') decision = `<span class="chip bad">${icon('shield')} Cezalısın</span><p class="lead" style="margin-top:10px">PFDK cezası nedeniyle bu maçta forma giyemezsin.</p>`;
       else if (match.role === 'out') decision = `<span class="chip bad">${icon('bandage')} Sakatsın</span><p class="lead" style="margin-top:10px">Bu maçı tribünden izleyeceksin.</p>`;
-      else decision = `<span class="chip warn">${icon('user')} Yedek kulübesi</span><p class="lead" style="margin-top:10px">${match.reason === 'tired' ? 'Hoca: "Çok yorgunsun, bugün kenardan başla."' : 'Hoca: "Sabırlı ol, gerekirse seni oyuna alacağım."'} ${match.subMinute ? '' : ''}</p>`;
+      else decision = `<span class="chip warn">${icon('user')} Yedek kulübesi</span><p class="lead" style="margin-top:10px">${match.reason === 'tired' ? 'Hoca: "Çok yorgunsun, bugün kenardan başla."' : match.reason === 'shape' ? 'Hoca: "Sahada ağır görünüyorsun. Formuna kavuşana kadar kenardan başlıyorsun."' : 'Hoca: "Sabırlı ol, gerekirse seni oyuna alacağım."'} ${match.subMinute ? '' : ''}</p>`;
       const go = await sheet({
         html: `
           <div class="center"><span class="chip">${esc(leagueLabel(leagueOf(match.myId)))} · Hafta ${match.week}</span></div>
@@ -653,6 +655,7 @@ export function createApp(rootEl) {
             <div class="row between small" style="margin-top:6px"><span class="muted">Yaşam gideri</span><b style="color:var(--bad)">−${money(f.living)}</b></div>
             ${f.upkeep ? `<div class="row between small" style="margin-top:6px"><span class="muted">Eşya/abonelik</span><b style="color:var(--bad)">−${money(f.upkeep)}</b></div>` : ''}
             ${f.agent ? `<div class="row between small" style="margin-top:6px"><span class="muted">Menajer komisyonu</span><b style="color:var(--bad)">−${money(f.agent)}</b></div>` : ''}
+            ${f.diet ? `<div class="row between small" style="margin-top:6px"><span class="muted">Beslenme planı</span><b style="color:var(--bad)">−${money(f.diet)}</b></div>` : ''}
             ${we.sponsors?.income ? `<div class="row between small" style="margin-top:6px"><span class="muted">Sponsorluk</span><b style="color:var(--good)">+${money(we.sponsors.income)}</b></div>` : ''}
             ${we.business ? `<div class="row between small" style="margin-top:6px"><span class="muted">İşletmeler</span><b style="color:${we.business.profit >= 0 ? 'var(--good)' : 'var(--bad)'}">${we.business.profit >= 0 ? '+' : ''}${money(we.business.profit)}</b></div>` : ''}
             ${we.realty ? `<div class="row between small" style="margin-top:6px"><span class="muted">Kira (giderler düşüldü)</span><b style="color:${we.realty.net >= 0 ? 'var(--good)' : 'var(--bad)'}">${we.realty.net >= 0 ? '+' : ''}${money(we.realty.net)}</b></div>` : ''}
@@ -662,6 +665,7 @@ export function createApp(rootEl) {
             <div class="row between"><span>Kasa</span><b style="color:var(--gold)">${money(s.career.money)}</b></div>
           </div>
           <div style="margin-top:10px">${changeChips(we.changes.filter((c) => c.key !== 'money'))}</div>
+          ${brainWeekCard(we.brain)}
           ${we.discipline?.outcome === 'ban' ? `<div class="card" style="margin-top:10px;border-color:rgba(255,93,108,.45)"><b style="color:var(--bad)">PFDK kararı: 1 maç men cezası</b><div class="muted small">Hakem açıklamaların yüzünden sonraki maçta forma giyemeyeceksin.</div></div>` : ''}
           ${we.discipline?.outcome === 'fine' ? `<div class="card" style="margin-top:10px;border-color:rgba(255,93,108,.45)"><b style="color:var(--bad)">PFDK kararı: ${money(we.discipline.fine)} para cezası</b></div>` : ''}
           ${we.discipline?.outcome === 'clear' ? `<div class="card" style="margin-top:10px"><b style="color:var(--good)">PFDK dosyayı ceza vermeden kapattı.</b></div>` : ''}
@@ -670,7 +674,7 @@ export function createApp(rootEl) {
           ${we.mentor?.decay ? `<div class="chips" style="margin-top:10px"><span class="chip warn">${icon('mentor', 'ico sm')} Bu hafta mentorunla buluşmadın: İlişki ${we.mentor.decay}</span></div>` : ''}
           ${we.mentor?.legacy ? `<div class="card" style="margin-top:10px"><b class="small">${icon('sprout', 'ico sm')} Akıl hocalığı</b><div class="muted small" style="margin:4px 0 8px">${esc(we.mentor.legacy.note)}</div>${changeChips(we.mentor.legacy.changes)}</div>` : ''}
           <button class="btn primary block" style="margin-top:16px" data-close>Devam</button>`,
-      });
+      }).then((v) => { if (v === 'body') this.openBodyAfter = true; });
     },
 
     // ── Bekleyen akışlar: olay → teklifler → sezon sonu ──
@@ -712,6 +716,8 @@ export function createApp(rootEl) {
       }
       this.go('hub');
       await this.mentorFlow();
+      // hafta sonu özetinde Beden & Zihin kartına dokunulduysa oraya geç
+      if (this.openBodyAfter) { this.openBodyAfter = false; return this.go('body'); }
       this.go('hub');
     },
 
@@ -935,6 +941,23 @@ export function createApp(rootEl) {
 }
 
 /** Hafta özeti: Avrupa maçı kartı */
+/** Hafta sonu özeti: bedendeki değişim, insanların söyledikleri, iç ses */
+function brainWeekCard(r) {
+  if (!r) return '';
+  const n = (v, unit = '') => {
+    if (!v) return '±0' + unit;
+    return `${v > 0 ? '+' : '−'}${String(Math.abs(v)).replace('.', ',')}${unit}`;
+  };
+  const chip = (label, v, unit, goodUp) => `<span class="chip ${!v ? '' : (v > 0) === goodUp ? 'good' : 'bad'}">${label} ${n(v, unit)}</span>`;
+  return `<button class="card brain-week" data-close="body" style="margin-top:10px;width:100%;text-align:left;color:inherit;font:inherit;cursor:pointer">
+    <div class="row between small" style="gap:8px"><b class="row" style="gap:6px">${icon('brain', 'ico sm')} Beden & Zihin</b>${icon('chev', 'ico sm')}</div>
+    <div class="muted small" style="margin-top:2px">${String(r.weight).replace('.', ',')} kg · kas ${String(r.muscle).replace('.', ',')} kg · yağ %${String(r.fat).replace('.', ',')}</div>
+    <div class="chips" style="margin-top:6px">${chip('Kas', Math.round(r.dMuscle * 10) / 10, ' kg', true)}${chip('Yağ', r.dFat, ' puan', false)}${r.dHeight ? chip('Boy', r.dHeight, ' cm', true) : ''}</div>
+    ${r.talks?.length ? r.talks.map((t) => `<div class="small" style="margin-top:6px">${esc(t)}</div>`).join('') : ''}
+    <div class="muted small" style="margin-top:6px;font-style:italic">“${esc(r.thought || '')}”</div>
+  </button>`;
+}
+
 function europeCard(m) {
   if (!m) return '';
   const cup = CUPS[m.cup];

@@ -6,6 +6,8 @@ import { ovr, form } from './player.js';
 import { RelationshipService } from './chirp/relationships.js';
 import { onCarSold } from './garage.js';
 import { weekIndex } from './chirp/timeline.js';
+import { DIETS } from './brain/body.js';
+import { brainNote } from './brain/ledger.js';
 
 /** Haftalık maaş: kulüp gücüyle üstel artar, oyuncunun kulübe göre seviyesi çarpan olur. */
 export function wageFor(clubR, playerOvr, country = 'tr') {
@@ -42,7 +44,9 @@ export function weeklyFinance(state) {
   const upkeep = weeklyUpkeep(state);
   // Menajer komisyonu (core/agent.js): maaştan haftalık pay
   const agent = Math.round(income * (state.agent?.commission || 0));
-  return { income, living: LIVING_COST, upkeep, agent, net: income - LIVING_COST - upkeep - agent };
+  // Beslenme planı (Beden & Zihin): yüksek protein, yağ yakımı, kişisel şef
+  const diet = DIETS[state.brain?.diet]?.cost || 0;
+  return { income, living: LIVING_COST, upkeep, agent, diet, net: income - LIVING_COST - upkeep - agent - diet };
 }
 
 export function canBuy(state, item) {
@@ -61,6 +65,7 @@ export function buyItem(state, id) {
     const p = state.player;
     if (item.use.energy) p.energy = clamp(p.energy + item.use.energy, 0, 100);
     if (item.use.morale) p.morale = clamp(p.morale + item.use.morale, 0, 100);
+    brainNote(state, 'item', { id });
     return { ok: true, msg: `${item.name} keyfini çıkardın!` };
   }
   state.career.items.push(id);

@@ -10,6 +10,7 @@ import { meter, statRow } from '../components.js';
 import { currentClub } from '../../core/game.js';
 import { MENTOR_TRAITS } from '../../core/mentor/index.js';
 import { characterCard, perkSheet, playstyleSheet } from '../lifeView.js';
+import { TRAITS, brainSummary } from '../../core/brain/index.js';
 
 function radar(stats) {
   // Ölçek: en yüksek stat'a göre (erken kariyerde şekil okunur kalsın), en az 50
@@ -60,6 +61,8 @@ export function playerScreen(app) {
   const pos = POSITIONS[p.position];
   const club = currentClub(s);
   const fx = itemEffects(s);
+  const bs = brainSummary(s);
+  const f1 = (v) => String(v).replace('.', ',');
   const items = s.career.items.map((id) => ITEM_BY_ID[id]).filter(Boolean);
   const fxChips = [
     fx.morale && `<span class="chip good">Moral +${fx.morale}/hf</span>`,
@@ -100,6 +103,17 @@ export function playerScreen(app) {
         <p class="muted small" style="margin:0">Etkin yetenek; stat, enerji (yorgunluk) ve morale göre hesaplanır.</p>
       </div>
 
+      <div class="h-sec">Beden & Zihin <span>${esc(bs.type.name)} · ${bs.mood.emoji} ${esc(bs.mood.name)}</span></div>
+      <button class="card body-link" data-go-body>
+        <div class="bl-grid">
+          <div><span>Boy</span><b>${f1(bs.height)}</b><small>cm</small></div>
+          <div><span>Kilo</span><b>${f1(bs.weight)}</b><small>kg</small></div>
+          <div><span>Kas</span><b>${f1(bs.muscle)}</b><small>kg</small></div>
+          <div><span>Yağ</span><b>%${f1(bs.fat)}</b><small>oran</small></div>
+        </div>
+        <div class="row between small" style="margin-top:8px"><span class="muted">Özgüven ${bs.mind.conf} · Odak ${bs.mind.focus} · Stres ${bs.mind.stress} · Uyku ${f1(bs.mind.sleep)} sa${Object.keys(bs.traits).length ? ` · ${Object.keys(bs.traits).map((id) => TRAITS[id]?.icon || '').join('')}` : ''}</span><span>${icon('chev', 'ico sm')}</span></div>
+      </button>
+
       ${characterCard(s)}
 
       ${medicalCard(s)}
@@ -133,6 +147,10 @@ export function playerScreen(app) {
       el.querySelector('[data-perks]')?.addEventListener('click', async () => {
         app.click();
         if (await perkSheet(app)) app.go('player');
+      });
+      el.querySelector('[data-go-body]')?.addEventListener('click', () => {
+        app.click();
+        app.go('body');
       });
       el.querySelector('[data-go-mentor]')?.addEventListener('click', () => {
         app.click();

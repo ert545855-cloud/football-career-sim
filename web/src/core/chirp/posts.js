@@ -11,6 +11,7 @@ import { CommentGenerator } from './comments.js';
 import { RelationshipService } from './relationships.js';
 import { Timeline, weekIndex } from './timeline.js';
 import { frameById, framesOfMatch, picLikeMult } from './photos.js';
+import { brainNote } from '../brain/ledger.js';
 
 /** Gönderiye eklenecek fotoğrafın künyesi (kayıtta saklanan küçük nesne) */
 function picMeta(state, pic) {
@@ -177,6 +178,7 @@ export class PlayerPostService {
     }
     this.timeline.data.pendingPost = null;
     questsOn(this.state, 'chirp', {});
+    brainNote(this.state, 'post');
     return { tweet, changes, discipline, mood, attShift, gain };
   }
 
@@ -289,6 +291,7 @@ export class PlayerPostService {
         tr.sort((x, y) => y.count - x.count);
       }
     }
+    brainNote(this.state, 'post');
     return { tweet, changes, discipline, trending, spam, gain };
   }
 

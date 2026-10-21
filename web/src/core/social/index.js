@@ -18,6 +18,7 @@ import { isWinterWeek, monthName, weekWeather } from '../weather.js';
 import { ensureHome, homeOf, homeScore } from './home.js';
 import { rollSocialEvents } from './events.js';
 import { changePersona } from '../character.js';
+import { brainNote } from '../brain/ledger.js';
 
 export * from './data.js';
 export * from './home.js';
@@ -303,6 +304,8 @@ export function finishOuting(state, outing) {
   s.outings += 1;
   state.calendar.slots -= 1;
   questsOn(state, 'social', { kind: outing?.kind });
+  brainNote(state, 'outing', { venueId: outing.venueId, kind: outing.kind }); // beyin: uyku, kalori, sosyallik
+  if (stage?.partner) brainNote(state, 'partner', { name: outing.person?.name });
 
   const events = rollSocialEvents(state, outing, t);
   const met = events.find((e) => e.met)?.met || null;

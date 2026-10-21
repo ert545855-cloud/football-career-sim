@@ -14,6 +14,9 @@ import {
 } from '../../games/pixel/gymArt.js';
 import { drawPixelText } from '../../games/pixel/font.js';
 import { questsOn } from '../../core/quests.js';
+import { ledgerOf } from '../../core/brain/ledger.js';
+
+const brainGymCount = (state) => (ledgerOf(state).gym || []).filter((g) => g.station !== 'stretch').length;
 
 const LW = 200;
 const LH = 124;
@@ -176,6 +179,7 @@ export function gymScreen(app) {
             ${res.label ? `<p class="lead center">${esc(res.label)}</p>` : `<p class="lead center">Köpük rulo ve esneme: kasların gevşedi.</p>`}
             ${r.record ? `<div class="center" style="margin-bottom:8px"><span class="chip gold">${icon('star', 'ico sm')} Yeni rekor!</span></div>` : ''}
             <div class="chips" style="justify-content:center">${chip('Kondisyon', r.dCond)}${chip('Güç', r.dPower)}${r.stat && !st.noGame ? `<span class="chip accent">${esc(STATS[r.stat].name)} gelişimi</span>` : ''}<span class="chip ${r.sore > 45 ? 'warn' : ''}">Kas ağrısı %${Math.round(r.sore)}</span></div>
+            ${st.noGame ? '' : `<p class="muted small center" style="margin:10px 0 0">${icon('brain', 'ico xs')} ${id === 'treadmill' ? 'Koşu bandı kalori yaktı: yağ oranına hafta sonunda yansır.' : `Kaslarına uyarı verdin (bu hafta ${brainGymCount(app.state)} seans). Kas kütlen hafta sonunda protein, uyku ve dinlenmeye göre büyür.`}</p>`}
             <button class="btn primary block" style="margin-top:14px" data-close>Tamam</button>`,
         });
         cancelAnimationFrame(raf);

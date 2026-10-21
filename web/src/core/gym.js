@@ -7,6 +7,7 @@ import { clamp } from './rng.js';
 import { addProgress, changeEnergy } from './player.js';
 import { CLUB_BY_ID } from './data.js';
 import { clubRating } from './league.js';
+import { brainNote } from './brain/ledger.js';
 
 export const GYM_RULES = { maxPerWeek: 2, condStart: 58, powerStart: 42, floorCond: 25, floorPower: 15 };
 
@@ -184,6 +185,7 @@ export function finishGym(state, station, q = 0, detail = {}) {
     g.best[station] = { score, label: detail.label || `%${Math.round(q * 100)}`, s: state.calendar.season, w: state.calendar.week };
   }
   g.log.unshift({ s: state.calendar.season, w: state.calendar.week, station, q: Math.round(q * 100) });
+  brainNote(state, 'gym', { station, q }); // beyin: kas uyarısı ve kalori
   if (g.log.length > 10) g.log.length = 10;
   return { ok: true, cond: g.cond, power: g.power, dCond: g.cond - c0, dPower: g.power - p0, sore: g.sore, record, stat, quality: Q };
 }

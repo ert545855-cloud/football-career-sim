@@ -1,6 +1,7 @@
 // KOZMETİK — krampon, antrenman forması, saç bandı, eldiven, kol boyu, berber (saç modeli/rengi).
 // Satın alınır, giyilir; mini oyunlardaki piksel oyuncuna yansır. Statlara etkisi yok (Altın Krampon küçük ün verir).
 import { AVATAR, CLUB_BY_ID } from './data.js';
+import { spriteBuild } from './brain/body.js';
 import { lookFromAvatar, kitFrom } from '../games/pixel/looks.js';
 
 export const COSMETIC_SLOTS = [
@@ -130,6 +131,7 @@ export function playerLook(state, { training = false, club = null } = {}) {
     gloves: get('gloves').gloves || null,
     longSleeve: !!get('sleeve').longSleeve,
     number: String(state.player?.number ?? ''),
+    build: spriteBuild(state.brain?.body), // Beden & Zihin: kaslı / kilolu gövde
   });
 }
 

@@ -86,6 +86,7 @@ function head(g, L, dir, oy) {
   const style = HAIR_STYLES.includes(L.hair) ? L.hair : 'short';
   const rows = dir === 'side' ? HEAD_S : HEAD_F;
   rows.forEach(([a, b], r) => { for (let x = a; x <= b; x++) g.set(x, oy + r, x === b && dir !== 'side' ? sk2 : skin); });
+  if (L.build === 'heavy') { g.set(6, oy + 5, skin); g.set(11, oy + 5, sk2); } // dolgun yanaklar / çene
   const H = (x, r, c = hc) => g.set(x, oy + r, c);
   const row = (r, a, b, c = hc) => { for (let x = a; x <= b; x++) H(x, r, c); };
 
@@ -148,14 +149,20 @@ function head(g, L, dir, oy) {
 // ───────────────────────────── GÖVDE ─────────────────────────────
 function torsoFront(g, L, oy, dir) {
   // omuz 5–12, bel 6–11 (satır oy..oy+7)
+  // gövde tipi (Beden & Zihin): kaslı → geniş omuz (V), kilolu → göbek ve geniş bel
+  const build = L.build;
   for (let r = 0; r < 8; r++) {
-    const a = r < 6 ? 5 : 6;
-    const b = r < 6 ? 12 : 11;
+    let a = r < 6 ? 5 : 6;
+    let b = r < 6 ? 12 : 11;
+    if (build === 'muscular' && r <= 2) { a = 4; b = 13; }
+    if (build === 'heavy' && r >= 3) { a = r >= 6 ? 5 : 4; b = r >= 6 ? 12 : 13; }
     for (let x = a; x <= b; x++) {
       let c = shirtAt(L, x, oy + r, 5, 12, oy);
       if (x >= b - 1) c = shade(c, -0.2);
       else if (x === a) c = shade(c, 0.08);
       if (r === 7) c = shade(c, -0.12);
+      if (build === 'heavy' && r === 5 && x >= 7 && x <= 10) c = shade(c, 0.1);
+      if (build === 'muscular' && r === 3 && (x === 7 || x === 10)) c = shade(c, -0.12);
       g.set(x, oy + r, c);
     }
   }
@@ -260,11 +267,17 @@ function armFront(g, L, side, pose, oy) {
     return;
   }
   const dy = pose === 'fwd' ? -1 : pose === 'back' ? 1 : 0;
-  g.rect(sl, oy, 2, 3, sleeve);
-  g.clear(side === 'L' ? 3 : 14, oy);
-  g.rect(ax, oy + 3, 2, 3 + dy, fore);
-  g.rect(ax, oy + 6 + dy, 2, L.gloves ? 2 : 1, hand);
-  if (stripe) g.rect(side === 'L' ? ax : ax + 1, oy, 1, 6 + dy, stripe);
+  // gövde tipi: kaslıda kollar kalın (3 piksel kolluk), kilolu ve kaslıda kollar gövdeden bir piksel dışarıda
+  const o = L.build === 'muscular' || L.build === 'heavy' ? 1 : 0;
+  const thick = L.build === 'muscular' ? 1 : 0;
+  const sx = side === 'L' ? sl - o : sl + o - thick;
+  const fx = side === 'L' ? ax - o : ax + o;
+  g.rect(sx, oy, 2 + thick, 3, sleeve);
+  if (thick) g.set(side === 'L' ? sx : sx + 2, oy + 2, shade(sleeve, -0.12)); // pazı gölgesi
+  g.clear(side === 'L' ? 3 - o : 14 + o, oy);
+  g.rect(fx, oy + 3, 2, 3 + dy, fore);
+  g.rect(fx, oy + 6 + dy, 2, L.gloves ? 2 : 1, hand);
+  if (stripe) g.rect(side === 'L' ? fx : fx + 1, oy, 1, 6 + dy, stripe);
 }
 
 /** Gövdenin önünde kollar: kollar bağlı / alkış */
@@ -366,7 +379,8 @@ function frontBody(g, L, frame, dir) {
   if (frame === 'cross' || frame === 'clap' || frame.startsWith('clip')) armsOverTorso(g, L, frame, oy);
   // şort (oy+8..oy+11)
   const sh = L.kit.shorts;
-  for (let r = 0; r < 4; r++) for (let x = 5; x <= 12; x++) {
+  const hw = L.build === 'heavy' ? 1 : 0; // kilolu: kalça geniş
+  for (let r = 0; r < 4; r++) for (let x = 5 - (r < 2 ? hw : 0); x <= 12 + (r < 2 ? hw : 0); x++) {
     if (r === 3 && (x === 8 || x === 9)) continue;
     g.set(x, oy + 8 + r, x >= 10 ? shade(sh, -0.16) : r === 0 ? shade(sh, -0.08) : sh);
   }

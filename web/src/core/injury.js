@@ -5,6 +5,8 @@ import { clamp, chance, randInt, weightedPick } from './rng.js';
 import { changeEnergy, changeMorale, changeRel } from './player.js';
 import { injuryPersonaMult } from './character.js';
 import { gymInjuryMult } from './gym.js';
+import { brainInjuryMult } from './brain/index.js';
+import { brainNote } from './brain/ledger.js';
 
 export const INJURIES = {
   knock: { name: 'Darbe', part: 'Kaval kemiği', weeks: [0, 1], w: 0.26, minor: true },
@@ -38,6 +40,7 @@ export function injuryRisk(state, match) {
   p *= injuryPersonaMult(state);
   if (state.flags?.campFitWeeks > 0) p *= 0.75; // yaz kampında kondisyon çalıştın
   p *= gymInjuryMult(state); // kondisyon, kas ağrısı, esneme
+  p *= brainInjuryMult(state); // beden (yağ/kas), uyku/stres, akut:kronik yük oranı
   return clamp(p, 0, 0.3);
 }
 
@@ -70,6 +73,7 @@ export function startInjury(state, id, weeks, { painkiller = false, source = 'ma
   }
   state.flags.injuredWeeks = Math.max(state.flags.injuredWeeks || 0, weeks);
   m.current = inj;
+  brainNote(state, 'injury', { weeks, name: def.name });
   state.pending.injury = inj;
   return inj;
 }
