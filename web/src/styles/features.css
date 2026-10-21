@@ -1143,3 +1143,36 @@ html[data-lang="ur"] body { line-height: 1.7; }
 /* Bay haftası (tek sayıda takımlı lig / boş fikstür) */
 .bye-week { border-left: 3px solid var(--accent); }
 .bye-week b { display: flex; align-items: center; gap: 6px; }
+.restructured { margin-top: 12px; border-left: 3px solid var(--gold); }
+.restructured b { display: inline-flex; align-items: center; gap: 6px; }
+
+/* ─────────── Chirp: maç kareleri ve fotoğraflar ─────────── */
+.bc-snap { left: 7px; bottom: 7px; font-size: 15px; }
+.bc.bc-full .bc-snap { width: 40px; height: 40px; left: calc(env(safe-area-inset-top, 0px) + 12px); bottom: 12px; }
+.bc-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; border-radius: inherit; }
+.bc-flash.go { animation: bcFlash 0.45s ease-out; }
+@keyframes bcFlash { 0% { opacity: 0.85; } 100% { opacity: 0; } }
+.tw-pic { position: relative; margin-top: 8px; border-radius: 12px; overflow: hidden; border: 1px solid var(--line, rgba(255, 255, 255, 0.12)); background: #0b1220; }
+.tw-pic canvas { display: block; width: 100%; aspect-ratio: 16 / 9; height: auto; image-rendering: pixelated; }
+.tw-pic .pic-badge { position: absolute; left: 8px; bottom: 8px; padding: 3px 8px; border-radius: 999px; background: rgba(7, 12, 26, 0.78); color: #fff; font-size: 11px; font-weight: 800; }
+.tw-pic.sm { margin-top: 0; border-radius: 8px; }
+.tw-pic.sm .pic-badge { font-size: 9.5px; padding: 2px 6px; left: 5px; bottom: 5px; }
+.pic-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.pic-grid .pic-cell { position: relative; padding: 0; border: 0; background: none; cursor: pointer; border-radius: 8px; outline: 2px solid transparent; outline-offset: 1px; }
+.pic-grid .pic-cell.on { outline-color: var(--accent); }
+.pic-grid .pic-cell .pic-label { position: absolute; right: 4px; top: 4px; padding: 1px 5px; border-radius: 6px; background: rgba(7, 12, 26, 0.72); color: #fff; font-size: 9.5px; font-weight: 800; }
+.pic-attach { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.pic-attach .tw-pic { width: 128px; flex: none; margin-top: 0; }
+.chirp-profile .cp-head { display: flex; gap: 12px; align-items: center; }
+.chirp-profile .cp-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; text-align: center; }
+.chirp-profile .cp-stats b { display: block; font-size: 18px; }
+.chirp-profile .cp-stats span { font-size: 11px; color: var(--muted); }
+.pop-meter { display: grid; gap: 8px; }
+.pop-factors { display: grid; gap: 6px; margin-top: 10px; }
+.pop-factor { display: grid; grid-template-columns: 112px 1fr 34px; gap: 8px; align-items: center; font-size: 12px; }
+.pop-factor .bar { height: 7px; border-radius: 99px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.pop-factor .bar i { display: block; height: 100%; background: var(--c, var(--accent)); border-radius: inherit; }
+.pop-factor b { text-align: right; font-variant-numeric: tabular-nums; }
+.fol-spark { width: 100%; height: 64px; display: block; margin-top: 8px; }
+.verified.me { color: #38bdf8; }
+.chirp-me-btn { background: none; border: 0; padding: 0; color: inherit; cursor: pointer; }

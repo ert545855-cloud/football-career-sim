@@ -10,6 +10,26 @@ import { MentorManager } from '../mentor/index.js';
 import { CommentGenerator } from './comments.js';
 import { RelationshipService } from './relationships.js';
 import { Timeline, weekIndex } from './timeline.js';
+import { frameById, framesOfMatch, picLikeMult } from './photos.js';
+
+/** Gönderiye eklenecek fotoğrafın künyesi (kayıtta saklanan küçük nesne) */
+function picMeta(state, pic) {
+  if (!pic) return null;
+  if (pic.t === 'frame') {
+    const f = frameById(state, pic.id);
+    if (!f) return null;
+    f.used = true;
+    return { t: 'frame', id: f.id, kind: f.kind, min: f.min, score: f.score, opp: f.opp, s: f.s, w: f.w };
+  }
+  if (pic.t === 'scene' && pic.scene) return { t: 'scene', scene: pic.scene, seed: pic.seed ?? Math.floor(Math.random() * 1e6) };
+  return null;
+}
+/** Aynı fotoğrafı tekrar paylaşmak etkileşimi düşürür */
+function repeatPenalty(data, pic) {
+  if (!pic) return 1;
+  const same = (data.timeline || []).slice(0, 30).filter((t) => t.authorId === 'me' && t.meta?.pic && (pic.t === 'frame' ? t.meta.pic.id === pic.id : t.meta.pic.scene === pic.scene)).length;
+  return same ? 0.55 ** same : 1;
+}
 
 /** @typedef {'modest'|'ego'|'aggressive'} PostStyleId */
 
@@ -72,6 +92,7 @@ export class PlayerPostService {
       played: summary.played,
       rating: summary.rating,
       opp: CLUB_BY_ID[match.oppId]?.name || '',
+      frames: framesOfMatch(this.state, match.id).map((f) => f.id),
     };
     return this.timeline.data.pendingPost;
   }
@@ -103,8 +124,9 @@ export class PlayerPostService {
   /**
    * Paylaşımı yapar: ilişkileri değiştirir, tweeti ve taraftar yorumlarını zaman tüneline ekler.
    * @param {PostStyleId} styleId
+   * @param {{pic?:{t:'frame', id:string}|{t:'scene', scene:string, seed?:number}|null}} [opts] eklenen fotoğraf
    */
-  publish(styleId) {
+  publish(styleId, opts = {}) {
     const st = POST_STYLES[styleId];
     if (!st || !this.pending) return null;
     const { player, calendar, career } = this.state;
@@ -113,7 +135,9 @@ export class PlayerPostService {
 
     const id = this.timeline.nextId();
     const followers = this.timeline.data.followers;
-    const likes = Math.round((20 + followers * (0.02 + this.rnd() * 0.04)) * (styleId === 'aggressive' ? 1.8 : styleId === 'ego' ? 1.4 : 1));
+    const pic = picMeta(this.state, opts.pic);
+    const picMult = pic ? picLikeMult(pic) * repeatPenalty(this.timeline.data, pic) : 1;
+    const likes = Math.round((20 + followers * (0.02 + this.rnd() * 0.04)) * (styleId === 'aggressive' ? 1.8 : styleId === 'ego' ? 1.4 : 1) * picMult);
     const tweet = new TweetModel({
       id,
       authorId: 'me',
@@ -123,7 +147,7 @@ export class PlayerPostService {
       week: calendar.week,
       likes,
       retweets: Math.round(likes * (0.1 + this.rnd() * 0.15)),
-      meta: { style: styleId, matchId: this.pending.matchId, scoreLine: this.pending.scoreLine },
+      meta: { style: styleId, matchId: this.pending.matchId, scoreLine: this.pending.scoreLine, ...(pic ? { pic } : {}) },
       comments: this.comments.generate(st.context, {
         player: player.name.split(' ')[0],
         club: club.name,
@@ -141,7 +165,8 @@ export class PlayerPostService {
     player.morale = Math.max(0, Math.min(100, player.morale + moraleDelta));
     changes.push({ key: /** @type any */ ('morale'), label: 'Moral', delta: moraleDelta });
 
-    this.timeline.data.followers += Math.round((10 + player.fame * 3 + likes / 15) * sponsorFollowerMult(this.state) * attitudeFollowerMult(this.state));
+    const gain = Math.round((10 + player.fame * 3 + likes / 15) * sponsorFollowerMult(this.state) * attitudeFollowerMult(this.state));
+    this.timeline.data.followers += gain;
     // Karakter barı: paylaşım üslubu
     const attShift = shiftAttitude(this.state, `post_${styleId}`);
 
@@ -152,7 +177,7 @@ export class PlayerPostService {
     }
     this.timeline.data.pendingPost = null;
     questsOn(this.state, 'chirp', {});
-    return { tweet, changes, discipline, mood, attShift };
+    return { tweet, changes, discipline, mood, attShift, gain };
   }
 
   dismiss() {
@@ -187,11 +212,14 @@ export class PlayerPostService {
   }
 
   /**
-   * Oyuncunun kendi yazdığı gönderi (#etiket, @bahsetme, serbest metin).
-   * @returns {{tweet:TweetModel, changes:Array, discipline:any, trending:string|null, spam:boolean}|null}
+   * Oyuncunun kendi yazdığı gönderi (#etiket, @bahsetme, serbest metin; isteğe bağlı fotoğraf).
+   * @param {string} raw
+   * @param {{pic?:object|null}} [opts]
+   * @returns {{tweet:TweetModel, changes:Array, discipline:any, trending:string|null, spam:boolean, gain:number}|null}
    */
-  publishText(raw) {
-    const text = String(raw || '').replace(/\s+\n/g, '\n').trim().slice(0, 280);
+  publishText(raw, opts = {}) {
+    const pic0 = opts.pic || null;
+    const text = String(raw || '').replace(/\s+\n/g, '\n').trim().slice(0, 280) || (pic0 ? '📸' : '');
     if (!text) return null;
     const { player, calendar, career } = this.state;
     const data = this.timeline.data;
@@ -214,7 +242,9 @@ export class PlayerPostService {
 
     const id = this.timeline.nextId();
     const followers = data.followers;
-    const likes = Math.round((15 + followers * (0.015 + this.rnd() * 0.05)) * (a.aggr ? 1.8 : a.ego ? 1.3 : a.funny ? 1.5 : 1) * (spam ? 0.4 : 1));
+    const pic = picMeta(this.state, pic0);
+    const picMult = pic ? picLikeMult(pic) * repeatPenalty(data, pic) : 1;
+    const likes = Math.round((15 + followers * (0.015 + this.rnd() * 0.05)) * (a.aggr ? 1.8 : a.ego ? 1.3 : a.funny ? 1.5 : 1) * (spam ? 0.4 : 1) * picMult);
     const ctx = { aggr: 'my_aggr', lineup: 'my_lineup', ego: 'my_ego', funny: 'my_funny', neg: 'my_neg', pos: 'my_pos' }[a.style];
     const tweet = new TweetModel({
       id,
@@ -225,7 +255,7 @@ export class PlayerPostService {
       week: calendar.week,
       likes,
       retweets: Math.round(likes * (0.08 + this.rnd() * 0.15)),
-      meta: { free: true, style: a.style },
+      meta: { free: true, style: a.style, ...(pic ? { pic } : {}) },
       comments: this.comments.generateRich(ctx, {
         vars: { first: player.name.split(' ')[0], player: player.name, clubShort: club.short },
         fansRel: player.rel.fans, mates: a.mate ? [a.mate] : a.mates.slice(0, 2), foreign: Math.min(0.3, (player.fame || 0) / 220),
@@ -234,7 +264,8 @@ export class PlayerPostService {
     });
     this.timeline.publish(tweet);
     data.unread = Math.max(0, data.unread - 1);
-    data.followers = Math.max(0, data.followers + (spam ? -40 : Math.round(5 + (player.fame || 0) * 2 + likes / 20)));
+    const gain = spam ? -40 : Math.round((5 + (player.fame || 0) * 2 + likes / 20) * (pic ? 1.4 : 1));
+    data.followers = Math.max(0, data.followers + gain);
 
     let discipline = null;
     if (a.aggr) {
@@ -258,7 +289,7 @@ export class PlayerPostService {
         tr.sort((x, y) => y.count - x.count);
       }
     }
-    return { tweet, changes, discipline, trending, spam };
+    return { tweet, changes, discipline, trending, spam, gain };
   }
 
   /**

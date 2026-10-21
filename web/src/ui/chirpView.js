@@ -14,6 +14,8 @@ import { avatarSVG, chirpAvatar, crestSVG, icon } from './art.js';
 import { confetti, esc, sheet, toast } from './dom.js';
 import { chirpCardHTML } from './chirpCards.js';
 import { paintPhotos } from './tabloidView.js';
+import { paintPics, picHTML } from './photoArt.js';
+import { frameById, frameLabel, galleryOf, isVerified, lifestyleOptions } from '../core/chirp/index.js';
 import { buzz, sfx } from '../audio.js';
 
 /** 1234 → "1,2B", 2_400_000 → "2,4 Mn" (Türkçe sosyal medya biçimi) */
@@ -72,14 +74,15 @@ export function tweetCard(state, tw, { compactReplies = true, eph = false } = {}
     <div class="tw-body">
       <div class="tw-head">
         <b class="ellipsis">${esc(author.displayName)}</b>
-        ${author.verified ? `<span class="verified" title="Resmi hesap">${icon('check', 'ico xs')}</span>` : ''}
+        ${author.verified || (tw.authorId === 'me' && isVerified(state)) ? `<span class="verified ${tw.authorId === 'me' ? 'me' : ''}" title="${tw.authorId === 'me' ? 'Onaylı hesap' : 'Resmi hesap'}">${icon('check', 'ico xs')}</span>` : ''}
         ${author.parody ? '<span class="parody">PARODİ</span>' : ''}
         <span class="muted ellipsis">${esc(author.handle || '')} · ${when}</span>
       </div>
       <div class="tw-text">${formatText(localizeText(tw.text), author)}</div>
       ${tw.card ? `<div class="tw-card">${chirpCardHTML(tw.card, state)}</div>` : ''}
       ${photo}
-      ${tw.meta?.scoreLine ? `<div class="chips" style="margin-top:8px"><span class="chip">${esc(tw.meta.scoreLine)}</span></div>` : ''}
+      ${tw.meta?.pic ? picHTML(tw.meta.pic) : ''}
+      ${tw.meta?.scoreLine && !tw.meta?.pic ? `<div class="chips" style="margin-top:8px"><span class="chip">${esc(tw.meta.scoreLine)}</span></div>` : ''}
       <div class="tw-actions">
         <button data-reply>${icon('comment', 'ico sm')} ${compact(comments.length)}</button>
         <button data-repost class="${tw.reposted ? 'reposted' : ''}">${icon('repost', 'ico sm')} <span>${compact(tw.retweets || 0)}</span></button>
@@ -102,10 +105,108 @@ export function shareCard(state) {
       <div class="grow"><b>Chirp'te Paylaş</b><div class="muted small">${res} · ${esc(p.scoreLine)}${p.played && p.rating ? ` · Not ${String(p.rating.toFixed(1)).replace('.', ',')}` : ''}</div></div>
       <button class="icon-btn" style="width:34px;height:34px" data-chirp-dismiss aria-label="Paylaşma">${icon('x')}</button>
     </div>
+    ${p.frames?.length ? `<div class="muted small" style="margin-top:8px">${icon('camera', 'ico xs')} Bu maçtan ${p.frames.length} kare var; paylaşıma en iyisi eklenir.</div>` : ''}
     <div class="share-opts">
       ${svc.options().map((o) => `<button class="share-opt ${o.tone}" data-chirp-style="${o.id}">${icon(o.icon)}<b>${o.label}</b><span>${effectSummary(o.effects)}</span></button>`).join('')}
     </div>
   </div>`;
+}
+
+// ─────────────────────────── Fotoğraf seçimi ───────────────────────────
+
+const lifePic = (o, seed) => ({ t: 'scene', scene: o.scene, seed });
+
+/**
+ * Fotoğraf seçici: maç kareleri (galeri) + yaşam fotoğrafları.
+ * @returns {Promise<object|null|undefined>} seçilen fotoğraf, null = fotoğrafsız, undefined = vazgeçti
+ */
+export async function pickPhoto(app, current = null) {
+  const s = app.state;
+  const frames = galleryOf(s);
+  const life = lifestyleOptions(s);
+  const seed = (s.calendar.season * 100 + s.calendar.week) * 7;
+  let tab = frames.length ? 'frames' : 'life';
+  let sel = current;
+  const same = (a, b) => !!a && !!b && a.t === b.t && (a.t === 'frame' ? a.id === b.id : a.scene === b.scene);
+  const gridHTML = () => {
+    if (tab === 'frames') {
+      if (!frames.length) return `<p class="muted small center" style="margin:16px 0">Henüz maç karen yok. Maçta golünde ve asistinde kare otomatik alınır; maç sırasında 📸 düğmesiyle sen de alabilirsin.</p>`;
+      return `<div class="pic-grid">${frames.map((f) => {
+        const pic = { t: 'frame', id: f.id, kind: f.kind, min: f.min, score: f.score, opp: f.opp };
+        return `<button class="pic-cell ${same(sel, pic) ? 'on' : ''}" data-sel="${esc(JSON.stringify(pic))}">${picHTML(pic, { cls: 'sm' })}<span class="pic-label">${esc(frameLabel(f.kind))}</span></button>`;
+      }).join('')}</div>`;
+    }
+    return `<div class="pic-grid">${life.map((o) => {
+      const pic = lifePic(o, seed);
+      return `<button class="pic-cell ${same(sel, pic) ? 'on' : ''}" data-sel="${esc(JSON.stringify(pic))}">${picHTML(pic, { cls: 'sm' })}<span class="pic-label">${esc(o.label)}</span></button>`;
+    }).join('')}</div>`;
+  };
+  return sheet({
+    html: `
+      <h3>${icon('camera', 'ico sm')} Fotoğraf ekle</h3>
+      <div class="seg" style="margin:10px 0" data-tabs>
+        <button class="${tab === 'frames' ? 'on' : ''}" data-tab="frames">Maç kareleri (${frames.length})</button>
+        <button class="${tab === 'life' ? 'on' : ''}" data-tab="life">Fotoğraflar</button>
+      </div>
+      <div data-grid></div>
+      <p class="muted small" style="margin:10px 0 0">Fotoğraflı gönderiler daha çok beğeni ve takipçi getirir; en çok etkileşimi gol anı alır. Aynı fotoğrafı tekrar paylaşmak ilgiyi düşürür.</p>
+      <div class="stack"><button class="btn primary block" data-ok>${icon('check')} Ekle</button><button class="btn ghost block" data-none>Fotoğrafsız paylaş</button></div>`,
+    onMount: (node, close) => {
+      const grid = node.querySelector('[data-grid]');
+      const draw = () => { grid.innerHTML = gridHTML(); paintPics(grid, s); };
+      draw();
+      node.addEventListener('click', (e) => {
+        const t = e.target.closest('[data-tab]');
+        if (t) {
+          tab = t.dataset.tab;
+          node.querySelectorAll('[data-tab]').forEach((b) => b.classList.toggle('on', b === t));
+          draw();
+          return;
+        }
+        const c = e.target.closest('[data-sel]');
+        if (c) {
+          sel = JSON.parse(c.dataset.sel);
+          grid.querySelectorAll('.pic-cell').forEach((b) => b.classList.toggle('on', b === c));
+          return;
+        }
+        if (e.target.closest('[data-none]')) close('none');
+        if (e.target.closest('[data-ok]')) {
+          if (!sel) return toast('Bir fotoğraf seç.', 'bad');
+          close(sel);
+        }
+      });
+    },
+  }).then((v) => (v === 'none' ? null : v && typeof v === 'object' ? v : undefined));
+}
+
+function attachHTML(pic) {
+  return pic
+    ? `<div class="pic-attach">${picHTML(pic, { cls: 'sm' })}<div class="col" style="gap:6px"><button class="btn sm ghost" data-pick>${icon('camera', 'ico sm')} Değiştir</button><button class="btn sm ghost" data-unpick>${icon('x', 'ico sm')} Kaldır</button></div></div>`
+    : `<button class="btn sm ghost" style="margin-top:10px" data-pick>${icon('camera', 'ico sm')} Fotoğraf ekle</button>`;
+}
+
+/** Gönderi taslağındaki fotoğraf kutusu (ekle / değiştir / kaldır) */
+function bindAttach(app, node, get, set) {
+  const box = node.querySelector('[data-attach]');
+  if (!box) return;
+  const draw = () => { box.innerHTML = attachHTML(get()); paintPics(box, app.state); };
+  draw();
+  box.addEventListener('click', async (e) => {
+    if (e.target.closest('[data-unpick]')) { set(null); draw(); return; }
+    if (e.target.closest('[data-pick]')) {
+      const p = await pickPhoto(app, get());
+      if (p !== undefined) { set(p); draw(); }
+    }
+  });
+}
+
+/** Maçın en iyi karesi (gol > asist > sevinç…) */
+function bestFrame(state, ids = []) {
+  for (const id of ids) {
+    const f = frameById(state, id);
+    if (f) return { t: 'frame', id: f.id, kind: f.kind, min: f.min, score: f.score, opp: f.opp };
+  }
+  return null;
 }
 
 export function effectChips(effects) {
@@ -130,18 +231,20 @@ export async function shareFlow(app, styleId) {
   const opt = svc.options().find((o) => o.id === styleId);
   if (!opt) return false;
   const me = playerAuthor(s);
+  let pic = bestFrame(s, s.chirp.pendingPost?.frames || []);
   const risk = opt.risk ? Math.round(Math.max(0.1, Math.min(0.85, 0.25 + (50 - Math.max(0, s.player.rel.federation - 15)) / 100)) * 100) : 0;
   const ok = await sheet({
     html: `
       <h3>${esc(opt.label)} paylaşım</h3>
       <p class="lead">Bu paylaşım ilişkilerini hemen etkiler.</p>
-      <article class="tweet preview">${chirpAvatar(me)}<div class="tw-body"><div class="tw-head"><b>${esc(me.displayName)}</b><span class="muted">${esc(me.handle)}</span></div><div class="tw-text">${esc(opt.text)}</div></div></article>
+      <article class="tweet preview">${chirpAvatar(me)}<div class="tw-body"><div class="tw-head"><b>${esc(me.displayName)}</b><span class="muted">${esc(me.handle)}</span></div><div class="tw-text">${esc(opt.text)}</div><div data-attach></div></div></article>
       <div class="chips" style="margin-top:12px">${effectChips(opt.effects)}</div>
       ${opt.risk ? `<div class="card" style="margin-top:12px;border-color:rgba(255,93,108,.4)"><b style="color:var(--bad)">${icon('shield', 'ico sm')} Ceza riski: %${risk}</b><div class="muted small" style="margin-top:4px">Federasyon açıklamayı inceleyebilir. Karar bir sonraki hafta sonunda: para cezası veya 1 maç men.</div></div>` : ''}
       <div class="stack"><button class="btn primary block" data-close="post">${icon('chirp')} Paylaş</button><button class="btn ghost block" data-close="no">Vazgeç</button></div>`,
+    onMount: (node) => bindAttach(app, node, () => pic, (p) => { pic = p; }),
   });
   if (ok !== 'post') return false;
-  const out = svc.publish(styleId);
+  const out = svc.publish(styleId, { pic });
   app.save();
   sfx(styleId === 'aggressive' ? 'whistle' : 'swish');
   buzz(20);
@@ -151,9 +254,10 @@ export async function shareFlow(app, styleId) {
       <h3>Paylaşıldı!</h3>
       <p class="lead">Taraftarlar yorumlara akın etti 👇</p>
       ${tweetCard(s, out.tweet, { compactReplies: false })}
-      <div class="chips" style="margin-top:12px">${changeChipsHTML(out.changes)}</div>
+      <div class="chips" style="margin-top:12px">${changeChipsHTML(out.changes)}${out.gain > 0 ? `<span class="chip good">+${compact(out.gain)} takipçi</span>` : ''}</div>
       ${out.attShift ? `<div style="margin-top:12px">${attitudeBar(attitudeOf(s), { delta: out.attShift })}</div>` : ''}
       <div class="stack"><button class="btn primary block" data-close="chirp">${icon('chirp')} Chirp'e git</button><button class="btn ghost block" data-close="ok">Tamam</button></div>`,
+    onMount: (node) => paintPics(node, s),
   });
   return go === 'chirp' ? 'chirp' : true;
 }
@@ -179,6 +283,7 @@ const EMOJIS = ['🔥', '💪', '😂', '👑', '⚽', '🙏', '❤️', '😤',
 export async function composeFlow(app, opts = {}) {
   const s = app.state;
   const me = playerAuthor(s);
+  let pic = opts.pic || null;
   const trends = (s.chirp.trends || []).slice(0, 6).map((t) => t.tag);
   const mates = squadNames(s).slice(0, 4);
   const club = CLUB_BY_ID[s.career.clubId];
@@ -193,7 +298,8 @@ export async function composeFlow(app, opts = {}) {
     html: `
       <div class="row" style="gap:10px">${chirpAvatar(me, 40)}<div class="grow"><b>${esc(me.displayName)}</b><div class="muted small">${esc(me.handle)} · ${compact(s.chirp.followers)} takipçi</div></div></div>
       <textarea class="compose" maxlength="280" placeholder="Ne düşünüyorsun? #etiket ekle, @arkadaşını an…" data-text>${esc(opts.text || '')}</textarea>
-      <div class="row between small"><span class="muted">Etiketli gönderiler gündeme oturabilir. Hakeme/federasyona yüklenmek ceza riski taşır.</span><b data-count>0/280</b></div>
+      <div data-attach></div>
+      <div class="row between small" style="margin-top:8px"><span class="muted">Etiketli gönderiler gündeme oturabilir. Hakeme/federasyona yüklenmek ceza riski taşır.</span><b data-count>0/280</b></div>
       ${trends.length ? `<div class="muted small" style="margin-top:10px">Gündem</div><div class="chips compose-chips">${trends.map((t) => `<button class="chip" data-ins="${esc(t)}">${esc(t)}</button>`).join('')}</div>` : ''}
       ${mates.length ? `<div class="muted small" style="margin-top:8px">Takım arkadaşların</div><div class="chips compose-chips">${mates.map((m) => `<button class="chip" data-ins="@${esc(m.replace(/\s+/g, ''))}">@${esc(m)}</button>`).join('')}</div>` : ''}
       <div class="chips compose-chips" style="margin-top:8px">${EMOJIS.map((e) => `<button class="chip" data-ins="${e}">${e}</button>`).join('')}</div>
@@ -201,6 +307,7 @@ export async function composeFlow(app, opts = {}) {
       <div class="stack" style="margin-top:6px">${ideas.map((t) => `<button class="btn sm ghost block idea" data-idea="${esc(t)}">${esc(t)}</button>`).join('')}</div>
       <div class="stack"><button class="btn primary block" data-post>${icon('chirp')} Paylaş</button><button class="btn ghost block" data-close="">Vazgeç</button></div>`,
     onMount: (node, close) => {
+      bindAttach(app, node, () => pic, (p) => { pic = p; });
       const ta = node.querySelector('[data-text]');
       const cnt = node.querySelector('[data-count]');
       const upd = () => (cnt.textContent = `${ta.value.length}/280`);
@@ -219,15 +326,15 @@ export async function composeFlow(app, opts = {}) {
           upd();
         }
         if (e.target.closest('[data-post]')) {
-          if (!ta.value.trim()) return toast('Önce bir şeyler yaz.', 'bad');
-          close(ta.value);
+          if (!ta.value.trim() && !pic) return toast('Önce bir şeyler yaz ya da fotoğraf ekle.', 'bad');
+          close(ta.value.trim() ? ta.value : ' ');
         }
       });
       setTimeout(() => ta.focus(), 250);
     },
   });
-  if (typeof text !== 'string' || !text.trim()) return false;
-  const out = new PlayerPostService(s).publishText(text);
+  if (typeof text !== 'string' || (!text.trim() && !pic)) return false;
+  const out = new PlayerPostService(s).publishText(text, { pic });
   if (!out) return false;
   app.save();
   sfx(out.tweet.meta.style === 'aggr' ? 'whistle' : 'swish');
@@ -241,9 +348,10 @@ export async function composeFlow(app, opts = {}) {
       <h3>${out.trending ? 'Gündemdesin! 🔥' : 'Paylaşıldı!'}</h3>
       <p class="lead">${out.spam ? 'Bu hafta çok paylaşım yaptın; bazı takipçiler sıkıldı.' : 'Yorumlar gelmeye başladı 👇'}</p>
       ${tweetCard(s, out.tweet, { compactReplies: false })}
-      <div class="chips" style="margin-top:12px">${changeChipsHTML(out.changes)}${out.trending ? `<span class="chip gold">${esc(out.trending)} TT</span>` : ''}</div>
+      <div class="chips" style="margin-top:12px">${changeChipsHTML(out.changes)}${out.trending ? `<span class="chip gold">${esc(out.trending)} TT</span>` : ''}${out.gain > 0 ? `<span class="chip good">+${compact(out.gain)} takipçi</span>` : ''}</div>
       ${out.discipline ? `<div class="card" style="margin-top:12px;border-color:rgba(255,93,108,.4)"><b style="color:var(--bad)">${icon('shield', 'ico sm')} Federasyon gönderini inceliyor</b><div class="muted small" style="margin-top:4px">Hafta sonunda para cezası ya da men cezası gelebilir.</div></div>` : ''}
       <button class="btn primary block" style="margin-top:14px" data-close>Tamam</button>`,
+    onMount: (node) => paintPics(node, s),
   });
   return true;
 }
@@ -332,6 +440,7 @@ export function ephemeralPosts(state, tag, n = 6) {
 /** Gönderi kartlarındaki beğen, yanıtla, paylaş, etiket ve "daha fazla yorum" düğmelerini bağlar. */
 export function bindTweetActions(app, scope, { onTag, onChange } = {}) {
   paintPhotos(scope, app.state);
+  paintPics(scope, app.state);
   scope.addEventListener('click', async (e) => {
     const tag = e.target.closest('[data-tag]');
     if (tag) {

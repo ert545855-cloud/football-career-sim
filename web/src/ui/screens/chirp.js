@@ -4,6 +4,7 @@ import { playerAuthor, timelineOf } from '../../core/chirp/index.js';
 import { chirpAvatar, icon } from '../art.js';
 import { esc } from '../dom.js';
 import { bindTweetActions, compact, composeFlow, ephemeralPosts, shareCard, shareFlow, tweetCard } from '../chirpView.js';
+import { bindProfile, profileHTML } from '../chirpProfile.js';
 
 const PRESS = new Set(['fabricio', 'yagiz', 'matteo', 'tertulia', 'footy', 'sermet', 'hakem', 'veri', 'deger', 'dunya', 'avrupa', 'milli', 'caps']);
 
@@ -15,7 +16,7 @@ function filters(state) {
     { id: 'team', label: 'Takımım', fn: (t) => t.authorId === `club:${myClub}` || t.authorId === `fans:${myClub}` || t.authorId === 'gardiyan' },
     { id: 'press', label: 'Gazeteciler', fn: (t) => PRESS.has(t.authorId) },
     { id: 'gossip', label: 'Magazin', fn: (t) => t.authorId === 'magazin' },
-    { id: 'me', label: 'Ben', fn: (t) => t.authorId === 'me' || (t.comments || []).some((c) => c.me) },
+    { id: 'me', label: 'Profilim', fn: (t) => t.authorId === 'me' || (t.comments || []).some((c) => c.me) },
   ];
 }
 
@@ -68,7 +69,7 @@ export function chirpScreen(app, params = {}) {
       <b>Burası henüz sessiz</b>
       <p class="muted small" style="margin:6px 0 0">Maç oynadıkça kulübün, taraftarlar, gazeteciler ve yorumcular yazmaya başlayacak. Sen de paylaşabilirsin.</p>
     </div>`;
-    body = `<div class="feed-tweets">${shown.length ? shown.map((t) => tweetCard(s, t)).join('') : empty}</div>
+    body = `${view.filter === 'me' ? profileHTML(s) : ''}<div class="feed-tweets">${shown.length ? shown.map((t) => tweetCard(s, t)).join('') : empty}</div>
       ${tweets.length > shown.length ? `<button class="btn ghost block" style="margin-top:10px" data-more-feed>Daha fazla göster (${tweets.length - shown.length})</button>` : ''}`;
   }
 
@@ -77,7 +78,7 @@ export function chirpScreen(app, params = {}) {
     html: `
       <div class="row between">
         <div class="row" style="gap:10px"><span class="chirp-logo lg">${icon('chirp')}</span><h1 class="h-title">Chirp</h1></div>
-        <div class="row" style="gap:8px">${chirpAvatar(me, 34)}<div class="col" style="gap:0"><b class="small">${compact(s.chirp.followers)}</b><span class="muted" style="font-size:10.5px">takipçi</span></div></div>
+        <button class="row chirp-me-btn" style="gap:8px" data-filter="me" aria-label="Profilim">${chirpAvatar(me, 34)}<div class="col" style="gap:0;text-align:left"><b class="small">${compact(s.chirp.followers)}</b><span class="muted" style="font-size:10.5px">takipçi</span></div></button>
       </div>
       <button class="compose-bar" data-compose>${chirpAvatar(me, 32)}<span class="grow">Ne düşünüyorsun, ${esc(s.player.name.split(' ')[0])}?</span>${icon('plus', 'ico sm')}</button>
       ${view.filter === 'all' ? `${trends.length ? `<div class="trend-strip">${trends.slice(0, 5).map((t) => `<button data-tag="${esc(t.tag)}">${esc(t.tag)}</button>`).join('')}</div>` : ''}` : ''}
@@ -88,6 +89,7 @@ export function chirpScreen(app, params = {}) {
       ${body}`,
     mount(el) {
       const rerender = () => app.go('chirp');
+      if (view.filter === 'me') bindProfile(app, el, { compose: (o) => composeFlow(app, o), rerender });
       bindTweetActions(app, el, {
         onTag: (tag) => {
           view.tag = tag;

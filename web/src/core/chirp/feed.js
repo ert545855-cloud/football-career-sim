@@ -126,9 +126,7 @@ export class FeedEngine {
     const s = this.state;
     if (s.calendar.phase !== 'week') return [];
     const out = [];
-    // Takipçi sayısı ünle orantılı (ünlü oyuncunun on binlerce takipçisi olur)
-    const fame = s.player.fame || 0;
-    this.tl.data.followers = Math.max(this.tl.data.followers || 0, Math.round(150 + fame * fame * 40));
+    // Takipçi sayısı kariyer yükselişine göre followers.js'te (hafta sonu) güncellenir
     out.push(...this.squadInjuries());
     const pre = this.preview();
     if (pre) out.push(pre);

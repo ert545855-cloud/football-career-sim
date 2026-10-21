@@ -1711,10 +1711,27 @@ export function createBroadcast(root, o) {
       fxUpdate(dt0);
       render();
       if (frameN++ % 2 === 0) drawMini();
+      // Chirp için kare: senaryonun planlanan anında (şut, sevinç) görüntü alınır
+      if (S.captures?.length && S.script && !S.replaying && !S.wipe && S.script.t >= S.captures[0].at) {
+        const c = S.captures.shift();
+        try { c.fn(c.kind, snapshot()); } catch { /* kare alınamadı */ }
+      }
     }
     raf = requestAnimationFrame(loop);
   }
   function stop() { cancelAnimationFrame(raf); raf = 0; }
+  /** Yayının o anki görüntüsü (küçültülmüş JPEG; Chirp'te paylaşılabilir maç karesi) */
+  function snapshot(w = 384, q = 0.74) {
+    if (!cv.width || !cv.height || typeof document === 'undefined') return null;
+    const h = Math.round((w * cv.height) / cv.width);
+    const oc = document.createElement('canvas');
+    oc.width = w;
+    oc.height = h;
+    const g = oc.getContext('2d');
+    g.imageSmoothingEnabled = true;
+    g.drawImage(cv, 0, 0, w, h);
+    try { return oc.toDataURL('image/jpeg', q); } catch { return null; }
+  }
 
   // ─────────────────────────── Dış API ───────────────────────────
   kickoffShape(o.homeIsMy ? 'my' : 'opp');
@@ -1770,7 +1787,12 @@ export function createBroadcast(root, o) {
       let scn = null;
       setTag(ev.outcome === 'goal' ? 'CANLI' : 'POZİSYON', 'live');
       await wipe(() => { scn = buildScenario(ev, seed); S.camFocus = null; }, o.auto ? 0.12 : 1.6);
+      // ev.capture(kind, dataURL): golde şut anı ve sevinç karesi
+      S.captures = ev.capture && ev.outcome === 'goal' && !o.auto
+        ? [{ at: scn.tShot + 0.32, kind: 'shot', fn: ev.capture }, { at: Math.max(scn.tShot + 1.4, scn.total - 0.8), kind: 'celebration', fn: ev.capture }]
+        : null;
       await startScript(scn.events, scn.total);
+      S.captures = null;
       if (ev.outcome === 'goal' && ev.replay && !o.auto && (o.speed?.() || 1) === 1) {
         // yavaş çekim tekrar (aynı tohum → aynı hareket)
         await wipe(() => { S.replaying = true; setTag('↺ TEKRAR', 'replay'); const r = buildScenario(ev, seed); scn = r; }, 1.4);
@@ -1807,6 +1829,8 @@ export function createBroadcast(root, o) {
     /** Oyuncu oyuna girdi / çıktı */
     setOnPitch(on) { meOn = !!on; applyMe(); },
     face() { return mePlayer?.meLook || me.look; },
+    /** Şu anki yayın görüntüsü (📸 düğmesi) */
+    snapshot,
   };
   return api;
 }

@@ -2,7 +2,7 @@
 // BÜYÜK MAÇLAR — derbi, sezon finali, zirve ve kader maçları. Bu maçlarda oyuncu heyecanlanır:
 // mini oyunlarda etkin yetenek düşer, oyun temposu artar ve şut nişangahı titrer.
 // Soğukkanlı mentor heyecanı %20 azaltır ve nişangahı yavaşlatır.
-import { CLUB_BY_ID } from '../data.js';
+import { CLUB_BY_ID, LEAGUES } from '../data.js';
 import { scaleWeek, seasonWeeks } from '../calendar.js';
 import { clubFixtures, fixtureFor, leagueIdIn, positionOf, zoneRules } from '../league.js';
 
@@ -59,7 +59,8 @@ export function bigMatchFor(state, m) {
   if (m.week >= scaleWeek(6) && state.world?.leagues) {
     const a = positionOf(state.world, m.myId);
     const b = positionOf(state.world, m.oppId);
-    const n = Object.keys(state.world.leagues[leagueIdIn(state.world, m.myId)]?.table || {}).length || 12;
+    const lid = leagueIdIn(state.world, m.myId);
+    const n = Object.keys(state.world.leagues[lid]?.table || {}).length || LEAGUES[lid]?.size || 0;
     if (a <= 3 && b <= 3) return { kind: 'summit', label: 'Zirve Maçı', title: 'Zirve Maçı', base: BIG_MATCH_KINDS.summit.base };
     const zone = Math.max(3, zoneRules(leagueIdIn(state.world, m.myId)).down || 0);
     if (m.week >= scaleWeek(15) && a > n - zone && b > n - zone) return { kind: 'decider', label: 'Kader Maçı', title: 'Kümede Kalma Finali', base: BIG_MATCH_KINDS.decider.base };

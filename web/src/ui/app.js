@@ -1,4 +1,5 @@
 // UYGULAMA DENETLEYİCİSİ — ekran yönetimi ve oyun akışları (antrenman, maç günü, sezon sonu…)
+import { compact as compactFollowers } from './chirpView.js';
 import { setSocialLang } from '../core/chirp/lang.js';
 import { drawPostponeArt } from './postponeArt.js';
 import { condOf } from '../core/gym.js';
@@ -626,7 +627,7 @@ export function createApp(rootEl) {
           <h3 class="center" style="margin-top:6px">${esc(sm.scoreLine)}</h3>
           ${sm.played ? `<div class="center" style="margin:14px 0 4px"><div class="muted small">Maç notun</div><div class="rating-big" data-rating style="color:${ratingColor(sm.rating)}">${sm.rating.toFixed(1)}</div></div>` : `<p class="lead center">Bu maçta forma giymedin.</p>`}
           ${sm.motm ? '<div class="center" style="margin-bottom:8px"><span class="chip gold">' + icon('star') + ' MAÇIN OYUNCUSU</span></div>' : ''}
-          <div class="chips" style="justify-content:center">${sm.goals ? `<span class="chip accent">${sm.goals} gol</span>` : ''}${sm.assists ? `<span class="chip accent">${sm.assists} asist</span>` : ''}${bonus}${statChips}</div>
+          <div class="chips" style="justify-content:center">${sm.goals ? `<span class="chip accent">${sm.goals} gol</span>` : ''}${sm.assists ? `<span class="chip accent">${sm.assists} asist</span>` : ''}${bonus}${statChips}${sm.followers?.delta > 0 ? `<span class="chip" style="--c:#38bdf8">${icon('chirp', 'ico xs')} +${compactFollowers(sm.followers.delta)} takipçi</span>` : ''}${s.chirp?.pendingPost?.frames?.length ? `<span class="chip">${icon('camera', 'ico xs')} ${s.chirp.pendingPost.frames.length} maç karesi</span>` : ''}</div>
           <div class="divider"></div>
           ${changeChips(Object.entries(sm.deltas).filter(([, v]) => v).map(([k, v]) => ({ key: k, label: { morale: 'Moral', energy: 'Enerji', manager: 'Hoca', teammates: 'Takım', fans: 'Taraftar', fame: 'Ün' }[k], delta: v })))}
           ${Math.abs(sm.attShift || 0) >= 0.5 ? `<div style="margin-top:12px">${attitudeBar(attitudeOf(s), { delta: sm.attShift })}</div>` : ''}

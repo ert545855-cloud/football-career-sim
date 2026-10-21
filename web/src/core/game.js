@@ -26,7 +26,7 @@ import { random } from './rng.js';
 import { agentNetworkOffers, agentSponsorMult, ensureAgent } from './agent.js';
 import { ensureNational, nationalWeeks, nationalWindow } from './national.js';
 import { ballonOnEurope, ballonOnMatch, ballonRank, ballonSeasonEnd, ensureBallon } from './ballondor.js';
-import { ChirpTriggerEngine, FABRICIO } from './chirp/index.js';
+import { ChirpTriggerEngine, FABRICIO, VERIFIED_AT, milestoneLabel } from './chirp/index.js';
 import { achievementsOnMatch, achievementsOnTraining, checkAchievements, ensureAchievements } from './achievements.js';
 import { ensureSocial, homeScore, socialOnWeekEnd } from './social/index.js';
 import { ensureGarage, garageOnWeekEnd } from './garage.js';
@@ -51,6 +51,7 @@ import { canShoot, sponsorsOnMatch, sponsorsOnWeek } from './sponsors.js';
 import { businessOnWeek } from './business.js';
 import { realtyOnWeek } from './realestate.js';
 import { foundationOnWeek } from './foundation.js';
+import { restructureLegacyWorld } from './restructure.js';
 import { attitudeOnWeek } from './attitude.js';
 import { boardOnMatch, electionDue, ensurePresident, ensureRival, makeElection, rivalOnMatch, rivalSeasonEnd, withheldWage, worldStarsWindow } from './living.js';
 import { offerFor } from './economy.js';
@@ -371,6 +372,7 @@ export function completeMatch(state, match) {
 
   // Chirp: paylaşım kartı + gazeteci tweetleri (formsuzluk, büyük performans, kulübe, yönetim)
   const chirp = chirpOnMatch(state, { summary, match });
+  for (const m of summary.followers?.milestones || []) addNews(state, `Maçtan sonra Chirp'te ${milestoneLabel(m)} takipçiye ulaştın!${m === VERIFIED_AT ? ' Hesabın artık onaylı ✔' : ''}`, 'good');
   // Kulüp nüfuzu: oynadıkça ve iyi oynadıkça soyunma odasında sözün geçer
   summary.influence = mentorOnMatch(state, summary);
   // Soyunma odası havası ve hocanın koltuğu
@@ -511,6 +513,7 @@ function endWeek(state, ctx) {
   chirpTweets.push(...discipline.tweets);
   if (discipline.outcome === 'ban') addNews(state, 'PFDK: 1 maç men cezası aldın.', 'bad');
   if (discipline.outcome === 'fine') addNews(state, `PFDK: €${discipline.fine} para cezası aldın.`, 'bad');
+  for (const m of discipline.followers?.milestones || []) addNews(state, `Chirp'te ${milestoneLabel(m)} takipçiye ulaştın!${m === VERIFIED_AT ? ' Hesabın artık onaylı ✔' : ''}`, 'good');
 
   // Mentorluk: buluşmasız hafta ilişkiyi düşürür; akıl hocası isen nüfuz +2; gençlerden talepler
   const mentor = mentorOnWeekEnd(state);
@@ -563,6 +566,8 @@ function endWeek(state, ctx) {
     calendar.week += 1;
     calendar.slots = WEEK_SLOTS;
     calendar.trainings = 0;
+    // Yüklemede geçilemediyse (planlı maç vardı) eski yapı yeni haftada gerçek lig yapısına geçer
+    if (!state.pending.cupTie) restructureLegacyWorld(state);
     // Chirp: yeni haftanın maç önü kartı, sakatlıklar, dünya futbolu, trendler
     chirpTweets.push(...chirpWeekStart(state));
   }

@@ -14,7 +14,8 @@ import { runMiniGame } from '../../games/index.js';
 import { celebrationOf, playerLook } from '../../core/cosmetics.js';
 import { buzz, sfx } from '../../audio.js';
 import { crestSVG, icon } from '../art.js';
-import { confetti, el, esc, sleep } from '../dom.js';
+import { confetti, el, esc, sleep, toast } from '../dom.js';
+import { SNAPS_PER_MATCH, addFrame } from '../../core/chirp/index.js';
 import { sprite } from '../../assets/sprites.js';
 import { FEED_SPRITES } from '../spriteMap.js';
 import { nationalCrest } from '../nationalView.js';
@@ -128,6 +129,8 @@ export function matchScreen(app, { match }) {
           <div class="bc-goal" data-goalbanner></div>
           <button class="bc-btn bc-fs" data-fs aria-label="Tam ekran">⛶</button>
           <button class="bc-btn bc-fs-skip" data-fs-skip aria-label="Sıradaki an">»</button>
+          ${match.myId || match.national ? '<button class="bc-btn bc-snap" data-snap aria-label="Kare al (Chirp galerisi)" title="Kare al">📸</button>' : ''}
+          <div class="bc-flash" data-snapflash></div>
         </div>
         <div class="bc-goals"><div data-gl-h></div><div data-gl-a></div></div>
       </div>
@@ -219,6 +222,11 @@ export function matchScreen(app, { match }) {
           const side = ln.kind === 'goal-opp' ? 'opp' : 'my';
           const me = ln.kind === 'goal-me';
           const meAssist = !!g?.meAssist;
+          // Chirp galerisi: senin golün/asistin (şut anı + sevinç) ve takımının golleri (sevinç)
+          const capture = side === 'my' ? (kind, url) => {
+            if (!me && !meAssist && kind === 'shot') return;
+            saveFrame(kind === 'shot' ? (me ? 'goal' : 'assist') : me || meAssist ? 'celebration' : 'team', url, ln.minute);
+          } : null;
           await bc.play({
             side, outcome: 'goal', kind: g?.kind || (me ? 'solo' : 'open'),
             scorer: me ? shortName : g?.scorer, me,
@@ -228,6 +236,7 @@ export function matchScreen(app, { match }) {
             minute: ln.minute,
             scoreText: () => scoreText(),
             onGoal: doPush,
+            capture,
           });
         } else if (ln.ai && ['save', 'post', 'chance'].includes(ln.kind) && (app.settings.speed || 1) === 1 && chanceAnims < (watching() ? 4 : 2)) {
           chanceAnims++;
@@ -243,6 +252,29 @@ export function matchScreen(app, { match }) {
         const a = match.isHome ? match.score.opp : match.score.my;
         return `${h} - ${a}`;
       };
+      // ── Chirp maç kareleri ──
+      const oppName = (match.isHome ? away : home)?.name || '';
+      let snaps = 0;
+      const saveFrame = (kind, url, mm) => {
+        if (app.autoplay || !url) return null;
+        return addFrame(s, { kind, minute: Math.max(1, Math.round(mm ?? minute)), score: scoreText(), opp: oppName, oppId: match.oppId || null, matchId: match.id || null }, url);
+      };
+      const snapBtn = el0.querySelector('[data-snap]');
+      const snapFlash = el0.querySelector('[data-snapflash]');
+      snapBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (snaps >= SNAPS_PER_MATCH) { toast(`Bu maçta en fazla ${SNAPS_PER_MATCH} kare alabilirsin.`, 'bad'); return; }
+        const url = bc.snapshot();
+        if (!url) return;
+        snaps += 1;
+        saveFrame('snap', url, minute);
+        sfx('camera');
+        buzz(20);
+        snapFlash?.classList.remove('go');
+        void snapFlash?.offsetWidth;
+        snapFlash?.classList.add('go');
+        toast(`📸 Kare galeriye eklendi (${snaps}/${SNAPS_PER_MATCH})`, 'good');
+      });
       const pop = () => {
         scoreEl.textContent = scoreText();
         scoreEl.classList.remove('score-pop');
@@ -463,6 +495,8 @@ export function matchScreen(app, { match }) {
           buzz('whistle');
           cancelAnimationFrame(raf);
           await sleep(900);
+          // kazanılan maçın son düdüğü: tribün coşkusu
+          if (match.score.my > match.score.opp && match.role !== 'out') saveFrame('fulltime', bc.snapshot(), 90);
           if (match.national) app.finishCampMatch(match);
           else if (match.cup) app.finishCupMatch(match);
           else app.finishMatch(match);

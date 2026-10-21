@@ -150,22 +150,33 @@ test('yalnızca odak liglerin tüm sonuçları saklanır', () => {
   assert.equal(w.leagues.en1.last.length, 10);
 });
 
-test('eski kayıt: sadece Türkiye ligleri olan dünya yükseltilir', () => {
+test('eski kayıt: sadece Türkiye ligleri olan dünya yüklenince hemen gerçek lig yapısına geçer', () => {
   setRandom(seeded(6));
   const s = newGame({ name: 'Eski Kayıt', position: 'MF' });
-  // eski biçim: 3 lig, fikstür kayıtta
+  // eski biçim: 3 lig, fikstür kayıtta, 12 takımlı yapı
   const old = { season: 1, ratings: s.world.ratings, leagues: {} };
   for (const id of ['super', 'first', 'u17']) old.leagues[id] = { ...s.world.leagues[id], fixtures: fixturesOf(s.world.leagues[id]) };
   for (let wk = 1; wk <= 4; wk++) simulateWeek(old, wk);
   s.world = old;
   s.calendar.week = 5;
+  s.calendar.phase = 'week';
+  s.pending.match = null;
   migrate(s);
-  assert.equal(s.world.v, 2);
-  assert.ok(s.world.leagues.en1 && s.world.leagues.tr3);
-  let games = 0;
-  for (let wk = 1; wk <= 4; wk++) games += matchesInWeek(s.world, s.world.leagues.en1, wk).length * 2;
-  assert.equal(Object.values(s.world.leagues.en1.table).reduce((n, r) => n + r.p, 0), games, 'yeni ligler geçmiş haftaları oynadı');
+  assert.equal(s.world.v, 3, 'süren sezon yeni yapıda');
+  for (const lg of Object.values(s.world.leagues)) assert.equal(lg.teams.length, LEAGUES[lg.id].size, `${lg.id} yapılandırmadaki takım sayısında`);
+  assert.equal(s.world.leagues.super.teams.length, 18);
+  assert.equal(s.world.leagues.first.teams.length, 20);
+  assert.ok(s.flags.restructured && s.flags.restructured.fromWeek === 5);
+  // hafta yeni sezon uzunluğuna orantılı taşındı, geçmiş turlar yeni fikstürle oynandı
+  assert.ok(s.calendar.week >= 5 && s.calendar.week <= s.world.weeks);
+  for (const id of ['super', 'first', 'en1']) {
+    const lg = s.world.leagues[id];
+    let games = 0;
+    for (let wk = 1; wk < s.calendar.week; wk++) games += matchesInWeek(s.world, lg, wk).length * 2;
+    assert.equal(Object.values(lg.table).reduce((n, r) => n + r.p, 0), games, `${id}: geçmiş haftalar oynandı`);
+  }
   assert.ok(s.world.europe, 'Avrupa kupaları kuruldu');
+  assert.equal(s.cup?.v != null, true, 'kupa yeni biçimde kuruldu');
 });
 
 test('Avrupa: 3 kupa × 32 takım, çakışma yok; sezon sonunda kazanan belli', () => {

@@ -81,11 +81,14 @@ function shortCode(town, name, taken) {
   return base.slice(0, 3);
 }
 
-/** Eski sürümün kulüpleri (kademe başına 12): eski tohum dizisi aynen oynatılır → kimlik, ad, renk, desen korunur */
+/** Eski sürümün kademe başına ürettiği kulüp sayısı (yalnızca eski kimliklerin aynen yeniden üretilmesi için; lig boyutu değildir) */
+const LEGACY_CLUBS_PER_LEVEL = 12;
+
+/** Eski sürümün kulüpleri: eski tohum dizisi aynen oynatılır → kimlik, ad, renk, desen korunur */
 function legacyClubs(country, reserved) {
   const rnd = seededRng(hashStr(`krampon-${country.id}`));
   const levels = country.id === 'tr' ? [3, 4] : [1, 2, 3];
-  const need = levels.length * 12;
+  const need = levels.length * LEGACY_CLUBS_PER_LEVEL;
   const towns = seededShuffle(country.towns, rnd);
   const entries = [];
   const usedNames = new Set();

@@ -6,7 +6,7 @@ import { join, relative } from 'node:path';
 import { parseAst } from 'rolldown/parseAst';
 
 const ROOT = new URL('..', import.meta.url).pathname;
-const SKIP_FILES = [/world\/clubs\.js$/, /world\/names\.js$/, /world\/locale\.js$/, /world\/countries\.js$/, /i18n\//, /music\//, /assets\//];
+const SKIP_FILES = [/world\/clubs\.js$/, /world\/clubsExtra\.js$/, /world\/names\.js$/, /world\/locale\.js$/, /world\/countries\.js$/, /i18n\//, /music\//, /assets\//];
 const TR = /[çğıöşüÇĞİÖŞÜâîû]/;
 const PH = '\u0001';
 

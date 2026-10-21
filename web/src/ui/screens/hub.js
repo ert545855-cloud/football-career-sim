@@ -18,6 +18,17 @@ import { GYM_RULES, ensureGym } from '../../core/gym.js';
 import { questsCard, questsClick } from '../questsView.js';
 
 
+/** Eski kayıt gerçek lig yapısına geçti: bir kez gösterilen bilgi kartı */
+function restructuredCard(s) {
+  const r = s.flags?.restructured;
+  if (!r || r.season !== s.calendar.season) return '';
+  return `<div class="card restructured">
+    <b>${icon('trophy', 'ico sm')} Ligler gerçek takım sayılarına geçti</b>
+    <p class="small" style="margin:6px 0 0">${esc(leagueLabel(r.leagueId))} artık <b>${r.teams} takımlı</b>; sezon ${r.weeks} hafta sürüyor. Kaldığın yer yeni takvimde ${r.week}. haftaya denk geldi. Puan durumu yeni fikstürle yeniden hesaplandı; kendi istatistiklerin, paran ve sözleşmen aynen duruyor. Kupa da yeni biçimde: üst lig kulüpleri doğrudan gruplardan başlar.</p>
+    <div class="row" style="gap:8px;margin-top:10px"><button class="btn sm primary" data-restructured-table>${icon('table', 'ico sm')} Puan durumunu gör</button><button class="btn sm ghost" data-restructured-ok>Tamam</button></div>
+  </div>`;
+}
+
 export function hubScreen(app) {
   const s = app.state;
   const { player, career, calendar, flags } = s;
@@ -73,6 +84,7 @@ export function hubScreen(app) {
       </div>
 
       ${startChips ? `<div class="chips" style="margin-top:10px">${startChips}</div>` : ''}
+      ${restructuredCard(s)}
       ${shareCard(s)}
 
       <div class="row between" style="margin-top:14px">
@@ -143,6 +155,20 @@ export function hubScreen(app) {
           app.click();
           const r = await shareFlow(app, st.dataset.chirpStyle);
           app.go(r === 'chirp' ? 'chirp' : 'hub');
+          return;
+        }
+        if (e.target.closest('[data-restructured-ok]')) {
+          app.click();
+          app.state.flags.restructured = null;
+          app.save();
+          app.go('hub');
+          return;
+        }
+        if (e.target.closest('[data-restructured-table]')) {
+          app.click();
+          app.state.flags.restructured = null;
+          app.save();
+          app.go('league');
           return;
         }
         if (e.target.closest('[data-chirp-dismiss]')) {

@@ -155,7 +155,7 @@ export const countryOf = (clubId) => CLUB_BY_ID[clubId]?.country || 'tr';
 /** Ligin tur sayısı (takım sayısı ve devre sayısından) */
 export const leagueRounds = (world, leagueId) => {
   const lg = world?.leagues?.[leagueId];
-  return lg ? fixturesOf(lg).length : roundsFor(LEAGUES[leagueId]?.size || 12, legsOf(leagueId));
+  return lg ? fixturesOf(lg).length : roundsFor(LEAGUES[leagueId]?.size || 0, legsOf(leagueId));
 };
 
 /** Sezonun hafta sayısı: oyuncunun liginin tur sayısı (en az 22) */
@@ -200,11 +200,12 @@ function defaultMembership() {
  * @param {object|null} prevRatings önceki sezonun kulüp güçleri
  * @param {{prev?:object, focus?:string[], clubId?:string, must?:string[]}} [opts]
  *   prev: önceki dünya (küme düşme/çıkma için); clubId: oyuncunun kulübü (takvim uzunluğu);
- *   must: lige mutlaka alınacak kulüpler (oyuncunun kulübü pasif kalmasın)
+ *   must: lige mutlaka alınacak kulüpler (oyuncunun kulübü pasif kalmasın);
+ *   noMoves: küme düşme/çıkma yok, kulüpler bulundukları kademede kalır (sezon ortası yapı geçişi)
  */
 export function createWorld(season = 1, prevRatings = null, opts = {}) {
   const ratings = Object.fromEntries(ALL_CLUBS.map((c) => [c.id, prevRatings?.[c.id] ?? c.rating]));
-  const membership = opts.prev ? promotions(opts.prev, { must: opts.must || (opts.clubId ? [opts.clubId] : []) }) : defaultMembership();
+  const membership = opts.prev ? promotions(opts.prev, { must: opts.must || (opts.clubId ? [opts.clubId] : []), noMoves: !!opts.noMoves }) : defaultMembership();
   const leagues = {};
   for (const lg of activeLeagues()) {
     const ids = membership.teams[lg.id] || [];
@@ -237,7 +238,7 @@ const byRating = (world) => (a, b) => clubRating(world, b) - clubRating(world, a
  *    fazlaysa en zayıfı bir alt kademeye) ve gruplara dağıtılır (eski grubunda kalan kulüpler yerini korur).
  * @returns {{teams:Object<string,string[]>, moves:Array<{clubId,from,to,up,playoff?}>, playoffs:Object}}
  */
-export function promotions(world, { must = [] } = {}) {
+export function promotions(world, { must = [], noMoves = false } = {}) {
   const teams = {};
   const moves = [];
   const playoffs = {};
@@ -267,7 +268,7 @@ export function promotions(world, { must = [] } = {}) {
     const protectedUp = new Set();
     const protectedDown = new Set();
     // kademeler arası hareketler (önceki sezonun tablolarına göre)
-    for (let L = 1; L < N; L++) {
+    for (let L = 1; L < N && !noMoves; L++) {
       const upper = divs[L - 1];
       const lower = divs[L];
       if (lower.closed) continue;

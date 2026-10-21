@@ -19,6 +19,7 @@ import { ensureMarket } from './market.js';
 import { ensureArchive } from './archive.js';
 import { ensurePresident, ensureRival } from './living.js';
 import { addFocus, leagueIdIn, upgradeWorld, useWorld } from './league.js';
+import { restructureLegacyWorld } from './restructure.js';
 import { ensureEurope } from './world/europe.js';
 
 const KEY = 'krampon.save.v1';
@@ -121,6 +122,8 @@ export function migrate(state) {
   upgradeWorld(state.world, state.calendar?.week || 1);
   ensureEurope(state.world, state.calendar?.week || 1);
   useWorld(state.world);
+  // 12 takımlı eski yapı: süren sezon hemen gerçek lig yapısına geçer (sezon sonunu beklemeden)
+  restructureLegacyWorld(state);
   addFocus(state.world, leagueIdIn(state.world, state.career.clubId));
   ensureRanking(state);
   ensureCoach(state);
