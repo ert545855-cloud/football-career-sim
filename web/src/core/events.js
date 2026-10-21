@@ -3,7 +3,8 @@ import { CLUB_BY_ID, STAT_KEYS, STATS } from './data.js';
 import { shiftAttitude } from './attitude.js';
 import { chance, clamp, pick, roundTo, weightedPick } from './rng.js';
 import { changeEnergy, changeFame, changeMorale, changeRel, form, ovr } from './player.js';
-import { positionOf } from './league.js';
+import { leagueIdIn, positionOf } from './league.js';
+import { scaleWeek } from './calendar.js';
 import { publishTabloid } from './social/events.js';
 import { PERSON_BY_ID } from './social/data.js';
 import { carStats } from './garage.js';
@@ -258,13 +259,13 @@ export const EVENTS = [
   },
   {
     id: 'league_leader', icon: 'trophy', title: 'Zirve Yarışı',
-    when: (s) => s.calendar.week >= 8 && positionOf(s.world, s.career.clubId) <= 2, weight: 1.2,
+    when: (s) => s.calendar.week >= scaleWeek(8) && positionOf(s.world, s.career.clubId) <= 2, weight: 1.2,
     text: (s) => `${club(s).name} zirve yarışında! Şehirde futbol ateşi yükseliyor.`,
     choices: [{ label: 'Bu sene bizim yılımız!', fx: { morale: 6, fans: 3 }, note: 'Herkes şampiyonluğu konuşuyor.' }],
   },
   {
     id: 'relegation_fear', icon: 'cloud', title: 'Kötü Gidişat',
-    when: (s) => s.calendar.week >= 8 && positionOf(s.world, s.career.clubId) >= 10, weight: 1.2,
+    when: (s) => s.calendar.week >= scaleWeek(8) && positionOf(s.world, s.career.clubId) > (s.world.leagues[leagueIdIn(s.world, s.career.clubId)]?.teams.length || 12) - 3, weight: 1.2,
     text: (s) => `${club(s).name} ligin dibinde. Taraftar sabırsız.`,
     choices: [
       { label: 'Takımı topla', fx: { teammates: 5, morale: -2, energy: -5 }, note: 'Bir oyuncular toplantısı düzenledin.' },

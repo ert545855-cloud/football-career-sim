@@ -1,3 +1,4 @@
+import { midWindowWeek } from '../src/core/calendar.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { setRandom, seeded } from '../src/core/rng.js';
@@ -157,10 +158,10 @@ test('B: Süper Lig sözleşmesi + kiralık; devre arası transfer kapalı; sezo
   assert.equal(selection(s).role, 'starter');
   let weeks = 0;
   let checkedWindow = false;
-  while (s.calendar.phase === 'week' && weeks++ < 30) {
+  while (s.calendar.phase === 'week' && weeks++ < 80) {
     const wk = s.calendar.week;
     const { out } = playWeek(s, 0.5);
-    if (wk === 11) {
+    if (wk === midWindowWeek()) {
       assert.equal(out.weekEnd.offers, null, 'kiralıkta devre arası teklif yok');
       checkedWindow = true;
     }
@@ -185,7 +186,7 @@ test('C: altyapı U-17 ligi oynanır; sezon sonunda A takım sözleşmesi', () =
   // Mentor adayları A takım kadrosundan gelir
   assert.equal(new MentorManager(s).clubId, parent);
   let weeks = 0;
-  while (s.calendar.season === 1 && weeks++ < 30) playWeek(s, 0.6);
+  while (s.calendar.season === 1 && weeks++ < 80) playWeek(s, 0.6);
   assert.equal(s.career.academy, null);
   assert.equal(s.career.contract.yearsLeft >= 2, true);
   const graduated = s.career.news.find((n) => n.text.includes('A takıma yükseldin') || n.text.includes('profesyonel sözleşme'));

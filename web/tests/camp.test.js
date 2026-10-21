@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { setRandom, seeded } from '../src/core/rng.js';
 import { newGame } from '../src/core/game.js';
-import { NATIONAL_WEEKS, nationalWindow } from '../src/core/national.js';
+import { nationalWeeks, nationalWindow } from '../src/core/national.js';
 import {
   activeCamp, campRole, doCampAction, endCamp, finishCampMatch, fixtureCard, planCampMatch, simulateCampMatch, startCamp, startTournamentCamp, tournamentFor,
 } from '../src/core/nationalCamp.js';
@@ -16,7 +16,7 @@ function u19Player(seed) {
   s.player.age = 18;
   s.player.ratings = [7, 7];
   setStats(s, 33);
-  s.calendar.week = NATIONAL_WEEKS[0];
+  s.calendar.week = nationalWeeks()[0];
   return s;
 }
 

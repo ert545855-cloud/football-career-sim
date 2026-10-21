@@ -26,7 +26,8 @@ export function seasonPoints(world) {
     const rows = sortedTable(lg);
     const played = rows[0]?.p || 0;
     if (!played) continue;
-    const frac = Math.min(1, played / 22);
+    const full = Math.max(1, (rows.length - 1) * (meta.legs || 2));
+    const frac = Math.min(1, played / full);
     rows.forEach((r, i) => add(r.id, ((rows.length - i) * 1.2 + (i === 0 ? 8 : 0)) * pr * frac));
   }
   const cups = world.europe?.cups || {};

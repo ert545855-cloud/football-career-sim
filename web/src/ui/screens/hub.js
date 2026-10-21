@@ -1,6 +1,7 @@
-import { ACTIONS, CLUB_BY_ID, MAX_TRAININGS_PER_WEEK, SEASON_WEEKS } from '../../core/data.js';
+import { ACTIONS, CLUB_BY_ID, MAX_TRAININGS_PER_WEEK } from '../../core/data.js';
+import { seasonWeeks } from '../../core/calendar.js';
 import { canDoAction, overview } from '../../core/game.js';
-import { fixtureFor, leagueLabel } from '../../core/league.js';
+import { clubFixtures, fixtureFor, leagueLabel } from '../../core/league.js';
 import { money } from '../../core/economy.js';
 import { crestSVG, icon, playerAvatar } from '../art.js';
 import { animateBars, esc } from '../dom.js';
@@ -11,7 +12,7 @@ import { bigMatchChip, hubMentorCard, meetingFlow, requestsSheet, selectionSheet
 import { actionArt } from '../spriteMap.js';
 import { monthName, weatherFor } from '../../core/weather.js';
 import { hubLockerCard } from '../lockerView.js';
-import { ROUND_LABEL, cupTieReady } from '../../core/cup.js';
+import { cupTieReady, roundLabel } from '../../core/cup.js';
 import { portfolioValue } from '../../core/invest.js';
 import { GYM_RULES, ensureGym } from '../../core/gym.js';
 import { questsCard, questsClick } from '../questsView.js';
@@ -22,7 +23,9 @@ export function hubScreen(app) {
   const { player, career, calendar, flags } = s;
   const ov = overview(s);
   const fx = fixtureFor(s.world, career.clubId, calendar.week);
-  const [h, a] = fx || [career.clubId, career.clubId];
+  // maçsız hafta (tek sayıda takımlı ligde bay ya da kısa ligin boş haftası): bir sonraki maç
+  const nextFx = fx ? null : clubFixtures(s.world, career.clubId).find((f) => f.week > calendar.week) || null;
+  const [h, a] = fx || (nextFx ? [nextFx.h, nextFx.a] : [career.clubId, career.clubId]);
   const home = CLUB_BY_ID[h];
   const away = CLUB_BY_ID[a];
   const isHome = h === career.clubId;
@@ -87,20 +90,21 @@ export function hubScreen(app) {
         ${meter('Kondisyon', 'run', ensureGym(s).cond, 100, ensureGym(s).cond < 45 ? 'var(--bad)' : ensureGym(s).cond < 60 ? 'var(--warn)' : '#4ade80', Math.round(ensureGym(s).cond))}
       </div>
 
-      ${cupTie ? `<div class="h-sec">${cupTie.kind === 'makeup' ? 'Hafta içi ertelenen maç' : 'Hafta içi kupa maçı'} <span>${esc(cupTie.kind === 'super' ? 'Süper Kupa' : cupTie.kind === 'makeup' ? `${cupTie.week}. hafta` : cupTie.group ? `Grup ${cupTie.group} · ${cupTie.round[1]}. maç` : ROUND_LABEL[cupTie.round] || '')}</span></div>
+      ${cupTie ? `<div class="h-sec">${cupTie.kind === 'makeup' ? (cupTie.midweek ? 'Hafta içi lig maçı' : 'Hafta içi ertelenen maç') : 'Hafta içi kupa maçı'} <span>${esc(cupTie.kind === 'super' ? 'Süper Kupa' : cupTie.kind === 'makeup' ? `${cupTie.week}. hafta` : cupTie.group ? `Grup ${cupTie.group} · ${cupTie.round.slice(1)}. maç` : roundLabel(s.cup, cupTie.round))}</span></div>
       <div class="card glow cup-next">
         <div class="fixture">
           <div class="team">${crestSVG(CLUB_BY_ID[cupTie.h])}<span>${esc(CLUB_BY_ID[cupTie.h].name)}</span></div>
-          <div class="col" style="align-items:center;gap:6px"><span class="vs">VS</span><span class="chip gold">${icon('trophy', 'ico xs')} Kupa</span></div>
+          <div class="col" style="align-items:center;gap:6px"><span class="vs">VS</span><span class="chip ${cupTie.kind === 'makeup' ? '' : 'gold'}">${icon(cupTie.kind === 'makeup' ? 'whistle' : 'trophy', 'ico xs')} ${cupTie.kind === 'makeup' ? 'Lig' : 'Kupa'}</span></div>
           <div class="team">${crestSVG(CLUB_BY_ID[cupTie.a])}<span>${esc(CLUB_BY_ID[cupTie.a].name)}</span></div>
         </div>
-        <p class="muted small center" style="margin:10px 0 0">${cupTie.kind === 'makeup' ? 'Hava muhalefeti nedeniyle ertelenen lig maçı. Sonuç tabloya işlenir; lig maçından önce oynanır.' : cupTie.group ? `${esc(cupTie.name)} · grup maçı, beraberlik de puan. Lig maçından önce oynanır.` : `${esc(cupTie.name)} · tek maç eleme, berabere biterse penaltılar. Lig maçından önce oynanır.`}</p>
-        <button class="btn primary block" style="margin-top:10px" data-act="cup">${icon('whistle')} Kupa Maçına Çık</button>
+        <p class="muted small center" style="margin:10px 0 0">${cupTie.kind === 'makeup' ? (cupTie.midweek ? 'Sıkışık fikstür: geçen haftanın ikinci lig maçı. Sonuç tabloya işlenir; hafta sonu maçından önce oynanır.' : 'Hava muhalefeti nedeniyle ertelenen lig maçı. Sonuç tabloya işlenir; lig maçından önce oynanır.') : cupTie.group ? `${esc(cupTie.name)} · grup maçı, beraberlik de puan. Lig maçından önce oynanır.` : `${esc(cupTie.name)} · tek maç eleme, berabere biterse penaltılar. Lig maçından önce oynanır.`}</p>
+        <button class="btn primary block" style="margin-top:10px" data-act="cup">${icon('whistle')} ${cupTie.kind === 'makeup' ? 'Maça Çık' : 'Kupa Maçına Çık'}</button>
       </div>` : ''}
       ${cupLate ? `<div class="card cup-late"><span class="chip bad">${icon('shield', 'ico xs')} Ertelendi</span> <span class="small">${esc(CLUB_BY_ID[cupLate.h]?.name || '')} – ${esc(CLUB_BY_ID[cupLate.a]?.name || '')} ${cupLate.kind === 'makeup' ? 'ertelenen lig maçı' : 'kupa maçı'} hava muhalefeti yüzünden gelecek hafta oynanacak.</span></div>` : ''}
 
-      <div class="h-sec">${cupTie ? 'Hafta sonu lig maçı' : 'Sıradaki maç'} <span>${monthName(calendar.week)} · Hafta ${calendar.week}/${SEASON_WEEKS}</span></div>
-      <div class="card glow" data-tut="fixture">
+      <div class="h-sec">${!fx ? 'Maç günü' : cupTie ? 'Hafta sonu lig maçı' : 'Sıradaki maç'} <span>${monthName(calendar.week)} · Hafta ${calendar.week}/${seasonWeeks()}</span></div>
+      ${!fx ? `<div class="card bye-week"><b>${icon('bed', 'ico sm')} Ligde maçın yok</b><p class="muted small" style="margin:6px 0 0">${ov.league?.size % 2 ? `Ligde ${ov.league.size} takım var: her hafta bir takım bay geçer, bu hafta sıra sizde.` : 'Fikstürde bu hafta boş: diğer liglerin maçları oynanıyor.'} Zamanını antrenmana ve dinlenmeye ayır.</p>${nextFx ? `<div class="row small" style="margin-top:8px;gap:6px">${crestSVG(CLUB_BY_ID[nextFx.h === career.clubId ? nextFx.a : nextFx.h], 'crest xs')}<span class="muted">Sıradaki maç: H${nextFx.week} · ${esc(CLUB_BY_ID[nextFx.h === career.clubId ? nextFx.a : nextFx.h]?.name || '')} ${nextFx.h === career.clubId ? '(İ)' : '(D)'}</span></div>` : ''}</div>` : ''}
+      <div class="card glow" data-tut="fixture" ${fx ? '' : 'hidden'}>
         <div class="fixture">
           <div class="team">${crestSVG(home)}<span>${esc(home.name)}</span></div>
           <div class="col" style="align-items:center;gap:6px"><span class="vs">VS</span><span class="chip">${isHome ? 'İç saha' : 'Deplasman'}</span></div>
@@ -119,7 +123,7 @@ export function hubScreen(app) {
       ${hubMentorCard(s)}
       ${hubLockerCard(s)}
       ${questsCard(s)}
-      <button class="btn primary lg block ${calendar.slots === 0 ? 'pulse' : ''}" style="margin-top:12px" data-act="match">${icon('whistle')} ${cupTie ? (cupTie.kind === 'makeup' ? 'Önce Ertelenen Maç' : 'Önce Kupa Maçı') : 'Maç Gününe Geç'}</button>
+      <button class="btn primary lg block ${calendar.slots === 0 ? 'pulse' : ''}" style="margin-top:12px" data-act="match">${icon('whistle')} ${cupTie ? (cupTie.kind === 'makeup' ? (cupTie.midweek ? 'Önce Hafta İçi Maç' : 'Önce Ertelenen Maç') : 'Önce Kupa Maçı') : fx ? 'Maç Gününe Geç' : 'Haftayı Tamamla'}</button>
 
       <div class="h-sec">İlişkiler</div>
       <div class="card" style="display:grid;gap:12px">

@@ -6,71 +6,148 @@ import { newGame } from '../src/core/game.js';
 import { migrate } from '../src/core/storage.js';
 import { generateOffers, wageFor } from '../src/core/economy.js';
 import {
-  createWorld, fixturesOf, leagueOf, leaguePrestige, positionOf, promotions, simulateWeek, sortedTable, upgradeWorld, useWorld,
+  createWorld, fixturesOf, leagueOf, leaguePrestige, matchesInWeek, positionOf, promotions, roundsInWeek, simulateWeek, sortedTable, upgradeWorld, useWorld, worldWeeks,
 } from '../src/core/league.js';
-import { CUP_IDS, createEurope, cupOf, europeQualifiers, europeWeek, playEuropeWeek } from '../src/core/world/europe.js';
+import { CUP_IDS, createEurope, cupOf, europeQualifiers, europeWeek, europeWeeks, playEuropeWeek } from '../src/core/world/europe.js';
+import { LEAGUE_SYSTEM, promotedCount, relegatedCount } from '../src/core/world/leagueConfig.js';
+import { seasonWeeks } from '../src/core/calendar.js';
 
-test('dünya: 28 ülke, her ligde 12 kulüp, Türkiye 4 kademe', () => {
+test('dünya: 28 ülke, her lig yapılandırmadaki gerçek takım sayısında, Türkiye 4 kademe', () => {
   assert.equal(COUNTRIES.length, 28);
-  const real = Object.values(LEAGUES).filter((l) => !l.youth);
-  assert.equal(real.length, 28 * 3 + 1);
-  for (const lg of real) assert.equal(CLUBS.filter((c) => c.league === lg.id).length, 12, lg.id);
-  assert.deepEqual(Object.values(LEAGUES).filter((l) => l.country === 'tr' && !l.youth).map((l) => l.id), ['super', 'first', 'tr2', 'tr3']);
+  const real = Object.values(LEAGUES).filter((l) => !l.youth && !l.legacy);
+  // yapılandırmadaki her kademe/grup bir lig
+  const expected = Object.values(LEAGUE_SYSTEM).reduce((n, divs) => n + divs.reduce((m, d) => m + (d.groups?.length || 1), 0), 0);
+  assert.equal(real.length, expected);
+  for (const lg of real) assert.equal(CLUBS.filter((c) => c.league === lg.id).length, lg.size, lg.id);
+  // gerçek takım sayıları
+  const size = (id) => CLUBS.filter((c) => c.league === id).length;
+  assert.equal(size('super'), 18, 'Süper Lig 18');
+  assert.equal(size('first'), 20, '1. Lig 20');
+  assert.equal(size('en1'), 20, 'Premier Lig 20');
+  assert.equal(size('es1'), 20, 'La Liga 20');
+  assert.equal(size('it1'), 20, 'Serie A 20');
+  assert.equal(size('de1'), 18, 'Bundesliga 18');
+  assert.equal(size('en2'), 24, 'Championship 24');
+  // ülke başına kademe sayısı yapılandırmadan (ABD 2, Türkiye 4)
+  const tiers = (cc) => new Set(real.filter((l) => l.country === cc).map((l) => l.level)).size;
+  assert.equal(tiers('tr'), 4);
+  assert.equal(tiers('us'), 2);
+  assert.deepEqual(real.filter((l) => l.country === 'tr').map((l) => l.id), ['super', 'first', 'tr2', 'tr2b', 'tr3', 'tr3b', 'tr3c', 'tr3d']);
   const ids = new Set(CLUBS.map((c) => c.id));
   assert.equal(ids.size, CLUBS.length);
   const shorts = new Set(CLUBS.map((c) => `${c.country}:${c.short}`));
   assert.equal(shorts.size, CLUBS.length, 'ülke içinde kısa adlar benzersiz');
-  // Üst lig ortalaması alt ligden güçlü
+  // Üst kademe ortalaması alt kademeden güçlü
   for (const c of COUNTRIES) {
-    const avg = (lid) => CLUBS.filter((x) => x.league === lid).reduce((s, x) => s + x.rating, 0) / 12;
-    const ls = real.filter((l) => l.country === c.id).sort((a, b) => a.tier - b.tier);
-    for (let i = 0; i < ls.length - 1; i++) assert.ok(avg(ls[i].id) > avg(ls[i + 1].id), `${ls[i].id} > ${ls[i + 1].id}`);
+    const avgLv = (lv) => { const xs = CLUBS.filter((x) => x.country === c.id && LEAGUES[x.league]?.level === lv); return xs.reduce((s, x) => s + x.rating, 0) / xs.length; };
+    for (let lv = 1; lv < tiers(c.id); lv++) assert.ok(avgLv(lv) > avgLv(lv + 1), `${c.id} ${lv} > ${lv + 1}`);
   }
   assert.ok(leaguePrestige('en1') > leaguePrestige('super') && leaguePrestige('super') > leaguePrestige('first'));
 });
 
-test('fikstür tohumdan aynı üretilir, her takım her hafta bir kez oynar', () => {
+test('yapılandırma tutarlı: üst kademeden düşen = alt kademeden çıkan (her ülke, her sınır)', () => {
+  for (const [cc, divs] of Object.entries(LEAGUE_SYSTEM)) {
+    for (let i = 0; i < divs.length - 1; i++) {
+      if (divs[i + 1].closed) continue;
+      assert.equal(relegatedCount(divs[i]), promotedCount(divs[i + 1]), `${cc}: ${divs[i].name} ↔ ${divs[i + 1].name}`);
+    }
+    assert.equal(relegatedCount(divs[divs.length - 1]), 0, `${cc}: en alt kademeden düşme yok`);
+  }
+});
+
+test('fikstür tohumdan aynı üretilir, her takım her turda bir kez oynar', () => {
   setRandom(seeded(3));
   const w = createWorld(1);
   const lg = w.leagues.es1;
   const f1 = fixturesOf(lg);
   const copy = JSON.parse(JSON.stringify(lg));
   assert.deepEqual(fixturesOf(copy), f1, 'kayıttan yüklenince aynı fikstür');
-  assert.equal(f1.length, 22);
-  for (const round of f1) {
-    const seen = round.flat();
-    assert.equal(new Set(seen).size, 12);
-  }
+  assert.equal(f1.length, 38, '20 takım → 38 tur');
+  for (const round of f1) assert.equal(new Set(round.flat()).size, 20);
   assert.equal(w.leagues.es1.fixtures, undefined, 'fikstür kayda yazılmaz');
 });
 
-test('küme düşme / çıkma: 3 takım yer değiştirir (2 doğrudan + play-off), ligler 12 kalır, leagueOf güncellenir', () => {
+test('takvim: sezon oyuncunun liginin tur sayısı kadar; diğer liglerin tüm turları sezona sığar', () => {
+  setRandom(seeded(31));
+  const fl = CLUBS.find((c) => c.league === 'first').id;
+  const w = createWorld(1, null, { clubId: fl });
+  assert.equal(w.weeks, 38, '1. Lig (20 takım) → 38 hafta');
+  const sl = CLUBS.find((c) => c.league === 'super').id;
+  assert.equal(createWorld(1, null, { clubId: sl }).weeks, 34, 'Süper Lig (18) → 34 hafta');
+  for (const lg of Object.values(w.leagues)) {
+    let n = 0;
+    for (let wk = 1; wk <= w.weeks; wk++) n += roundsInWeek(w, lg, wk).length;
+    assert.equal(n, fixturesOf(lg).length, `${lg.id}: tüm turlar takvimde`);
+  }
+  // oyuncunun liginde her hafta tam bir tur
+  for (let wk = 1; wk <= w.weeks; wk++) assert.equal(roundsInWeek(w, w.leagues.first, wk).length, 1);
+});
+
+test('küme düşme / çıkma: yapılandırmadaki sayılar (doğrudan + play-off), lig boyutları korunur, leagueOf güncellenir', () => {
   setRandom(seeded(4));
   const w = useWorld(createWorld(1));
-  for (let wk = 1; wk <= 22; wk++) simulateWeek(w, wk);
+  for (let wk = 1; wk <= worldWeeks(w); wk++) simulateWeek(w, wk);
   const relegated = sortedTable(w.leagues.super).slice(-3).map((r) => r.id);
   const promoted = sortedTable(w.leagues.first).slice(0, 2).map((r) => r.id);
   const { moves, playoffs } = promotions(w);
-  assert.equal(moves.length, (27 * 2 + 3) * 6);
+  // Türkiye: Süper Lig ↔ 1. Lig 3'er, 1. Lig ↔ 2. Lig 4'er, 2. Lig ↔ 3. Lig 6'şar
+  const lv = (id) => LEAGUES[id]?.level;
+  const count = (a, b, up) => moves.filter((m) => LEAGUES[m.to]?.country === 'tr' && lv(m.from) === a && lv(m.to) === b && m.up === up).length;
+  assert.equal(count(2, 1, true), 3);
+  assert.equal(count(1, 2, false), 3);
+  assert.equal(count(3, 2, true), 4);
+  assert.equal(count(2, 3, false), 4);
+  assert.equal(count(4, 3, true), 6);
+  assert.equal(count(3, 4, false), 6);
+  // kapalı lig (ABD): hareket yok
+  assert.equal(moves.filter((m) => LEAGUES[m.to]?.country === 'us').length, 0);
   const po = playoffs.first;
   const table = sortedTable(w.leagues.first).map((r) => r.id);
   assert.ok(table.slice(2, 6).includes(po.winner), 'play-off galibi 3–6. sıralardan');
   assert.ok(moves.some((m) => m.clubId === po.winner && m.up && m.playoff));
   const next = useWorld(createWorld(2, null, { prev: w }));
-  for (const lg of Object.values(next.leagues)) assert.equal(lg.teams.length, 12, lg.id);
+  for (const lg of Object.values(next.leagues)) assert.equal(lg.teams.length, LEAGUES[lg.id].size, lg.id);
   for (const id of promoted) assert.equal(leagueOf(id), 'super');
   for (const id of relegated) assert.equal(leagueOf(id), 'first');
   assert.ok(positionOf(next, promoted[0]) >= 1);
+  // birkaç sezon üst üste: boyutlar sabit, kulüp kaybolmaz
+  let cur = next;
+  for (let season = 3; season <= 5; season++) {
+    for (let wk = 1; wk <= worldWeeks(cur); wk++) simulateWeek(cur, wk);
+    cur = useWorld(createWorld(season, null, { prev: cur }));
+    for (const lg of Object.values(cur.leagues)) assert.equal(lg.teams.length, LEAGUES[lg.id].size, `${season} ${lg.id}`);
+    const all = Object.values(cur.leagues).flatMap((lg) => lg.teams);
+    assert.equal(new Set(all).size, all.length, 'bir kulüp iki ligde olamaz');
+  }
+});
+
+test('eski 12 takımlı dünya: süren sezon aynen biter, yeni sezonda gerçek yapıya geçilir', () => {
+  setRandom(seeded(41));
+  const s = newGame({ name: 'Eski Yapı', position: 'FW' });
+  // eski (v2) dünya: her ligde 12 takım, takvim 22 hafta
+  const legacy = { season: 1, ratings: s.world.ratings, leagues: {}, focus: ['super', 'first'], moves: [], v: 2 };
+  for (const [id, lg] of Object.entries(s.world.leagues)) {
+    if (LEAGUES[id].groupIdx || LEAGUES[id].youth) continue;
+    const teams = lg.teams.slice(0, 12);
+    legacy.leagues[id] = { ...lg, teams, table: Object.fromEntries(teams.map((t) => [t, { id: t, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0, last: [] }])), results: [], last: [] };
+  }
+  useWorld(legacy);
+  assert.equal(worldWeeks(legacy), 22);
+  for (let wk = 1; wk <= 22; wk++) simulateWeek(legacy, wk);
+  for (const r of Object.values(legacy.leagues.super.table)) assert.equal(r.p, 22);
+  const next = createWorld(2, null, { prev: legacy, clubId: legacy.leagues.first.teams[0] });
+  for (const lg of Object.values(next.leagues)) assert.equal(lg.teams.length, LEAGUES[lg.id].size, lg.id);
+  assert.equal(next.weeks >= 34, true);
 });
 
 test('yalnızca odak liglerin tüm sonuçları saklanır', () => {
   setRandom(seeded(5));
-  const w = createWorld(1);
+  const w = createWorld(1, null, { clubId: CLUBS.find((c) => c.league === 'first').id });
   simulateWeek(w, 1);
   simulateWeek(w, 2);
   assert.equal(w.leagues.super.results.length, 2);
   assert.equal(w.leagues.en1.results.length, 0);
-  assert.equal(w.leagues.en1.last.length, 6);
+  assert.equal(w.leagues.en1.last.length, 10);
 });
 
 test('eski kayıt: sadece Türkiye ligleri olan dünya yükseltilir', () => {
@@ -85,7 +162,9 @@ test('eski kayıt: sadece Türkiye ligleri olan dünya yükseltilir', () => {
   migrate(s);
   assert.equal(s.world.v, 2);
   assert.ok(s.world.leagues.en1 && s.world.leagues.tr3);
-  assert.equal(Object.values(s.world.leagues.en1.table).reduce((n, r) => n + r.p, 0), 4 * 12, 'yeni ligler geçmiş haftaları oynadı');
+  let games = 0;
+  for (let wk = 1; wk <= 4; wk++) games += matchesInWeek(s.world, s.world.leagues.en1, wk).length * 2;
+  assert.equal(Object.values(s.world.leagues.en1.table).reduce((n, r) => n + r.p, 0), games, 'yeni ligler geçmiş haftaları oynadı');
   assert.ok(s.world.europe, 'Avrupa kupaları kuruldu');
 });
 
@@ -116,7 +195,8 @@ test('Avrupa: oyuncunun kulübü kupadaysa maç, katkı ve prim hesaplanır', ()
   assert.equal(cupOf(s.world, s.career.clubId), 'cl');
   for (const k of Object.keys(s.player.stats)) s.player.stats[k] = 80;
   let played = 0;
-  for (let wk = 1; wk <= 14; wk++) {
+  const groupWeeks = europeWeeks(seasonWeeks()).group;
+  for (let wk = 1; wk <= groupWeeks[groupWeeks.length - 1]; wk++) {
     const r = europeWeek(s, wk);
     if (r.my) {
       played += 1;

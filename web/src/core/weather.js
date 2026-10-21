@@ -1,14 +1,16 @@
 // HAVA DURUMU VE ZEMİN — her maçın havası ev sahibinin ülkesine ve takvimdeki aya göre belirlenir.
 // Deterministik: (sezon, hafta, ev sahibi) aynıysa hava aynıdır; oyunun rastgele akışını (rng) bozmaz.
 // Fizik: yüzey (kuru/ıslak/ağır/karlı) top sürtünmesini, sekmeyi ve oyuncu tutunmasını değiştirir; rüzgâr havadaki topu iter.
-import { CLUB_BY_ID, LEAGUES, SEASON_WEEKS } from './data.js';
+import { CLUB_BY_ID, LEAGUES } from './data.js';
+import { seasonWeeks } from './calendar.js';
 
 export const MONTHS = ['Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık', 'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs'];
 
 /** Haftanın ayı (sezon Ağustos'ta başlar, Mayıs'ta biter). */
 export function monthIndex(week = 1) {
-  const w = Math.max(1, Math.min(SEASON_WEEKS, week));
-  return Math.min(MONTHS.length - 1, Math.floor(((w - 1) / SEASON_WEEKS) * MONTHS.length));
+  const W = seasonWeeks();
+  const w = Math.max(1, Math.min(W, week));
+  return Math.min(MONTHS.length - 1, Math.floor(((w - 1) / W) * MONTHS.length));
 }
 export const monthName = (week) => MONTHS[monthIndex(week)];
 /** Kış: Aralık, Ocak, Şubat */

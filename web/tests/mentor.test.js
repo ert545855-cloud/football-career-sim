@@ -1,3 +1,4 @@
+import { seasonWeeks } from '../src/core/calendar.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { setRandom, seeded } from '../src/core/rng.js';
@@ -215,7 +216,7 @@ test('büyük maç tespiti: derbi ve sezon finali', () => {
   assert.equal(derbyName('van', 'agr'), 'Doğu Derbisi');
   assert.equal(derbyName('agr', 'van'), 'Doğu Derbisi');
   assert.equal(bigMatchFor(s, { myId: 'van', oppId: 'agr', week: 3 }).kind, 'derby');
-  assert.equal(bigMatchFor(s, { myId: 'van', oppId: 'kiz', week: 22 }).kind, 'final');
+  assert.equal(bigMatchFor(s, { myId: 'van', oppId: 'kiz', week: seasonWeeks() }).kind, 'final');
   assert.equal(bigMatchFor(s, { myId: 'van', oppId: 'kiz', week: 2 }), null);
   // Planlanan maça işlenir
   const m = getMatch(s);

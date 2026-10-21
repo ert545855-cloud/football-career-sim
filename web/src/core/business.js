@@ -6,6 +6,7 @@
 import { clamp, roundTo, seeded } from './rng.js';
 import { changeMorale, changeRel } from './player.js';
 import { currentAgent } from './agent.js';
+import { scaleWeek } from './calendar.js';
 
 export const BIZ_TYPES = {
   cafe: {
@@ -194,7 +195,7 @@ function simWeek(state, z, ctx, R, news) {
   for (const e of z.effects) mult *= e.mult;
   z.effects = z.effects.map((e) => ({ ...e, weeks: e.weeks - 1 })).filter((e) => e.weeks > 0);
   const week = state.calendar?.week || 1;
-  const season = z.type === 'cafe' ? (week > 12 && week < 22 ? 0.88 : 1.05) : z.type === 'gym' ? (week <= 4 ? 1.15 : 1) : 1;
+  const season = z.type === 'cafe' ? (week > scaleWeek(12) && week < scaleWeek(22) ? 0.88 : 1.05) : z.type === 'gym' ? (week <= scaleWeek(4) ? 1.15 : 1) : 1;
   let perf = 1;
   if (z.type === 'boots' && sm) perf += (sm.goals || 0) * 0.07 + (sm.motm ? 0.05 : 0) + (sm.played ? (sm.rating - 6.6) * 0.03 : -0.03);
   if (z.type === 'cafe' && sm?.result === 'W') perf += 0.06;

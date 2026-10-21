@@ -9,6 +9,7 @@ import { clamp, chance, pick, rand, randInt } from './rng.js';
 import { randomName } from './world/names.js';
 import { clubRating, leagueOf, sortedTable } from './league.js';
 import { form } from './player.js';
+import { scaleWeek } from './calendar.js';
 
 export const STYLES = {
   attack: { id: 'attack', name: 'Hücumcu', desc: 'Bol pozisyon, bol gol; savunma riskli.', goals: 1.12, conc: 1.08, moments: { shot: 1.15, attack: 1.3, tackle: 0.9 } },
@@ -142,7 +143,7 @@ export function coachOnMatch(state, summary) {
   c.security = clamp(c.security + (res === 'W' ? 4 : res === 'D' ? 0 : -6) + clamp((exp - pos) * 0.6, -4, 3) - (streakL ? 6 : 0), 0, 100);
   if (summary.played && summary.rating != null) c.likes = clamp((c.likes || 0) + (summary.rating - 6.6) * 0.7, -12, 12);
   const week = state.calendar.week;
-  if (c.security <= 0 && week >= 4 && week <= 20) return { sacked: sackCoach(state, 'results') };
+  if (c.security <= 0 && week >= scaleWeek(4) && week <= scaleWeek(20)) return { sacked: sackCoach(state, 'results') };
   return null;
 }
 

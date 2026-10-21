@@ -1,7 +1,7 @@
 // Otomatik oyuncu: denge testleri ve simülasyon için oyunu baştan sona oynar.
 import { GAME_WEIGHTS, POSITIONS, SHOP_ITEMS } from '../src/core/data.js';
 import { chance, rand } from '../src/core/rng.js';
-import { canDoAction, chooseEvent, completeMatch, declineOffers, doAction, endSeason, finishTraining, getMatch, postponeMatch, takeOffer, trainingSetup } from '../src/core/game.js';
+import { canDoAction, chooseEvent, completeMatch, declineOffers, doAction, endSeason, finishTraining, freeWeek, getMatch, postponeMatch, takeOffer, trainingSetup } from '../src/core/game.js';
 import { applyAiEvent, resolveMoment } from '../src/core/match.js';
 import { getEvent } from '../src/core/events.js';
 import { chooseLocker } from '../src/core/locker.js';
@@ -57,9 +57,9 @@ export function playWeek(state, humanSkill = 0.5) {
   const affordable = SHOP_ITEMS.filter((i) => i.kind !== 'use' && !state.career.items.includes(i.id) && i.price <= state.career.money * 0.2 && i.weekly <= state.career.contract.wage * 0.1);
   if (affordable.length) buyItem(state, affordable.sort((a, b) => b.price - a.price)[0].id);
 
-  // Maç
+  // Maç (bay haftasında maç yok: hafta kapanır)
   const match = getMatch(state);
-  const timeline = [
+  const timeline = !match ? [] : [
     ...match.events.map((ev) => ({ minute: ev.minute, ev })),
     ...match.moments.map((m) => ({ minute: m.minute, m })),
   ].sort((a, b) => a.minute - b.minute);
@@ -72,7 +72,7 @@ export function playWeek(state, humanSkill = 0.5) {
       resolveMoment(match, item.m, fakeGame((s / tw / 100) * (match.big?.skillMult ?? 1), humanSkill), state.player.name);
     }
   }
-  const out = match.postponed ? postponeMatch(state, match) : completeMatch(state, match);
+  const out = !match ? freeWeek(state) : match.postponed ? postponeMatch(state, match) : completeMatch(state, match);
 
   if (state.pending.event) {
     const ev = getEvent(state.pending.event.id);

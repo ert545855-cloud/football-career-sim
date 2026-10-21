@@ -29,7 +29,7 @@ export function settingsScreen(app) {
         <h1 class="h-title grow">Ayarlar</h1>
       </div>
       <div class="card list">
-        <div class="li"><span class="ic" style="color:var(--accent)">🌐</span><div class="grow"><b>Dil</b> <span class="muted small" data-noi18n>· Language</span><div class="lang-grid" style="margin-top:8px" data-noi18n>${LANGS.map((l) => `<button class="${(st.lang || 'tr') === l.id ? 'on' : ''}" data-lang="${l.id}" lang="${l.id}" dir="${l.dir || 'ltr'}">${l.name}</button>`).join('')}</div></div></div>
+        <div class="li"><span class="ic" style="color:var(--accent)">🌐</span><div class="grow"><b>Dil</b> <span class="muted small" data-noi18n>· Language</span><div class="lang-grid" style="margin-top:8px" data-noi18n>${LANGS.map((l) => `<button class="${(st.lang || 'tr') === l.id ? 'on' : ''}" data-lang="${l.id}" lang="${l.id}" dir="${l.dir || 'ltr'}">${l.name}</button>`).join('')}</div><div class="muted small" style="margin-top:6px" data-noi18n>Beta: çeviriler tamamlanıyor, bazı metinler henüz Türkçe · Beta: translations in progress</div></div></div>
         ${toggle('sound', 'Ses efektleri', 'sound', 'Vuruş, düdük, tribün sesleri')}
         ${toggle('music', 'Müzik', 'music', 'Oyuna özel bestelenmiş hareketli pop parçalar')}
         ${st.music !== false ? `<div class="li"><span class="ic"></span><div class="grow"><b>Müzik sesi</b><div class="seg" style="margin-top:8px">${[[0.25, 'Kısık'], [0.5, 'Orta'], [0.85, 'Yüksek']].map(([k, l]) => `<button class="${Math.abs((st.musicVol ?? 0.5) - k) < 0.05 ? 'on' : ''}" data-mvol="${k}">${l}</button>`).join('')}</div><div class="muted small" style="margin-top:6px" data-np>${npText()}</div></div></div>` : ''}

@@ -35,7 +35,7 @@ export const FLOWS = {
     { sel: '[data-playstyle]', title: 'Karakter', text: 'Kişiliğin alışkanlıklarınla değişir. Oyun tarzı seç, uzmanlık puanlarınla yeni yetenekler aç.' },
   ],
   social: [{ title: 'Sosyal hayat', text: 'Takım arkadaşlarınla ve sevdiklerinle buluş. Konuşmalarında verdiğin cevaplar ilişkini ve moralini etkiler; gece hayatı profesyonelliğini düşürebilir.' }],
-  league: [{ title: 'Lig ve kupa', text: 'Puan durumu, fikstür ve Kupa sekmesi burada. Kupa ön eleme ile başlar: son 32, son 16, çeyrek final, yarı final ve final.' }],
+  league: [{ title: 'Lig ve kupa', text: 'Puan durumu, fikstür ve Kupa sekmesi burada. Kupada alt lig kulüpleri ön eleme oynar; üst lig kulüpleri doğrudan gruplardan başlar. Grubunu ilk iki sırada bitiren çeyrek finale çıkar, sonra yarı final ve final.' }],
   chirp: [{ title: 'Chirp', text: 'Futbol dünyasının sosyal medyası. Maçlarından sonra paylaşım yap, taraftarlarınla etkileş; ün ve taraftar ilişkin buna göre değişir.' }],
   shop: [{ title: 'Mağaza', text: 'Araba, ev, gelişim ürünleri ve dolap (krampon, gol sevinci…). Kişisel antrenör antrenman verimini artırır.' }],
   gym: [

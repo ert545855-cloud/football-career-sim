@@ -1,7 +1,7 @@
 // @ts-check
 // Başlangıç akışı: isim → seçmeler kampı → rapor/mevki → teklifler → imza.
 // Bu dosya, başlangıç yollarının (A/B/C) sezon boyunca oyun akışına etkilerini de yönetir.
-import { AVATAR, CLUB_BY_ID, CLUBS, leagueAt } from '../data.js';
+import { AVATAR, CLUB_BY_ID, CLUBS, leaguesAt } from '../data.js';
 import { clubRating } from '../league.js';
 import { ovr } from '../player.js';
 import { ensureNumberAfterMove } from './numbers.js';
@@ -73,8 +73,8 @@ export function resolveStartTerms(state, rnd = Math.random) {
     player.rel.teammates = 45;
     if (o < parentR - 28) {
       const cc = CLUB_BY_ID[parentId]?.country || 'tr';
-      const second = leagueAt(cc, 2);
-      const loans = (world.leagues?.[second]?.teams || CLUBS.filter((c) => c.league === second).map((c) => c.id)).map((id) => CLUB_BY_ID[id]).filter(Boolean).sort((a, b) => clubRating(world, b.id) - clubRating(world, a.id)).slice(0, 6);
+      const seconds = leaguesAt(cc, 2);
+      const loans = seconds.flatMap((second) => world.leagues?.[second]?.teams || CLUBS.filter((c) => c.league === second).map((c) => c.id)).map((id) => CLUB_BY_ID[id]).filter(Boolean).sort((a, b) => clubRating(world, b.id) - clubRating(world, a.id)).slice(0, 6);
       const loanTo = loans[Math.floor(rnd() * loans.length)].id;
       career.clubId = loanTo;
       career.loan = { parentId, untilSeason: season + 1 };

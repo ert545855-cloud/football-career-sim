@@ -6,7 +6,7 @@ import {
 import { FOUNDATION_RULES, PROJECTS, canFound, canStart, donate, ensureFoundation, found, foundationName, startProject } from '../../core/foundation.js';
 import { portfolioValue } from '../../core/invest.js';
 import { questsOn } from '../../core/quests.js';
-import { SEASON_WEEKS } from '../../core/data.js';
+import { seasonWeeks } from '../../core/calendar.js';
 import { money } from '../../core/economy.js';
 import { buzz, sfx } from '../../audio.js';
 import { icon } from '../art.js';
@@ -177,7 +177,7 @@ function realtyTab(s, re) {
   const listings = re.listings.map((l) => {
     const T = PROP_TYPES[l.type];
     const fee = Math.round(l.price * 0.04);
-    const yld = (l.rent * SEASON_WEEKS) / l.price;
+    const yld = (l.rent * seasonWeeks()) / l.price;
     const okMoney = s.career.money >= l.price + fee;
     return `<article class="card re-card listing">
       <div class="row" style="gap:12px;align-items:flex-end">${bld(T.art, { color: '#475569' })}

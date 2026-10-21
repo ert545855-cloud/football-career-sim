@@ -6,63 +6,100 @@ import { completeCupMatch, createCup, cupOnWeekEnd, groupTable, planCupMatch, sc
 import { chooseTreatment, ensureMedical, medicalOnWeekEnd, startInjury, treatmentOptions } from '../src/core/injury.js';
 import { clauseOptions, negotiateClauses, applyClauses, goalBonusFor, clausesOnSeasonEnd } from '../src/core/clauses.js';
 import { lastMinuteOffer } from '../src/core/economy.js';
-import { CLUB_BY_ID } from '../src/core/data.js';
+import { CLUB_BY_ID, LEAGUES } from '../src/core/data.js';
 
-test('kupa: ön eleme → gruplar (ilk 2 + en iyi 3.ler) → eleme ağacı; senin maçların hafta içi', () => {
+test('kupa: üst lig ön elemeye girmez; alt ligler kademeli ön eleme; gruplar → doğrudan çeyrek final', () => {
   setRandom(seeded(101));
   const s = newGame({ name: 'Kupa Test', position: 'FW' });
   const cup = createCup(s);
   assert.ok(cup && cup.name === 'Türkiye Kupası');
-  assert.equal(cup.format.groups, 12, 'Türkiye (4 lig + amatörler): 12 grup');
-  assert.ok(cup.pre?.pre1?.length === 12 && cup.preByes.pre2.length === 36, 'amatörler ve alt liglerle iki turlu ön eleme');
-  assert.ok(cup.pre.pre1.every((t) => CLUB_BY_ID[t.h].amateur && CLUB_BY_ID[t.a].amateur), '1. ön eleme: amatör kulüpler');
-  assert.equal(cup.direct.length, 24, 'Süper Lig ve 1. Lig doğrudan grupta');
+  const topIds = s.world.leagues.super.teams;
+  // AŞAMA 1: ön elemede tek bir üst lig kulübü yok
+  const preClubs = cup.plan.flatMap((p) => p.enter);
+  assert.equal(topIds.filter((id) => preClubs.includes(id)).length, 0, 'Süper Lig kulüpleri ön elemeye katılmaz');
+  assert.deepEqual([...cup.direct].sort(), [...topIds].sort(), 'tüm Süper Lig kulüpleri doğrudan gruplarda');
+  // kademeli katılım: 1. tur amatörler + en alt lig, sonraki turlarda üst kademeler
+  const lvl = (id) => (CLUB_BY_ID[id].amateur ? 5 : LEAGUES[CLUB_BY_ID[id].league].level);
+  assert.ok(cup.plan[0].enter.every((id) => lvl(id) >= 4), '1. tur: 3. Lig + amatörler');
+  assert.ok(cup.plan[1].enter.every((id) => lvl(id) === 3), '2. tur: 2. Lig katılır');
+  assert.ok(cup.plan[2].enter.every((id) => lvl(id) === 2), '3. tur: 1. Lig katılır');
+  // AŞAMA 2: 4 grup; her gruba en az bir ön eleme galibi
+  assert.equal(cup.format.groups, 4);
+  assert.equal(cup.format.groups * cup.format.size, topIds.length + cup.format.qualifiers);
+  // AŞAMA 3: gruplardan sonra doğrudan çeyrek final (Son 32 / Son 16 yok)
+  assert.deepEqual(Object.keys(cup.rounds), ['qf', 'sf', 'f']);
+  assert.ok(!cup.stages.some((st) => st === 'r32' || st === 'r16'));
   const me = s.career.clubId;
-  const inPre = cup.pre.pre1.some((t) => t.h === me || t.a === me) || cup.preByes.pre2.includes(me);
-  assert.ok(inPre || cup.direct.includes(me), 'kulübün kupada');
-  // eleme şablonu baştan hazır: Son 32 → Final
-  assert.equal(cup.rounds.r32.length, 16);
-  assert.equal(cup.rounds.r16.length, 8);
-  assert.equal(cup.rounds.f.length, 1);
+  assert.ok(preClubs.includes(me), '1. Lig kulübümüz ön elemede');
   let played = 0;
-  for (let week = 1; week <= 22 && !cup.winner; week++) {
+  let groupsDone = false;
+  for (let week = 1; week <= s.world.weeks && !cup.winner; week++) {
     s.calendar.week = week;
     const t = cupOnWeekEnd(s, week);
     if (t) {
       const m = planCupMatch(s);
       assert.ok(m.cup && m.homeId === t.h);
-      assert.equal(m.knockout, !['g1', 'g2', 'g3'].includes(t.round), 'grup maçı eleme değil');
-      m.score = ['g1', 'g2', 'g3'].includes(t.round) && played === 1 ? { my: 1, opp: 1 } : { my: 3, opp: 0 };
+      const grp = /^g\d+$/.test(t.round);
+      assert.equal(m.knockout, !grp, 'grup maçı eleme değil');
+      m.score = grp && played === 3 ? { my: 1, opp: 1 } : { my: 3, opp: 0 };
       const r = completeCupMatch(s, m, { success: true });
       assert.equal(s.pending.cupTie, null);
-      if (['g1', 'g2', 'g3'].includes(t.round)) assert.equal(r.pens, null, 'grupta penaltı yok');
+      if (grp) assert.equal(r.pens, null, 'grupta penaltı yok');
       played++;
     }
-    if (week === 9) {
-      // gruplar bitti: 12 × (1. + 2.) + en iyi 8 üçüncü = 32
-      assert.equal(cup.stage, 'r32');
-      const teams = cup.rounds.r32.flatMap((x) => [x.h, x.a]);
-      assert.equal(new Set(teams).size, 32);
-      assert.equal(cup.thirds.length, 8);
-      for (const g of cup.groups) { const tb = groupTable(s.world, g); assert.ok(teams.includes(tb[0].id) && teams.includes(tb[1].id)); }
+    if (!groupsDone && cup.stage === 'qf') {
+      groupsDone = true;
+      // gruplar bitti: her grubun 1. ve 2.si çeyrek finalde, başka kimse yok
+      const teams = cup.rounds.qf.flatMap((x) => [x.h, x.a]);
+      assert.equal(new Set(teams).size, 8);
+      const expected = cup.groups.flatMap((g) => groupTable(s.world, g).slice(0, 2).map((r) => r.id));
+      assert.deepEqual([...teams].sort(), [...expected].sort());
+      // grup birincisi iç sahada, başka grubun ikincisine karşı
+      for (const t of cup.rounds.qf) assert.ok(cup.groups.find((g) => groupTable(s.world, g)[0].id === t.h));
+      // gruplarda hem üst lig hem ön eleme galipleri vardı
+      assert.ok(cup.groups.every((g) => g.teams.some((id) => topIds.includes(id))));
+      assert.ok(cup.groups.some((g) => g.teams.some((id) => !topIds.includes(id))));
     }
   }
+  assert.ok(groupsDone, 'gruplar çeyrek finale bağlandı');
   assert.ok(cup.winner, 'final oynandı');
   assert.equal(cup.winner, me, 'hep kazanan kulübümüz şampiyon');
-  assert.ok(played >= 8, `grup + eleme maçları oynandı: ${played}`);
+  assert.ok(played >= 10, `ön eleme + grup + eleme maçları oynandı: ${played}`);
   const pair = cupSeasonEnd(s, s.career.clubId, 'xx');
   assert.ok(s.lastCup && s.lastCup.winner);
   assert.ok(pair && scheduleSuperCup(s, pair) && s.pending.cupTie.kind === 'super');
   setRandom(Math.random);
 });
 
+test('kupa biçimi: her ülkede üst lig doğrudan grupta, gruplara tam olarak kontenjan kadar takım kalır', () => {
+  setRandom(seeded(105));
+  for (const nat of ['tr', 'en', 'de', 'us', 'sc', 'ca', 'ar', 'wa', 'ro', 'br', 'eg']) {
+    const s = newGame({ name: 'Kupa Ülke', position: 'MF', nationality: nat });
+    const cup = s.cup;
+    const top = Object.values(s.world.leagues).filter((lg) => LEAGUES[lg.id].country === nat && LEAGUES[lg.id].level === 1).flatMap((lg) => lg.teams);
+    assert.equal(cup.direct.length, top.length, nat);
+    // turları sırayla oyna: gruplara giren = üst lig + kontenjan
+    for (let week = 1; week <= s.world.weeks && !cup.winner; week++) { s.calendar.week = week; const t = cupOnWeekEnd(s, week); if (t) { const m = planCupMatch(s); m.score = { my: 2, opp: 1 }; completeCupMatch(s, m); } }
+    const inGroups = cup.groups.flatMap((g) => g.teams);
+    assert.equal(inGroups.length, top.length + cup.format.qualifiers, nat);
+    assert.ok(top.every((id) => inGroups.includes(id)), `${nat}: üst lig grupta`);
+    assert.ok(cup.winner, `${nat}: kupa tamamlandı`);
+    const weeks = cup.stages.map((st) => cup.weeks[st]);
+    for (let i = 1; i < weeks.length; i++) assert.ok(weeks[i] > weeks[i - 1], `${nat}: turlar ayrı haftalarda`);
+    assert.ok(weeks[weeks.length - 1] <= s.world.weeks, `${nat}: final sezon içinde`);
+  }
+  setRandom(Math.random);
+});
+
 test('kupa: sezon ortasında kurulursa geçmiş turlar simüle edilir', () => {
   setRandom(seeded(77));
   const s = newGame({ name: 'Kupa Geç', position: 'MF' });
-  s.calendar.week = 14;
+  s.cup = null;
+  const probe = createCup(s);
+  s.calendar.week = probe.weeks.qf + 1;
   s.cup = null;
   const cup = createCup(s);
-  assert.equal(cup.stage, 'qf', 'Son 16 haftası (13) geçti');
+  assert.equal(cup.stage, 'sf', 'çeyrek final haftası geçti');
   assert.ok(cup.groups.every((g) => g.fx.every((f) => f.hg != null)));
   setRandom(Math.random);
 });
@@ -124,7 +161,7 @@ test('kupa: karda ertelenen eşleşme bir hafta bekler, tur o oynanınca ilerler
   const cup = createCup(s);
   let t = null;
   let week = 1;
-  for (; week <= 22 && !t; week++) { s.calendar.week = week; t = cupOnWeekEnd(s, week); }
+  for (; week <= s.world.weeks && !t; week++) { s.calendar.week = week; t = cupOnWeekEnd(s, week); }
   assert.ok(t, 'bir kupa eşleşmesi geldi');
   const stage = cup.stage;
   s.calendar.week = week; // eşleşmenin oynanacağı hafta

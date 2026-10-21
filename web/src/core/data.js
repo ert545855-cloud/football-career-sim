@@ -71,7 +71,7 @@ export const TRAINING = {
 
 // Kurgusal kulüpler. rating = kulübün genel gücü (oyuncu OVR'si ile aynı ölçek).
 export const CLUBS = [
-  // Süper Lig — gerçek kulüpleri çağrıştıran kurgusal adlar ve benzer renkler (gerçek ad/arma kullanılmaz)
+  // Süper Lig (18) — gerçek kulüpleri çağrıştıran kurgusal adlar ve benzer renkler (gerçek ad/arma kullanılmaz)
   { id: 'bog', name: 'İstanbul Aslan', short: 'ASL', fan: 'Aslan', league: 'super', rating: 79, colors: ['#a90432', '#fdb912'], pattern: 'half', city: 'İstanbul' },
   { id: 'aka', name: 'İstanbul Kartal', short: 'KRT', fan: 'Kartal', league: 'super', rating: 76, colors: ['#111111', '#f8fafc'], pattern: 'stripes', city: 'İstanbul' },
   { id: 'ege', name: 'İstanbul Kanarya', short: 'KNR', fan: 'Kanarya', league: 'super', rating: 72, colors: ['#163962', '#ffed00'], pattern: 'stripes', city: 'İstanbul' },
@@ -84,8 +84,15 @@ export const CLUBS = [
   { id: 'tra', name: 'Konya Selçuklu', short: 'KON', fan: 'Selçuklu', league: 'super', rating: 55, colors: ['#007a3d', '#ffffff'], pattern: 'hoops', city: 'Konya' },
   { id: 'fir', name: 'Sivas Yiğido', short: 'SİV', fan: 'Yiğido', league: 'super', rating: 53, colors: ['#c8102e', '#ffffff'], pattern: 'solid', city: 'Sivas' },
   { id: 'ulu', name: 'Bursa Timsah', short: 'BUR', fan: 'Timsah', league: 'super', rating: 50, colors: ['#00843d', '#ffffff'], pattern: 'stripes', city: 'Bursa' },
+  // gerçek takım sayısı (18) için eklenenler
+  { id: 'hlc', name: 'Haliç Denizcileri', short: 'HLÇ', fan: 'Denizci', league: 'super', rating: 63, colors: ['#0b2a5b', '#ffffff'], pattern: 'stripes', city: 'İstanbul' },
+  { id: 'eyp', name: 'Eyüp Mor Yıldız', short: 'EYP', fan: 'Mor Yıldız', league: 'super', rating: 61, colors: ['#5b2a86', '#ffd200'], pattern: 'half', city: 'İstanbul' },
+  { id: 'aln', name: 'Alanya Kızılkule', short: 'ALN', fan: 'Kızılkule', league: 'super', rating: 57, colors: ['#f26522', '#00843d'], pattern: 'stripes', city: 'Antalya' },
+  { id: 'kgm', name: 'Karagümrük Surlar', short: 'KGM', fan: 'Surlar', league: 'super', rating: 56, colors: ['#c8102e', '#111111'], pattern: 'stripes', city: 'İstanbul' },
+  { id: 'adn', name: 'Adana Mavi Yıldırım', short: 'ADN', fan: 'Yıldırım', league: 'super', rating: 52, colors: ['#1e3a8a', '#38bdf8'], pattern: 'stripes', city: 'Adana' },
+  { id: 'mlt', name: 'Malatya Kayısı', short: 'MLT', fan: 'Kayısı', league: 'super', rating: 51, colors: ['#ffd200', '#111111'], pattern: 'half', city: 'Malatya' },
 
-  // 1. Lig
+  // 1. Lig (20)
   { id: 'pam', name: 'Kocaeli Körfez', short: 'KOC', fan: 'Körfez', league: 'first', rating: 45, colors: ['#007a3d', '#111111'], pattern: 'stripes', city: 'Kocaeli' },
   { id: 'kac', name: 'Rize Çaycılar', short: 'RİZ', fan: 'Çaycılar', league: 'first', rating: 43, colors: ['#00843d', '#1e73be'], pattern: 'half', city: 'Rize' },
   { id: 'efe', name: 'Ankara Gelincik', short: 'ANK', fan: 'Gelincik', league: 'first', rating: 41, colors: ['#c8102e', '#111111'], pattern: 'stripes', city: 'Ankara' },
@@ -98,6 +105,15 @@ export const CLUBS = [
   { id: 'dat', name: 'Bodrum Kale', short: 'BOD', fan: 'Bodrum', league: 'first', rating: 30, colors: ['#00843d', '#ffffff'], pattern: 'solid', city: 'Muğla' },
   { id: 'kiz', name: 'Ankara Başkent Gücü', short: 'BAŞ', fan: 'Başkent', league: 'first', rating: 28, colors: ['#ffd200', '#0b1d4f'], pattern: 'solid', city: 'Ankara' },
   { id: 'van', name: 'Diyarbakır Amed', short: 'AMD', fan: 'Amed', league: 'first', rating: 26, colors: ['#00843d', '#c8102e'], pattern: 'half', city: 'Diyarbakır' },
+  // gerçek takım sayısı (20) için eklenenler
+  { id: 'pdk', name: 'Pendik Sahil', short: 'PDK', fan: 'Sahil', league: 'first', rating: 44, colors: ['#c8102e', '#ffffff'], pattern: 'solid', city: 'İstanbul' },
+  { id: 'bol', name: 'Bolu Köroğlu', short: 'BOL', fan: 'Köroğlu', league: 'first', rating: 42, colors: ['#d6001c', '#ffffff'], pattern: 'stripes', city: 'Bolu' },
+  { id: 'cor', name: 'Çorum Hitit', short: 'ÇOR', fan: 'Hitit', league: 'first', rating: 40, colors: ['#c8102e', '#111111'], pattern: 'half', city: 'Çorum' },
+  { id: 'bnd', name: 'Bandırma Marmara', short: 'BND', fan: 'Marmara', league: 'first', rating: 36, colors: ['#c8102e', '#ffffff'], pattern: 'hoops', city: 'Balıkesir' },
+  { id: 'igd', name: 'Iğdır Ova', short: 'IĞD', fan: 'Ova', league: 'first', rating: 32, colors: ['#0057b8', '#ffd200'], pattern: 'solid', city: 'Iğdır' },
+  { id: 'sry', name: 'Sarıyer Boğaz', short: 'SRY', fan: 'Boğaz', league: 'first', rating: 29, colors: ['#1e2b5c', '#ffffff'], pattern: 'stripes', city: 'İstanbul' },
+  { id: 'umr', name: 'Ümraniye Çamlıca', short: 'ÜMR', fan: 'Çamlıca', league: 'first', rating: 27, colors: ['#c8102e', '#1e2b5c'], pattern: 'half', city: 'İstanbul' },
+  { id: 'esn', name: 'Esenler Gücü', short: 'ESN', fan: 'Esenler', league: 'first', rating: 25, colors: ['#7a1e3a', '#ffd200'], pattern: 'solid', city: 'İstanbul' },
 ].map((c) => ({ ...c, country: 'tr' }));
 
 const WORLD = generateWorld({ tr: CLUBS.map((c) => c.short) });
@@ -106,24 +122,31 @@ const WORLD = generateWorld({ tr: CLUBS.map((c) => c.short) });
 CLUBS.push(...WORLD.clubs);
 import { generateWorld } from './world/generate.js';
 import { COUNTRIES, COUNTRY_BY_ID } from './world/countries.js';
+import { LEGACY_LEAGUES, baseLeagueId } from './world/leagueConfig.js';
 
 export { COUNTRIES, COUNTRY_BY_ID };
 
-
 /**
- * Ligler: 28 ülkenin ilk 3 ligi (Türkiye'de 4) + Türkiye U-17 gelişim ligi.
- * tier = ülke içindeki kademe (1 = en üst). country = ülke kimliği.
+ * Ligler: her ülkenin lig piramidi leagueConfig.js'ten (kademe, grup, gerçek takım sayısı) + U-17 gelişim ligleri.
+ * tier = ülke içindeki kademe (1 = en üst). country = ülke kimliği. size = takım sayısı, legs = devre sayısı.
+ * legacy: artık yapıda olmayan eski lig (yalnız eski kayıtların süren sezonu için; yeni dünyada kurulmaz).
  */
 export const LEAGUES = {
   ...Object.fromEntries(WORLD.leagues.map((l) => [l.id, l])),
-  /** Dev kulüplerin altyapı takımlarından oluşan gelişim ligi (Seçenek C) */
-  u17: { id: 'u17', name: 'U-17 Gelişim Ligi', short: 'U17', tier: 3, level: 9, youth: true, country: 'tr' },
-  // diğer ülkelerin U-17 ligleri (vatandaşlığa göre başlangıçta altyapı seçeneği)
-  ...Object.fromEntries(COUNTRIES.filter((c) => c.id !== 'tr').map((c) => [`${c.id}u17`, { id: `${c.id}u17`, name: `${c.name} U-17 Ligi`, short: 'U17', tier: 3, level: 9, youth: true, country: c.id }])),
+  ...Object.fromEntries(Object.entries(LEGACY_LEAGUES).map(([id, l]) => {
+    const cc = id.slice(0, 2);
+    return [id, { id, name: l.name, short: `${COUNTRY_BY_ID[cc]?.short || cc.toUpperCase()}${l.level}`, tier: l.level, level: l.level, country: cc, legacy: true, size: 12, legs: 2, groups: 1, groupIdx: 0, div: l.name }];
+  })),
 };
+/** U-17 gelişim ligleri: ülkenin üst lig kulüplerinin altyapıları (takım sayısı = üst lig takım sayısı) */
+for (const c of COUNTRIES) {
+  const id = c.id === 'tr' ? 'u17' : `${c.id}u17`;
+  LEAGUES[id] = { id, name: c.id === 'tr' ? 'U-17 Gelişim Ligi' : `${c.name} U-17 Ligi`, short: 'U17', tier: 3, level: 9, youth: true, country: c.id, legs: 2, groups: 1, groupIdx: 0, div: 'U-17' };
+}
 
-/** Ülkenin n. kademe ligi ve altyapı ligi */
-export const leagueAt = (cc, level) => (cc === 'tr' ? ['super', 'first', 'tr2', 'tr3'][level - 1] : `${cc}${level}`);
+/** Ülkenin n. kademe ligi (gruplu kademede ilk grup) ve kademenin tüm grupları */
+export const leagueAt = (cc, level) => baseLeagueId(cc, level);
+export const leaguesAt = (cc, level) => Object.values(LEAGUES).filter((l) => l.country === cc && l.level === level && !l.youth && !l.legacy).map((l) => l.id);
 export const youthLeagueOf = (cc) => (cc === 'tr' ? 'u17' : `${cc}u17`);
 
 
@@ -131,20 +154,44 @@ export const youthLeagueOf = (cc) => (cc === 'tr' ? 'u17' : `${cc}u17`);
  * Altyapı (U-17) takımları: Süper Lig kulüplerinin gençleri. Kendi liglerinde oynarlar,
  * transfer tekliflerine ve büyük kulüp listelerine girmezler (CLUBS yalnızca A takımları içerir).
  */
-export const YOUTH_CLUBS = CLUBS.filter((c) => LEAGUES[c.league]?.tier === 1).map((c) => ({
-  ...c,
-  id: `${c.id}-u17`,
-  name: `${c.name} U-17`,
-  league: youthLeagueOf(c.country),
-  rating: Math.round(16 + (c.rating - 50) * 0.35),
-  parentId: c.id,
-  youth: true,
-}));
+export const YOUTH_CLUBS = CLUBS.filter((c) => LEAGUES[c.league]?.tier === 1).map((c) => {
+  // üst lig gruplu ise (konferanslar) altyapı ligi de aynı gruplara ayrılır
+  const gi = LEAGUES[c.league].groupIdx || 0;
+  const base = youthLeagueOf(c.country);
+  const id = gi ? `${base}${'abcdefgh'[gi]}` : base;
+  if (!LEAGUES[id]) {
+    const top = LEAGUES[c.league];
+    LEAGUES[id] = { ...LEAGUES[base], id, name: `${LEAGUES[base].name} · ${top.group || String.fromCharCode(65 + gi)}`, groupIdx: gi, groups: top.groups };
+  }
+  if (gi && !LEAGUES[base].group) {
+    LEAGUES[base].groups = LEAGUES[c.league].groups;
+    const g0 = Object.values(LEAGUES).find((l) => l.country === c.country && l.level === 1 && !l.groupIdx && !l.youth);
+    LEAGUES[base].group = g0?.group || 'A';
+    LEAGUES[base].name = `${LEAGUES[base].name} · ${LEAGUES[base].group}`;
+  }
+  return {
+    ...c,
+    id: `${c.id}-u17`,
+    name: `${c.name} U-17`,
+    league: id,
+    rating: Math.round(16 + (c.rating - 50) * 0.35),
+    parentId: c.id,
+    youth: true,
+  };
+});
 
 /** Lig tablosu ve fikstür üretimi için tüm takımlar (A takımları + altyapı) */
 export const ALL_CLUBS = [...CLUBS, ...YOUTH_CLUBS];
+for (const lg of Object.values(LEAGUES)) if (lg.youth) lg.size = YOUTH_CLUBS.filter((c) => c.league === lg.id).length;
 
 export const CLUB_BY_ID = Object.fromEntries(ALL_CLUBS.map((c) => [c.id, c]));
+/** Yapıdan taşan eski kulüpler: lige alınmaz, eski kayıtlarda adları görünsün diye dizinde kalır */
+for (const c of WORLD.inactive) if (!CLUB_BY_ID[c.id]) CLUB_BY_ID[c.id] = c;
+// Eskiden üst ligde olup artık olmayan kulüplerin U-17 takımları (eski kayıtların süren sezonu için)
+for (const c of [...CLUBS, ...WORLD.inactive]) {
+  if (!/^[a-z]{2}1-\d\d$/.test(c.id) || CLUB_BY_ID[`${c.id}-u17`]) continue;
+  CLUB_BY_ID[`${c.id}-u17`] = { ...c, id: `${c.id}-u17`, name: `${c.name} U-17`, league: youthLeagueOf(c.country), rating: Math.round(16 + ((c.rating || 30) - 50) * 0.35), parentId: c.id, youth: true, inactive: true };
+}
 
 /**
  * Bölgesel Amatör Lig (BAL) kulüpleri: yalnızca Türkiye Kupası'nın ön eleme turlarında oynarlar.
@@ -204,6 +251,10 @@ export function fanName(club) {
   return n || club.short;
 }
 
+/**
+ * Tasarım takviminin hafta sayısı (eski 12 takımlı ligler). Gerçek sezon uzunluğu oyuncunun liginden gelir:
+ * core/calendar.js → seasonWeeks(). Bu sabitler yalnız eski kayıtlar ve ölçekleme tabanı içindir.
+ */
 export const SEASON_WEEKS = 22;
 export const MID_WINDOW_WEEK = 11;
 export const WEEK_SLOTS = 4;

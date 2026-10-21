@@ -5,9 +5,9 @@
 //    Yönetim hedefi tutarsa itibar artar, kötü sezonlarda kovulursun ve daha küçük kulüplerden teklif gelir.
 //  • TV yorumcusu: her sezon 3 program, her birinde üslup seçimi (objektif / sert / esprili) → popülerlik,
 //    tartışma ve kazanç. Sezon sonunda sözleşme ve "Yılın Yorumcusu" ödülü.
-import { CLUBS, CLUB_BY_ID, LEAGUES, SEASON_WEEKS } from './data.js';
+import { CLUBS, CLUB_BY_ID, LEAGUES } from './data.js';
 import { clamp, chance, pick, rand, roundTo, shuffle } from './rng.js';
-import { createWorld, evolveRatings, positionOf, simulateWeek, sortedTable } from './league.js';
+import { createWorld, evolveRatings, positionOf, simulateWeek, sortedTable, worldWeeks } from './league.js';
 
 export const COACH_CHOICES = {
   tactic: [
@@ -126,7 +126,7 @@ export function playCoachSeason(state, choices) {
   const tacticFit = tac.id === 'attack' ? (base >= 60 ? 1 : -1) : tac.id === 'defend' ? (base < 50 ? 1.5 : -0.5) : 0.5;
   const rating = clamp(base + tr.now + co.pendingNext + trn.bonus + coachSkill + tacticFit - (crisis ? 4 : 0) + rand(-1.5, 1.5), 15, 95);
   world.ratings[co.clubId] = rating;
-  for (let w = 1; w <= SEASON_WEEKS; w++) simulateWeek(world, w);
+  for (let w = 1; w <= worldWeeks(world); w++) simulateWeek(world, w);
   const lg = world.leagues[club.league];
   const table = sortedTable(lg);
   const position = positionOf(world, co.clubId);

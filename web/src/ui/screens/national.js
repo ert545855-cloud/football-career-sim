@@ -1,5 +1,5 @@
 // MİLLİ TAKIM EKRANI — seviye, milli maç sayıları, çağrı hedefi, turnuva geçmişi.
-import { NATIONAL_TEAMS, NATIONAL_WEEKS, RESULT_LABEL, callUpScore, ensureNational, nextCallTarget, tournamentName } from '../../core/national.js';
+import { NATIONAL_TEAMS, RESULT_LABEL, callUpScore, ensureNational, nationalWeeks, nextCallTarget, tournamentName } from '../../core/national.js';
 import { icon } from '../art.js';
 import { animateBars, esc } from '../dom.js';
 import { meter } from '../components.js';
@@ -10,7 +10,7 @@ export function nationalScreen(app) {
   const n = ensureNational(s);
   const tgt = nextCallTarget(s);
   const cur = tgt.current ? NATIONAL_TEAMS[tgt.current] : null;
-  const nextWeek = NATIONAL_WEEKS.find((w) => w >= s.calendar.week);
+  const nextWeek = nationalWeeks().find((w) => w >= s.calendar.week);
   const nextT = s.calendar.season % 2 === 0 ? s.calendar.season : s.calendar.season + 1;
   const score = Math.round(callUpScore(s));
   const totalCaps = n.caps.U19 + n.caps.U21 + n.caps.A;

@@ -6,7 +6,7 @@
 //   A · Alt Lig Takımı        : en alt ligden (1. Lig, alt yarı) rastgele kulüp, ilk 11 garantisi
 //   B · Üst Lig Takımı (kiralık): Süper Lig kulübü sözleşme imzalar, 1 yıl 1. Lig'e kiralar (forma şartıyla)
 //   C · Dev Kulüp Altyapısı    : büyük kulübün U-17 takımı; gelişim bonusu, sezon sonunda A takıma yükselme
-import { CLUBS, CLUB_BY_ID, LEAGUES, leagueAt } from '../data.js';
+import { CLUBS, CLUB_BY_ID, LEAGUES, leagueAt, leaguesAt } from '../data.js';
 import { clubRating, leagueIdIn } from '../league.js';
 
 /** @typedef {'A'|'B'|'C'} OfferKind */
@@ -50,8 +50,8 @@ export const OFFER_KINDS = {
 
 /** Teklif metinlerindeki lig adları: vatandaşlığın ülkesine göre */
 export function offerText(t, cc = 'tr') {
-  const top = LEAGUES[leagueAt(cc, 1)]?.name || 'Süper Lig';
-  const second = LEAGUES[leagueAt(cc, 2)]?.name || '1. Lig';
+  const top = LEAGUES[leagueAt(cc, 1)]?.div || 'Süper Lig';
+  const second = LEAGUES[leagueAt(cc, 2)]?.div || '1. Lig';
   const youth = LEAGUES[cc === 'tr' ? 'u17' : `${cc}u17`]?.name || 'U-17 Gelişim Ligi';
   return String(t).replace(/\{top\}/g, top).replace(/\{second\}/g, second).replace(/\{youth\}/g, youth);
 }
@@ -66,10 +66,11 @@ export function unlockedOptions(score) {
 export function offerPools(world, cc = 'tr') {
   const r = (id) => clubRating(world, id);
   const inLeague = (lid) => (world?.leagues?.[lid]?.teams || CLUBS.filter((c) => c.league === lid).map((c) => c.id)).map((id) => CLUB_BY_ID[id]).filter(Boolean);
-  const top = leagueAt(cc, 1);
-  const second = LEAGUES[leagueAt(cc, 2)] ? leagueAt(cc, 2) : 'first';
-  const supers = inLeague(LEAGUES[top] ? top : 'super').sort((a, b) => r(b.id) - r(a.id));
-  const firsts = inLeague(second).sort((a, b) => r(b.id) - r(a.id));
+  // gruplu kademelerde (konferanslar) tüm gruplar
+  const tops = leaguesAt(cc, 1).length ? leaguesAt(cc, 1) : ['super'];
+  const seconds = leaguesAt(cc, 2).length ? leaguesAt(cc, 2) : ['first'];
+  const supers = tops.flatMap(inLeague).sort((a, b) => r(b.id) - r(a.id));
+  const firsts = seconds.flatMap(inLeague).sort((a, b) => r(b.id) - r(a.id));
   const half = Math.ceil(firsts.length / 2);
   return {
     /** A: en alt lig, alt yarı */

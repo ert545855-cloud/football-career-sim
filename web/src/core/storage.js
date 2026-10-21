@@ -36,11 +36,39 @@ function storage() {
   }
 }
 
+/**
+ * Kayıt sıkıştırma: lig tabloları (gerçek takım sayılarıyla ~2200 satır) dizi olarak yazılır.
+ * {id,p,w,d,l,gf,ga,pts,last:[…]} → [id,p,w,d,l,gf,ga,pts,"GMB"] (canlı durum değişmez, kopya üzerinde)
+ */
+export function packState(state) {
+  const w = state?.world;
+  if (!w?.leagues) return state;
+  const leagues = {};
+  for (const [id, lg] of Object.entries(w.leagues)) {
+    if (!lg?.table) { leagues[id] = lg; continue; }
+    const { table, ...rest } = lg;
+    leagues[id] = { ...rest, tz: Object.values(table).map((r) => [r.id, r.p, r.w, r.d, r.l, r.gf, r.ga, r.pts, (r.last || []).join('')]) };
+  }
+  return { ...state, world: { ...w, leagues } };
+}
+
+/** packState'in tersi (eski, sıkıştırılmamış kayıtlar olduğu gibi geçer) */
+export function unpackState(state) {
+  const w = state?.world;
+  if (!w?.leagues) return state;
+  for (const lg of Object.values(w.leagues)) {
+    if (!lg?.tz) continue;
+    lg.table = Object.fromEntries(lg.tz.map(([id, p, w2, d, l, gf, ga, pts, last]) => [id, { id, p, w: w2, d, l, gf, ga, pts, last: String(last || '').split('') }]));
+    delete lg.tz;
+  }
+  return state;
+}
+
 export function saveGame(state) {
   const s = storage();
   if (!s) return false;
   try {
-    s.setItem(KEY, JSON.stringify(state));
+    s.setItem(KEY, JSON.stringify(packState(state)));
     return true;
   } catch {
     return false;
@@ -52,7 +80,7 @@ export function loadGame() {
   if (!s) return null;
   try {
     const raw = s.getItem(KEY);
-    return raw ? migrate(JSON.parse(raw)) : null;
+    return raw ? migrate(unpackState(JSON.parse(raw))) : null;
   } catch {
     return null;
   }
@@ -67,6 +95,7 @@ export function clearSave() {
 /** Eski veya eksik kayıtları güvenli hale getirir. */
 export function migrate(state) {
   if (!state || !state.player || !state.career) return null;
+  unpackState(state);
   state.version = SAVE_VERSION;
   state.flags = { cooldowns: {}, benchStreak: 0, rivalOffset: 0, injuredWeeks: 0, trainBoostWeeks: 0, nationalSeason: 0, ...(state.flags || {}) };
   state.pending = { match: null, event: null, offers: null, seasonReport: null, national: null, tournament: null, ...(state.pending || {}) };
@@ -133,14 +162,14 @@ export function clearDraft() {
 
 /** Kaydı panoya kopyalanabilir metne çevirir (cihaz değiştirmek için). */
 export function exportSave(state) {
-  const json = JSON.stringify(state);
+  const json = JSON.stringify(packState(state));
   return btoa(unescape(encodeURIComponent(json)));
 }
 
 export function importSave(code) {
   try {
     const json = decodeURIComponent(escape(atob(code.trim())));
-    return migrate(JSON.parse(json));
+    return migrate(unpackState(JSON.parse(json)));
   } catch {
     return null;
   }

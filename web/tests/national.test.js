@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { setRandom, seeded } from '../src/core/rng.js';
 import { newGame } from '../src/core/game.js';
 import {
-  NATIONAL_WEEKS, callUpLevel, declineCallUp, finishTournament, nationalWindow, playNationalMatch, startTournament, tournamentEligible,
+  nationalWeeks, callUpLevel, declineCallUp, finishTournament, nationalWindow, playNationalMatch, startTournament, tournamentEligible,
 } from '../src/core/national.js';
 import { playWeek } from '../scripts/bot.js';
 
@@ -36,7 +36,7 @@ test('milli: pencere yalnızca milli ara haftalarında; maç ve ret etkileri', (
   setStats(s, 70);
   s.calendar.week = 3;
   assert.equal(nationalWindow(s), null);
-  s.calendar.week = NATIONAL_WEEKS[0];
+  s.calendar.week = nationalWeeks()[0];
   const call = nationalWindow(s);
   assert.ok(call && call.level === 'A' && s.pending.national);
   const r = playNationalMatch(s, { success: true, accuracy: 1 });
@@ -45,7 +45,7 @@ test('milli: pencere yalnızca milli ara haftalarında; maç ve ret etkileri', (
   assert.equal(s.career.caps, 1);
   assert.equal(s.pending.national, null);
 
-  s.calendar.week = NATIONAL_WEEKS[1];
+  s.calendar.week = nationalWeeks()[1];
   nationalWindow(s);
   const fed = s.player.rel.federation;
   declineCallUp(s);

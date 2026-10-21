@@ -4,9 +4,10 @@ import { drawPostponeArt } from './postponeArt.js';
 import { condOf } from '../core/gym.js';
 import { attitudeBar } from './attitudeView.js';
 import { attitudeOf } from '../core/attitude.js';
-import { ACTIONS, CLUB_BY_ID, LEAGUES, POSITIONS, SEASON_WEEKS, STATS, STAT_KEYS, TRAINING } from '../core/data.js';
+import { ACTIONS, CLUB_BY_ID, LEAGUES, POSITIONS, STATS, STAT_KEYS, TRAINING } from '../core/data.js';
+import { seasonWeeks } from '../core/calendar.js';
 import {
-  canDoAction, chooseEvent, completeMatch, declineOffers, doAction, endSeason, finishTraining, getMatch, newGame, postponeMatch, retire, takeOffer, trainingSetup,
+  canDoAction, chooseEvent, completeMatch, declineOffers, doAction, endSeason, finishTraining, freeWeek, getMatch, hasLeagueMatch, newGame, postponeMatch, retire, takeOffer, trainingSetup,
 } from '../core/game.js';
 import { getEvent } from '../core/events.js';
 import { money } from '../core/economy.js';
@@ -505,12 +506,22 @@ export function createApp(rootEl) {
       const s = this.state;
       if (s.calendar.phase !== 'week') return this.runPending();
       if (cupTieReady(s)) { await cupFlow(this); return; }
+      const noMatch = !hasLeagueMatch(s);
       if (s.calendar.slots > 0) {
         const ok = await sheet({
           center: true,
-          html: `<h3>Maç gününe geçilsin mi?</h3><p class="lead">Bu hafta hâlâ <b>${s.calendar.slots}</b> zaman hakkın var. Kullanılmayan haklar kaybolur.</p><div class="stack"><button class="btn primary block" data-close="go">Evet, maça geç</button><button class="btn ghost block" data-close="no">Haftaya devam</button></div>`,
+          html: `<h3>${noMatch ? 'Hafta tamamlansın mı?' : 'Maç gününe geçilsin mi?'}</h3><p class="lead">Bu hafta hâlâ <b>${s.calendar.slots}</b> zaman hakkın var. Kullanılmayan haklar kaybolur.</p><div class="stack"><button class="btn primary block" data-close="go">${noMatch ? 'Evet, haftayı bitir' : 'Evet, maça geç'}</button><button class="btn ghost block" data-close="no">Haftaya devam</button></div>`,
         });
         if (ok !== 'go') return;
+      }
+      // maçsız hafta (bay): dünya oynar, hafta kapanır
+      if (noMatch) {
+        const week = s.calendar.week;
+        const out = freeWeek(s);
+        this.save();
+        await this.weekEndSheet(out, week);
+        await this.runPending();
+        return;
       }
       const match = getMatch(s);
       this.save();
@@ -576,7 +587,7 @@ export function createApp(rootEl) {
             <div class="team">${crestSVG(away, 'crest lg')}<span>${esc(away.name)}</span></div>
           </div>
           <p class="lead center">${esc(why[1])}</p>
-          <p class="muted small center">Maç ${match.week >= SEASON_WEEKS - 1 ? 'sezon bitmeden, gelecek hafta' : 'iki hafta sonra'} hafta içine alınacak. Bu hafta sonu dinlen: enerji toplarsın.</p>
+          <p class="muted small center">Maç ${match.week >= seasonWeeks() - 1 ? 'sezon bitmeden, gelecek hafta' : 'iki hafta sonra'} hafta içine alınacak. Bu hafta sonu dinlen: enerji toplarsın.</p>
           <button class="btn primary block" style="margin-top:14px" data-close>Tamam</button>`,
         onMount: (n) => drawPostponeArt(n.querySelector('[data-pp]'), match.postponed),
       });
@@ -635,7 +646,7 @@ export function createApp(rootEl) {
         center: true,
         html: `
           <h3>Hafta ${week} tamamlandı</h3>
-          <p class="lead">Maaşın yattı, vücudun toparlandı.</p>
+          <p class="lead">${out.free ? 'Bay haftası: ligde maçın yoktu. ' : ''}Maaşın yattı, vücudun toparlandı.</p>
           <div class="card">
             <div class="row between small"><span class="muted">Maaş</span><b style="color:var(--good)">+${money(f.income)}</b></div>
             <div class="row between small" style="margin-top:6px"><span class="muted">Yaşam gideri</span><b style="color:var(--bad)">−${money(f.living)}</b></div>

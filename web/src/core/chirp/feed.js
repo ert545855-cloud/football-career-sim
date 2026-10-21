@@ -5,7 +5,10 @@
 //   • Sermet Hoca (Bursa frikiği), Eski Hakem Rıza, Veri Futbol, Piyasa Değeri, Futbol Capsleri
 //   • Dünya futbolu (büyük takımlar), Avrupa kupaları sonuçları, milli takım kadrosu, yapay transferler
 //   • Trendler (#etiketler) — Keşfet sekmesi için
-import { CLUBS, CLUB_BY_ID, COUNTRY_BY_ID, LEAGUES, MID_WINDOW_WEEK, POSITIONS } from '../data.js';
+import { CLUBS, CLUB_BY_ID, COUNTRY_BY_ID, LEAGUES, POSITIONS } from '../data.js';
+import { midWindowWeek, seasonWeeks } from '../calendar.js';
+import { europeWeeks } from '../world/europe.js';
+import { nationalWeeks } from '../national.js';
 import { clubRating, fixtureFor, leagueOf, positionOf, sortedTable, weekResults } from '../league.js';
 import { MentorManager } from '../mentor/index.js';
 import { upcomingBigMatch } from '../mentor/bigMatch.js';
@@ -129,7 +132,7 @@ export class FeedEngine {
     out.push(...this.squadInjuries());
     const pre = this.preview();
     if (pre) out.push(pre);
-    if (s.calendar.week === 1 || s.calendar.week === MID_WINDOW_WEEK + 1) out.push(...this.aiTransfers(s.calendar.week === 1 ? 3 : 2));
+    if (s.calendar.week === 1 || s.calendar.week === midWindowWeek() + 1) out.push(...this.aiTransfers(s.calendar.week === 1 ? 3 : 2));
     out.push(...this.worldDigest());
     if (s.calendar.week > 1 && this.chance(0.55)) out.push(this.meme());
     if (this.chance(0.3)) out.push(this.publish({ author: SERMET, text: this.pick(SERMET_LINES.general), topic: 'pundit', ctx: 'sermet', likes: [3000, 12000] }));
@@ -510,9 +513,10 @@ export class FeedEngine {
     if (ctx.match) add(tagOf(`${this.club.short}vs${CLUB_BY_ID[ctx.match.oppId].short}`), 2000 + fame * 120 + (ctx.match.big ? 15000 : 0), 'match');
     if (ctx.match?.big?.kind === 'derby') add('#Derbi', 40000, 'event');
     const w = s.calendar.week;
-    if ([3, 5, 7, 9, 12, 14, 16, 18, 20, 22].includes(w)) add('#ŞampiyonlarLigi', 30000 + this.rnd() * 20000, 'world');
-    if (w === 6 || w === 16) add('#MilliTakım', 25000);
-    if (w === 1 || w === MID_WINDOW_WEEK || w === MID_WINDOW_WEEK + 1) add('#TransferBombası', 22000 + this.rnd() * 9000);
+    const ew = europeWeeks(seasonWeeks());
+    if ([...ew.group, ew.r16, ew.qf, ew.sf, ew.f].includes(w)) add('#ŞampiyonlarLigi', 30000 + this.rnd() * 20000, 'world');
+    if (nationalWeeks().includes(w)) add('#MilliTakım', 25000);
+    if (w === 1 || w === midWindowWeek() || w === midWindowWeek() + 1) add('#TransferBombası', 22000 + this.rnd() * 9000);
     if ((s.social?.press || []).some((p) => p.s === s.calendar.season && p.w >= w - 1)) add('#Magazin', 18000);
     for (const [tag, n] of Object.entries(data.myTags || {})) add(tag, n, 'mine');
     for (const tag of [...EVERGREEN_TAGS].sort(() => this.rnd() - 0.5).slice(0, 5)) add(tag, 2000 + this.rnd() * 20000, 'tr');

@@ -1,11 +1,13 @@
 // AVRUPA KUPALARI — Şampiyonlar Ligi, Avrupa Ligi, Konferans Ligi (32'şer takım).
 //
 // Katılım: Avrupa ülkelerinin üst liglerinde geçen sezonun sırası (ilk sezon kulüp gücü).
-// Takvim: 8 grup × 4 takım, 6 maç günü (hafta 3,5,7,9,12,14) → son 16 (16) → çeyrek (18) → yarı (20) → final (22).
+// Takvim (22 haftalık tasarım; sezon uzunluğuna ölçeklenir): 8 grup × 4 takım, 6 maç günü (hafta 3,5,7,9,12,14)
+// → son 16 (16) → çeyrek (18) → yarı (20) → final (22).
 // Eleme turları tek maç; berabere biterse uzatma ve penaltılar.
 import { CLUB_BY_ID, COUNTRIES, LEAGUES } from '../data.js';
 import { EURO_SLOTS } from './countries.js';
-import { clubRating, goalLambda, sortedTable } from '../league.js';
+import { clubRating, goalLambda, sortedTable, worldWeeks } from '../league.js';
+import { BASE_WEEKS, scaleWeek } from '../calendar.js';
 import { chance, poisson, rand } from '../rng.js';
 import { ovr } from '../player.js';
 
@@ -16,6 +18,11 @@ export const CUPS = {
 };
 export const CUP_IDS = ['cl', 'el', 'ecl'];
 export const CUP_WEEKS = { group: [3, 5, 7, 9, 12, 14], r16: 16, qf: 18, sf: 20, f: 22 };
+/** Bu sezonun Avrupa takvimi (sezon uzunluğu W haftaya ölçekli) */
+export function europeWeeks(W = BASE_WEEKS) {
+  const s = (w) => scaleWeek(w, W);
+  return { group: CUP_WEEKS.group.map(s), r16: s(CUP_WEEKS.r16), qf: s(CUP_WEEKS.qf), sf: s(CUP_WEEKS.sf), f: s(CUP_WEEKS.f) };
+}
 export const STAGE_LABEL = { group: 'Grup aşaması', r16: 'Son 16', qf: 'Çeyrek final', sf: 'Yarı final', f: 'Final', done: 'Tamamlandı' };
 const GROUP_ROUNDS = [[[0, 1], [2, 3]], [[0, 2], [1, 3]], [[0, 3], [1, 2]], [[1, 0], [3, 2]], [[2, 0], [3, 1]], [[3, 0], [2, 1]]];
 const GROUP_NAMES = 'ABCDEFGH'.split('');
@@ -130,10 +137,11 @@ function applyGroup(cup, m) {
 }
 
 /** Haftanın kupa aşaması */
-export function stageOfWeek(week) {
-  const g = CUP_WEEKS.group.indexOf(week);
+export function stageOfWeek(week, W = BASE_WEEKS) {
+  const cw = europeWeeks(W);
+  const g = cw.group.indexOf(week);
   if (g >= 0) return { stage: 'group', md: g + 1 };
-  for (const st of ['r16', 'qf', 'sf', 'f']) if (CUP_WEEKS[st] === week) return { stage: st };
+  for (const st of ['r16', 'qf', 'sf', 'f']) if (cw[st] === week) return { stage: st };
   return null;
 }
 
@@ -161,7 +169,7 @@ function pairsFor(cup, stage) {
  */
 export function playEuropeWeek(world, week, opts = {}) {
   const eu = world.europe;
-  const st = stageOfWeek(week);
+  const st = stageOfWeek(week, worldWeeks(world));
   if (!eu || !st) return [];
   const out = [];
   for (const id of CUP_IDS) {

@@ -1,6 +1,7 @@
 // AVRUPA KUPALARI GÖRÜNÜMÜ — lig ekranında: kupa seçici, gruplar, eleme turları, kazanan.
 import { CLUB_BY_ID, COUNTRY_BY_ID } from '../core/data.js';
-import { CUPS, CUP_IDS, CUP_WEEKS, STAGE_LABEL, cupOf, groupTable } from '../core/world/europe.js';
+import { CUPS, CUP_IDS, STAGE_LABEL, cupOf, europeWeeks, groupTable } from '../core/world/europe.js';
+import { seasonWeeks } from '../core/calendar.js';
 import { crestSVG, icon } from './art.js';
 import { esc } from './dom.js';
 
@@ -38,7 +39,8 @@ export function europeSection(app) {
   const ko = ['r16', 'qf', 'sf', 'f'].filter((k) => cup.results[k]).reverse().map((k) => `<div class="h-sec">${STAGE_LABEL[k]}</div><div class="card list" style="padding:4px 10px">${cup.results[k].map((m) => matchRow(m, myId)).join('')}</div>`).join('');
   const lastMd = [6, 5, 4, 3, 2, 1].find((n) => cup.results[`g${n}`]);
   const mdResults = cup.stage === 'group' || cup.stage === 'r16' ? (lastMd ? `<div class="h-sec">${lastMd}. maç günü</div><div class="card list" style="padding:4px 10px">${cup.results[`g${lastMd}`].map((m) => matchRow(m, myId)).join('')}</div>` : '') : '';
-  const next = cup.stage === 'done' ? null : cup.stage === 'group' ? CUP_WEEKS.group.find((w) => w >= s.calendar.week) : CUP_WEEKS[cup.stage];
+  const CW = europeWeeks(seasonWeeks());
+  const next = cup.stage === 'done' ? null : cup.stage === 'group' ? CW.group.find((w) => w >= s.calendar.week) : CW[cup.stage];
 
   return `
     <div class="seg" style="margin-bottom:10px">${CUP_IDS.map((id) => `<button class="${view.cup === id ? 'on' : ''}" data-cup="${id}">${CUPS[id].name}${myCup === id ? ' ★' : ''}</button>`).join('')}</div>

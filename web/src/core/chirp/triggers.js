@@ -1,6 +1,7 @@
 // @ts-check
 // OLAY TABANLI TWEET MOTORU — oyun içi olaylar oldukça gazeteciler zaman tüneline tweet düşer.
-import { CLUBS, CLUB_BY_ID, LEAGUES, MID_WINDOW_WEEK } from '../data.js';
+import { CLUBS, CLUB_BY_ID, LEAGUES } from '../data.js';
+import { midWindowWeek } from '../calendar.js';
 import { clubRating, leagueOf } from '../league.js';
 import { TweetModel, FABRICIO, YAGIZ } from './models.js';
 import { CommentGenerator } from './comments.js';
@@ -144,7 +145,7 @@ export class ChirpTriggerEngine {
 
     // A) Formsuzluk → Yağız Sapanca
     if (summary.played && this.isFormDip() && this.cooldownOk('form_dip')) {
-      const when = calendar.week < MID_WINDOW_WEEK ? 'Devre arasında' : 'Sezon sonunda';
+      const when = calendar.week < midWindowWeek() ? 'Devre arasında' : 'Sezon sonunda';
       out.push(this.post(YAGIZ, 'form_dip', TEMPLATES.form_dip, { when }));
       this.markCooldown('form_dip');
       // Medya baskısı: küçük moral ve yönetim etkisi

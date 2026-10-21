@@ -1,6 +1,6 @@
 // KUPA ARAYÜZÜ — kupa maçı akışı (maç öncesi kart, maç, penaltılar, sonuç), lig ekranındaki kupa ağacı.
-import { CLUB_BY_ID } from '../core/data.js';
-import { CUP_WEEK, KO_ROUNDS, ROUND_LABEL, completeCupMatch, cupStages, cupTieCanPostpone, ensureCup, groupTable, isGroupStage, myCupStatus, myGroup, nextPath, planCupMatch, postponeCupTie, roundLabel, thirdsTable } from '../core/cup.js';
+import { CLUB_BY_ID, LEAGUES } from '../core/data.js';
+import { KO_ROUNDS, ROUND_LABEL, completeCupMatch, cupStages, cupTieCanPostpone, cupWeek, ensureCup, entryStage, groupTable, isGroupStage, isPreStage, myCupStatus, myGroup, nextPath, planCupMatch, postponeCupTie, preRounds, roundLabel } from '../core/cup.js';
 import { drawPostponeArt } from './postponeArt.js';
 import { clubRating } from '../core/league.js';
 import { effectiveSkill } from '../core/player.js';
@@ -54,14 +54,14 @@ export async function cupFlow(app) {
     center: true,
     dismissable: false,
     html: `<div class="center">${spriteOr('cup_gold', icon('trophy'), { size: 64 })}</div>
-      <div class="center"><span class="chip ${mk ? '' : 'gold'}">${sup ? 'SEZON AÇILIŞI' : mk ? 'HAFTA İÇİ · ERTELENEN LİG MAÇI' : grp ? `GRUP ${esc(tie.group || '')} · ${tie.round[1]}. MAÇ` : `HAFTA İÇİ · ${esc(roundLabel(s.cup, tie.round).toLocaleUpperCase('tr'))}`}</span></div>
+      <div class="center"><span class="chip ${mk ? '' : 'gold'}">${sup ? 'SEZON AÇILIŞI' : mk ? (tie.midweek ? 'HAFTA İÇİ · LİG MAÇI' : 'HAFTA İÇİ · ERTELENEN LİG MAÇI') : grp ? `GRUP ${esc(tie.group || '')} · ${tie.round.slice(1)}. MAÇ` : `HAFTA İÇİ · ${esc(roundLabel(s.cup, tie.round).toLocaleUpperCase('tr'))}`}</span></div>
       <h3 class="center" style="margin-top:8px">${esc(match.cup.name)}</h3>
       <div class="fixture" style="margin:12px 0">
         <div class="team">${crestSVG(home, 'crest lg')}<span>${esc(home.name)}</span></div>
         <span class="vs">VS</span>
         <div class="team">${crestSVG(away, 'crest lg')}<span>${esc(away.name)}</span></div>
       </div>
-      <p class="lead center">${sup ? 'Lig şampiyonu ile kupa şampiyonu karşı karşıya. Sezonun ilk kupası seni bekliyor!' : mk ? `${tie.week}. haftada hava muhalefeti yüzünden ertelenen maç. Sonuç lig tablosuna işlenecek.` : grp ? `Grup maçı: beraberlik de puan. İlk 2 ve en iyi ${s.cup?.format?.thirds || 0} üçüncü ${ROUND_LABEL[s.cup?.format?.ko] || 'eleme'} turuna kalır.` : 'Tek maç eleme: berabere biterse penaltılar. Kaybeden kupaya veda eder.'}</p>
+      <p class="lead center">${sup ? 'Lig şampiyonu ile kupa şampiyonu karşı karşıya. Sezonun ilk kupası seni bekliyor!' : mk ? (tie.midweek ? `Sıkışık fikstür: ${tie.week}. haftanın ikinci lig maçı hafta içinde oynanıyor. Sonuç lig tablosuna işlenecek.` : `${tie.week}. haftada hava muhalefeti yüzünden ertelenen maç. Sonuç lig tablosuna işlenecek.`) : grp ? `Grup maçı: beraberlik de puan. Grubunu ilk 2'de bitiren doğrudan ${ROUND_LABEL[s.cup?.format?.ko] || 'eleme'} turuna çıkar.` : 'Tek maç eleme: berabere biterse penaltılar. Kaybeden kupaya veda eder.'}</p>
       ${ctx ? `<div class="cup-ctx">${ctx}</div>` : ''}
       <div class="chips" style="justify-content:center"><span class="chip">${icon('bolt', 'ico xs')} Enerji ${s.player.energy}</span><span class="chip ${match.role === 'starter' ? 'good' : 'warn'}">${match.role === 'starter' ? 'İlk 11' : match.role === 'out' ? 'Kadro dışı' : 'Yedek'}</span></div>
       <button class="btn primary lg block" style="margin-top:14px" data-close>${icon('whistle')} Maça çık</button>`,
@@ -79,12 +79,13 @@ function afterNote(s, r) {
     const g = myGroup(cup, me);
     const pos = g ? groupTable(s.world, g).findIndex((x) => x.id === me) + 1 : 0;
     if (r.out) return `<p class="center small" style="color:var(--bad);margin:10px 0 0">Grup ${g?.id || ''} ${pos}.liği: kupaya veda ettik.</p>`;
-    if (r.round === 'g3' && KO_ROUNDS.includes(cup.stage)) return `<p class="center small" style="color:var(--good);margin:10px 0 0">Gruptan çıktık! ${esc(ROUND_LABEL[cup.stage])} kurası çekildi.</p>`;
+    if (KO_ROUNDS.includes(cup.stage)) return `<p class="center small" style="color:var(--good);margin:10px 0 0">Gruptan çıktık! ${esc(ROUND_LABEL[cup.stage])} kurası çekildi.</p>`;
     return `<p class="center small muted" style="margin:10px 0 0">Grup ${g?.id || ''}'de ${pos}. sıradasın.</p>`;
   }
   if (r.out) return '';
   const t = cup.stage && (cup.pre?.[cup.stage] || cup.rounds?.[cup.stage] || []).find((x) => x.h === me || x.a === me);
-  if (t && t.h && t.a) return `<p class="center small" style="color:var(--good);margin:10px 0 0">${esc(roundLabel(cup, cup.stage))} rakibi: ${esc(CLUB_BY_ID[t.h === me ? t.a : t.h]?.name || '')} (H${CUP_WEEK[cup.stage]})</p>`;
+  if (t && t.h && t.a) return `<p class="center small" style="color:var(--good);margin:10px 0 0">${esc(roundLabel(cup, cup.stage))} rakibi: ${esc(CLUB_BY_ID[t.h === me ? t.a : t.h]?.name || '')} (H${cupWeek(cup, cup.stage)})</p>`;
+  if (isPreStage(cup.stage) && (cup.preByes?.[cup.stage] || []).includes(me)) return `<p class="center small" style="color:var(--good);margin:10px 0 0">${esc(roundLabel(cup, cup.stage))}: kuraya göre bay geçtik.</p>`;
   if (isGroupStage(cup.stage)) return `<p class="center small" style="color:var(--good);margin:10px 0 0">Gruplara kaldık! Grup ${esc(myGroup(cup, me)?.id || '')}.</p>`;
   return '';
 }
@@ -145,10 +146,11 @@ export function cupSteps(cup, me) {
     seen.add(key);
     const idx = stages.indexOf(st);
     const cur = cup.stage ? stages.indexOf(cup.stage) : stages.length;
-    const lastIdx = key === 'groups' ? stages.indexOf('g3') : idx;
+    const lastIdx = key === 'groups' ? stages.filter(isGroupStage).map((x) => stages.indexOf(x)).pop() : idx;
     const state = cup.winner || cur > lastIdx ? 'done' : (key === 'groups' ? isGroupStage(cup.stage) : cup.stage === st) ? 'cur' : '';
-    const label = key === 'groups' ? 'Gruplar' : roundLabel(cup, st).replace(' final', '');
-    const wk = key === 'groups' ? `H${CUP_WEEK.g1}–${CUP_WEEK.g3}` : `H${CUP_WEEK[st]}`;
+    const gs = stages.filter(isGroupStage);
+    const label = key === 'groups' ? 'Gruplar' : isPreStage(st) ? roundLabel(cup, st).replace(' Ön eleme', ' Ön').replace('Ön eleme', 'Ön') : roundLabel(cup, st).replace(' final', '');
+    const wk = key === 'groups' ? `H${cupWeek(cup, gs[0])}–${cupWeek(cup, gs[gs.length - 1])}` : `H${cupWeek(cup, st)}`;
     const out = cup.out && (cup.out === key || (cup.out === 'groups' && key === 'groups'));
     chips.push(`<span class="cs ${state} ${out ? 'out' : ''}"><b>${esc(label)}</b><small>${wk}</small></span>`);
   }
@@ -160,9 +162,8 @@ export function cupSteps(cup, me) {
 export function groupCard(state, cup, g, o = {}) {
   const me = state.career.clubId;
   const rows = groupTable(state.world, g);
-  const thirdsOk = cup.thirds?.length ? cup.thirds : thirdsTable(state.world, cup).slice(0, cup.format.thirds).map((r) => r.id);
   const body = rows.map((r, i) => {
-    const q = i < 2 ? 'q' : i === 2 && thirdsOk.includes(r.id) ? 'q3' : i === 3 ? 'x' : '';
+    const q = i < 2 ? 'q' : 'x';
     const av = `${r.gf - r.ga > 0 ? '+' : ''}${r.gf - r.ga}`;
     if (o.compact) return `<div class="gt-r ${q} ${r.id === me ? 'me' : ''}"><span class="n">${i + 1}</span>${crestSVG(CLUB_BY_ID[r.id], 'crest xs')}<span class="grow ellipsis">${esc(CLUB_BY_ID[r.id]?.name || '')}</span><span class="c">${r.p}</span><span class="c">${av}</span><b class="c">${r.pts}</b></div>`;
     return o.mini
@@ -173,12 +174,6 @@ export function groupCard(state, cup, g, o = {}) {
   return `<div class="gt ${o.mini ? 'mini' : ''}"><div class="gt-h"><b>Grup ${g.id}</b>${o.mini ? '' : o.compact ? '<span class="c">O</span><span class="c">AV</span><span class="c">P</span>' : '<span class="c">O</span><span class="c">G</span><span class="c">B</span><span class="c">M</span><span class="c">AV</span><span class="c">P</span>'}</div>${body}${fx}</div>`;
 }
 
-function thirdsCard(state, cup) {
-  const rows = thirdsTable(state.world, cup);
-  const n = cup.format.thirds;
-  const me = state.career.clubId;
-  return `<div class="gt"><div class="gt-h"><b>En iyi üçüncüler</b><span class="c">O</span><span class="c">AV</span><span class="c">P</span></div>${rows.map((r, i) => `${i === n ? '<div class="gt-cut">Eleme çizgisi</div>' : ''}<div class="gt-r ${i < n ? 'q3' : 'x'} ${r.id === me ? 'me' : ''}"><span class="n">${r.group}</span>${crestSVG(CLUB_BY_ID[r.id], 'crest xs')}<span class="grow ellipsis">${esc(CLUB_BY_ID[r.id]?.name || '')}</span><span class="c">${r.p}</span><span class="c">${r.gf - r.ga > 0 ? '+' : ''}${r.gf - r.ga}</span><b class="c">${r.pts}</b></div>`).join('')}</div>`;
-}
 
 function tieRow(t, side, me) {
   const id = t[side];
@@ -208,7 +203,7 @@ export function bracketHTML(state, cup, { from = null } = {}) {
     for (let i = 0; i < ties.length; i += 2) pairs.push(ties.slice(i, i + 2));
     const last = ci === rounds.length - 1;
     const body = pairs.map((pr) => `<div class="brk-pair ${pr.length > 1 && !last ? 'join' : ''}">${pr.map((t) => `<div class="brk-tie ${t.h === me || t.a === me ? 'me' : ''} ${ci ? 'in' : ''}">${tieRow(t, 'h', me)}${tieRow(t, 'a', me)}</div>`).join('')}</div>`).join('');
-    return `<div class="brk-col ${cup.stage === r ? 'cur' : ''}" ${cup.stage === r ? 'data-brk-cur' : ''}><div class="brk-h">${esc(ROUND_LABEL[r])}<small>H${CUP_WEEK[r]}</small></div><div class="brk-body">${body}</div></div>`;
+    return `<div class="brk-col ${cup.stage === r ? 'cur' : ''}" ${cup.stage === r ? 'data-brk-cur' : ''}><div class="brk-h">${esc(ROUND_LABEL[r])}<small>H${cupWeek(cup, r)}</small></div><div class="brk-body">${body}</div></div>`;
   }).join('');
   const champ = `<div class="brk-col champ"><div class="brk-h">Şampiyon</div><div class="brk-body"><div class="brk-pair"><div class="brk-tie in champ-box">${cup.winner ? `${crestSVG(CLUB_BY_ID[cup.winner], 'crest sm')}<b>${esc(CLUB_BY_ID[cup.winner]?.name || '')}</b>` : '<span class="trophy">🏆</span><span class="muted small">?</span>'}</div></div></div></div>`;
   return `<div class="brk" style="--rows:${n0}">${cols}${champ}</div>`;
@@ -221,14 +216,17 @@ function pathCard(state, cup) {
   let next = '';
   const st = cup.stage;
   if (!cup.out && !cup.winner && st) {
-    const list = isGroupStage(st) ? (myGroup(cup, me)?.fx || []).filter((f) => f.md >= Number(st[1]) && f.hg == null && (f.h === me || f.a === me)) : [];
-    if (isGroupStage(st) && list.length) next = list.map((f) => `<div class="li small"><span class="chip">${f.md}. maç · H${CUP_WEEK[`g${f.md}`]}</span><span class="grow">${esc(CLUB_BY_ID[f.h === me ? f.a : f.h]?.name || '')} ${f.h === me ? '(İ)' : '(D)'}</span></div>`).join('');
+    const list = isGroupStage(st) ? (myGroup(cup, me)?.fx || []).filter((f) => f.md >= Number(st.slice(1)) && f.hg == null && (f.h === me || f.a === me)) : [];
+    const entry = entryStage(cup, me);
+    if (isGroupStage(st) && list.length) next = list.map((f) => `<div class="li small"><span class="chip">${f.md}. maç · H${cupWeek(cup, `g${f.md}`)}</span><span class="grow">${esc(CLUB_BY_ID[f.h === me ? f.a : f.h]?.name || '')} ${f.h === me ? '(İ)' : '(D)'}</span></div>`).join('');
+    else if (isPreStage(st) && entry === 'groups') next = `<div class="li small"><span class="chip accent">Gruplar · H${cupWeek(cup, 'g1')}</span><span class="grow">Üst lig kulübü olarak ön elemeye katılmadan gruplardan başlıyorsun</span></div>`;
+    else if (isPreStage(st) && entry && cup.stages.indexOf(entry) > cup.stages.indexOf(st)) next = `<div class="li small"><span class="chip">${esc(roundLabel(cup, entry))} · H${cupWeek(cup, entry)}</span><span class="grow">Kademen bu turda kupaya katılıyor</span></div>`;
+    else if (isPreStage(st) && (cup.preByes?.[st] || []).includes(me)) next = `<div class="li small"><span class="chip">${esc(roundLabel(cup, st))}</span><span class="grow">Bu turda bay geçiyorsun; sonraki tur H${cupWeek(cup, cup.stages[cup.stages.indexOf(st) + 1])}</span></div>`;
     else {
       const path = nextPath(cup, me);
       const t = (cup.pre?.[st] || cup.rounds[st] || []).find((x) => x.h === me || x.a === me);
-      if (t) next = `<div class="li small"><span class="chip accent">${esc(roundLabel(cup, st))} · H${CUP_WEEK[st]}</span><span class="grow">${esc(CLUB_BY_ID[t.h === me ? t.a : t.h]?.name || '')}</span></div>`;
+      if (t) next = `<div class="li small"><span class="chip accent">${esc(roundLabel(cup, st))} · H${cupWeek(cup, st)}</span><span class="grow">${esc(CLUB_BY_ID[t.h === me ? t.a : t.h]?.name || '')}</span></div>`;
       if (path) next += `<div class="li small muted"><span class="chip">${esc(ROUND_LABEL[path.round])}</span><span class="grow">Kazanırsan: ${path.tie.h ? `${esc(short(path.tie.h))} – ${esc(short(path.tie.a))} galibi` : 'ağaçtaki komşu eşleşmenin galibi'}</span></div>`;
-      if (!t && st === 'pre1' && (cup.preByes?.pre2 || []).includes(me)) next = `<div class="li small"><span class="chip">2. Ön eleme · H${CUP_WEEK.pre2}</span><span class="grow">1. ön eleme galiplerinden biri</span></div>`;
     }
   }
   return `<div class="card list">${res || '<div class="muted small" style="padding:8px 4px">Henüz kupa maçı oynamadın.</div>'}${next ? `<div class="divider" style="margin:6px 0"></div>${next}` : ''}</div>`;
@@ -242,27 +240,29 @@ export function cupSection(state, view = {}) {
   const status = myCupStatus(state);
   const hasGroups = cup.groups?.length > 0;
   const grpStarted = hasGroups && cup.groups.some((g) => g.fx.some((f) => f.hg != null));
-  const def = cup.stage && KO_ROUNDS.includes(cup.stage) ? 'bracket' : isGroupStage(cup.stage) || (hasGroups && !KO_ROUNDS.includes(cup.stage)) ? 'groups' : cup.pre && cup.stage?.startsWith('pre') ? 'pre' : 'bracket';
+  const def = cup.stage && KO_ROUNDS.includes(cup.stage) ? 'bracket' : isGroupStage(cup.stage) || (hasGroups && !KO_ROUNDS.includes(cup.stage)) ? 'groups' : isPreStage(cup.stage) ? 'pre' : 'bracket';
   // not: Avrupa sekmesi view.cup'ı kullanır; yerli kupanın alt sekmesi ayrı anahtarda (view.dcup)
   const tab = ['path', 'pre', 'groups', 'bracket'].includes(view.dcup) ? view.dcup : def;
-  const tabs = [['path', 'Yolum'], cup.pre ? ['pre', 'Ön eleme'] : null, cup.format.groups ? ['groups', 'Gruplar'] : null, ['bracket', 'Eleme ağacı']].filter(Boolean);
+  const tabs = [['path', 'Yolum'], cup.plan?.length ? ['pre', 'Ön eleme'] : null, cup.format.groups ? ['groups', 'Gruplar'] : null, ['bracket', 'Eleme ağacı']].filter(Boolean);
   let body = '';
   if (tab === 'path') body = pathCard(state, cup);
   else if (tab === 'pre') {
-    body = ['pre1', 'pre2'].filter((r) => cup.pre?.[r]).reverse().map((r) => `<div class="h-sec">${esc(roundLabel(cup, r))} <span>Hafta ${CUP_WEEK[r]} · ${cup.pre[r].length} eşleşme</span></div>
+    // ön eleme planı: hangi tur, kaç maç, hangi kademe katılıyor
+    const lvName = (id) => esc(LEAGUES[CLUB_BY_ID[id]?.league]?.div || (CLUB_BY_ID[id]?.amateur ? 'Amatör' : ''));
+    const plan = (cup.plan || []).map((p) => `<div class="li small ${cup.stage === p.id ? 'me' : ''}"><span class="chip ${cup.stage === p.id ? 'accent' : ''}">${esc(roundLabel(cup, p.id))} · H${cupWeek(cup, p.id)}</span><span class="grow">${p.matches} maç${p.enter.length ? ` · katılan: ${[...new Set(p.enter.map(lvName))].filter(Boolean).join(', ')}` : ''}</span></div>`).join('');
+    body = `<div class="card list">${plan}<div class="li small muted"><span class="chip">Gruplar · H${cupWeek(cup, 'g1')}</span><span class="grow">${cup.format.qualifiers} ön eleme galibi + ${cup.direct.length} üst lig kulübü</span></div></div>`;
+    body += preRounds(cup).reverse().map((r) => `<div class="h-sec">${esc(roundLabel(cup, r))} <span>Hafta ${cupWeek(cup, r)} · ${cup.pre[r].length} eşleşme${cup.preByes?.[r]?.length ? ` · ${cup.preByes[r].length} bay` : ''}</span></div>
       <div class="pre-grid">${cup.pre[r].map((t) => `<div class="brk-tie flat ${t.h === me || t.a === me ? 'me' : ''}">${tieRow(t, 'h', me)}${tieRow(t, 'a', me)}</div>`).join('')}</div>`).join('');
-    if (cup.preByes?.pre2?.length && !cup.pre?.pre2) body += `<div class="h-sec">2. Ön elemede bekleyenler <span>Hafta ${CUP_WEEK.pre2}</span></div><div class="chips">${cup.preByes.pre2.map((id) => `<span class="chip ${id === me ? 'accent' : ''}">${crestSVG(CLUB_BY_ID[id], 'crest xs')} ${esc(short(id))}</span>`).join('')}</div>`;
-    body += `<div class="h-sec">Gruplardan başlayanlar <span>${cup.direct.length} kulüp</span></div><div class="chips">${cup.direct.map((id) => `<span class="chip ${id === me ? 'accent' : ''}">${crestSVG(CLUB_BY_ID[id], 'crest xs')} ${esc(short(id))}</span>`).join('')}</div>`;
+    body += `<div class="h-sec">Gruplardan başlayanlar (üst lig) <span>${cup.direct.length} kulüp</span></div><div class="chips">${cup.direct.map((id) => `<span class="chip ${id === me ? 'accent' : ''}">${crestSVG(CLUB_BY_ID[id], 'crest xs')} ${esc(short(id))}</span>`).join('')}</div>`;
   } else if (tab === 'groups') {
-    if (!hasGroups) body = `<div class="card muted small">Grup kurası ön eleme bitince çekilecek (Hafta ${CUP_WEEK.g1} öncesi). ${cup.format.groups} grup × 4 takım: ilk 2'ler ve en iyi ${cup.format.thirds} üçüncü ${ROUND_LABEL[cup.format.ko]}'ya kalır.</div>`;
+    if (!hasGroups) body = `<div class="card muted small">Grup kurası ön eleme bitince çekilecek (Hafta ${cupWeek(cup, 'g1')} öncesi). ${cup.format.groups} grup × ${cup.format.size} takım: ${cup.direct.length} üst lig kulübü seribaşı, ${cup.format.qualifiers} takım ön elemeden. Grup birincileri ve ikincileri doğrudan ${ROUND_LABEL[cup.format.ko].toLocaleLowerCase('tr')}de.</div>`;
     else {
       const mine = myGroup(cup, me);
       body = `${mine ? groupCard(state, cup, mine, { fixtures: true }) : ''}
         <div class="gt-grid">${cup.groups.filter((g) => g !== mine).map((g) => groupCard(state, cup, g, { mini: true })).join('')}</div>
-        ${grpStarted && cup.format.thirds ? thirdsCard(state, cup) : ''}
-        <p class="muted small" style="margin-top:8px">Yeşil: ilk 2 (tur atlar) · Sarı: en iyi ${cup.format.thirds} üçüncü arasında · Kırmızı: elenir.</p>`;
+        <p class="muted small" style="margin-top:8px">Yeşil: ilk 2 (doğrudan ${esc(ROUND_LABEL[cup.format.ko].toLocaleLowerCase('tr'))}) · Kırmızı: elenir.${grpStarted ? '' : ' Tek devre: her takım grubundaki herkesle bir kez oynar.'}</p>`;
     }
-  } else body = `${bracketHTML(state, cup)}<p class="muted small" style="margin-top:6px">Kazanan ağaçta sağa ilerler. İlk eleme turunun eşleşmeleri grup sonuçlarına göre kurayla yerleşir.</p>`;
+  } else body = `${bracketHTML(state, cup)}<p class="muted small" style="margin-top:6px">Kazanan ağaçta sağa ilerler. Grup birincisi, başka gruptan bir ikinciyle iç sahada eşleşir; aynı gruptan iki takım ancak finalde karşılaşabilir.</p>`;
   return `<div class="card cup-head">${spriteOr('cup_gold', icon('trophy'), { size: 40 })}<div class="grow"><b>${esc(cup.name)}</b><div class="muted small">Sezon ${cup.season} · ${esc(status || '')}</div></div>${cup.winner ? `<span class="chip gold">${esc(short(cup.winner))}</span>` : ''}</div>
     ${cupSteps(cup, me)}
     <div class="seg" style="margin:10px 0">${tabs.map(([k, l]) => `<button class="${tab === k ? 'on' : ''}" data-dcup="${k}">${l}</button>`).join('')}</div>

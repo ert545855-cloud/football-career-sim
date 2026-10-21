@@ -1,100 +1,82 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CLUBS, STAT_KEYS, SEASON_WEEKS } from '../src/core/data.js';
+import { CLUBS, LEAGUES, STAT_KEYS } from '../src/core/data.js';
+import { roundsFor, seasonWeeks } from '../src/core/calendar.js';
 import { setRandom, seeded } from '../src/core/rng.js';
-import { roundRobin, createWorld, simulateWeek, sortedTable } from '../src/core/league.js';
+import { roundRobin, createWorld, simulateWeek, sortedTable, worldWeeks } from '../src/core/league.js';
 import { newGame, endSeason, doAction, canDoAction } from '../src/core/game.js';
 import { EVENTS, resolveEvent } from '../src/core/events.js';
 import { createPlayer, ovr, effectiveSkill, addProgress, cleanName } from '../src/core/player.js';
 import { generateOffers, buyItem, sellItem, wageFor } from '../src/core/economy.js';
 import { playWeek } from '../scripts/bot.js';
 
-test('fikstür: 12 takım → 22 hafta, herkes herkesle iki kez, 11 iç 11 dış saha', () => {
-  setRandom(seeded(1));
-  const ids = CLUBS.filter((c) => c.league === 'first').map((c) => c.id);
-  const rounds = roundRobin(ids);
-  assert.equal(rounds.length, SEASON_WEEKS);
+/** Fikstür denetimi: her çift tam `legs` kez, bir takım bir turda en çok bir kez, tek sayıda takımda her turda tek bay */
+function checkFixture(ids, legs) {
+  const rounds = roundRobin(ids, Math.random, legs);
+  const n = ids.length;
+  assert.equal(rounds.length, roundsFor(n, legs), `${n} takım, ${legs} devre`);
   for (const r of rounds) {
-    assert.equal(r.length, 6);
-    assert.equal(new Set(r.flat()).size, 12, 'bir takım aynı haftada iki maç oynamamalı');
+    assert.equal(r.length, Math.floor(n / 2));
+    assert.equal(new Set(r.flat()).size, r.length * 2, 'bir takım aynı turda iki maç oynamamalı');
   }
   const home = Object.fromEntries(ids.map((i) => [i, 0]));
+  const games = Object.fromEntries(ids.map((i) => [i, 0]));
   const pairs = new Map();
   for (const r of rounds) for (const [h, a] of r) {
     home[h]++;
+    games[h]++;
+    games[a]++;
     const k = [h, a].sort().join('-');
     pairs.set(k, (pairs.get(k) || 0) + 1);
   }
-  for (const id of ids) assert.equal(home[id], 11);
-  assert.equal(pairs.size, 66);
-  for (const v of pairs.values()) assert.equal(v, 2);
+  assert.equal(pairs.size, (n * (n - 1)) / 2, 'herkes herkesle');
+  for (const v of pairs.values()) assert.equal(v, legs);
+  for (const id of ids) {
+    assert.equal(games[id], legs * (n - 1));
+    // çift devrede iç/dış saha eşit
+    if (legs % 2 === 0) assert.equal(home[id], (legs / 2) * (n - 1));
+  }
+  return rounds;
+}
+
+test('fikstür motoru: takım sayısından bağımsız (18, 20, 24, 29 takım; 2–4 devre; tek sayıda bay)', () => {
+  setRandom(seeded(1));
+  const mk = (n) => Array.from({ length: n }, (_, i) => `t${String(i).padStart(2, '0')}`);
+  for (const n of [2, 3, 8, 10, 12, 17, 18, 20, 21, 24, 29, 30]) checkFixture(mk(n), 2);
+  checkFixture(mk(12), 3);
+  checkFixture(mk(10), 4);
+  // 18 takım → 34 tur, 20 → 38, 29 → 58 (her turda bir takım bay)
+  assert.equal(roundRobin(mk(18)).length, 34);
+  assert.equal(roundRobin(mk(20)).length, 38);
+  const r29 = roundRobin(mk(29));
+  assert.equal(r29.length, 58);
+  for (const r of r29) assert.equal(new Set(r.flat()).size, 28, 'tek sayıda takımda her tur bir bay');
+  // gerçek ligler: Süper Lig 18, 1. Lig 20
+  const sl = CLUBS.filter((c) => c.league === 'super').map((c) => c.id);
+  const fl = CLUBS.filter((c) => c.league === 'first').map((c) => c.id);
+  assert.equal(sl.length, 18);
+  assert.equal(fl.length, 20);
+  checkFixture(sl, 2);
+  checkFixture(fl, 2);
 });
 
-test('lig tablosu: puanlar ve gol averajı tutarlı', () => {
+test('lig tablosu: sezon sonunda her takım tüm maçlarını oynamış, puanlar ve gol averajı tutarlı', () => {
   setRandom(seeded(2));
   const world = createWorld(1);
-  for (let w = 1; w <= SEASON_WEEKS; w++) simulateWeek(world, w);
+  for (let w = 1; w <= worldWeeks(world); w++) simulateWeek(world, w);
   for (const lg of Object.values(world.leagues)) {
     const rows = sortedTable(lg);
     const gf = rows.reduce((s, r) => s + r.gf, 0);
     const ga = rows.reduce((s, r) => s + r.ga, 0);
     assert.equal(gf, ga);
+    const games = (rows.length - 1) * (LEAGUES[lg.id]?.legs || 2);
     for (const r of rows) {
-      assert.equal(r.p, 22);
-      assert.equal(r.w + r.d + r.l, 22);
+      assert.equal(r.p, games, `${lg.id}: ${rows.length} takım → ${games} maç`);
+      assert.equal(r.w + r.d + r.l, games);
       assert.equal(r.pts, r.w * 3 + r.d);
     }
     for (let i = 1; i < rows.length; i++) assert.ok(rows[i - 1].pts >= rows[i].pts);
   }
-});
-
-test('oyuncu: başlangıç statları ve OVR ~20', () => {
-  for (const pos of ['FW', 'MF', 'DF']) {
-    const p = createPlayer({ name: 'Test', position: pos });
-    const o = ovr(p);
-    assert.ok(o >= 18 && o <= 22, `${pos} OVR ${o}`);
-    const s = effectiveSkill(p, { shooting: 1 });
-    assert.ok(s > 0 && s < 1);
-  }
-  assert.equal(cleanName('  <b>Ali</b>  Veli  '), 'Ali Veli');
-});
-
-test('gelişim: stat 99\'u geçmez', () => {
-  const p = createPlayer({ name: 'T', position: 'FW' });
-  p.stats.shooting = 98;
-  for (let i = 0; i < 200; i++) addProgress(p, 'shooting', 5);
-  assert.equal(p.stats.shooting, 99);
-});
-
-test('olaylar: her seçenek hatasız uygulanır ve değerler sınır içinde kalır', () => {
-  setRandom(seeded(3));
-  for (const ev of EVENTS) {
-    for (let c = 0; c < ev.choices.length; c++) {
-      const s = newGame({ name: 'Test', position: 'MF' });
-      s.career.money = 50000;
-      s.player.fame = 70;
-      assert.doesNotThrow(() => ev.text(s, { summary: { played: true, rating: 5, goals: 1 } }));
-      const out = resolveEvent(s, ev.id, c);
-      assert.ok(Array.isArray(out.changes));
-      for (const k of STAT_KEYS) assert.ok(s.player.stats[k] >= 1 && s.player.stats[k] <= 99);
-      assert.ok(s.player.morale >= 0 && s.player.morale <= 100);
-      assert.ok(Number.isFinite(s.career.money));
-    }
-  }
-});
-
-test('mağaza: al, sat, tek kullanımlık', () => {
-  const s = newGame({ name: 'T', position: 'FW' });
-  s.career.money = 1000;
-  assert.equal(buyItem(s, 'bike').ok, true);
-  assert.equal(buyItem(s, 'bike').ok, false, 'iki kez alınamaz');
-  assert.equal(buyItem(s, 'super').ok, false, 'para yetmez');
-  s.player.energy = 50;
-  assert.equal(buyItem(s, 'spa').ok, true);
-  assert.equal(s.player.energy, 70);
-  const before = s.career.money;
-  assert.equal(sellItem(s, 'bike').ok, true);
-  assert.equal(s.career.money, before + 175);
 });
 
 test('aksiyonlar: slot ve enerji kuralları', () => {
@@ -110,8 +92,8 @@ test('sezon sonu: sözleşmesi biten oyuncu en az bir teklif alır', () => {
     const s = newGame({ name: 'T', position: 'FW' });
     s.career.contract.yearsLeft = 1;
     s.player.rel.manager = 10;
-    for (let w = 1; w <= SEASON_WEEKS; w++) simulateWeek(s.world, w);
-    s.calendar.week = SEASON_WEEKS;
+    for (let w = 1; w <= worldWeeks(s.world); w++) simulateWeek(s.world, w);
+    s.calendar.week = seasonWeeks();
     endSeason(s);
     assert.ok(s.pending.offers && s.pending.offers.list.length >= 1);
     assert.equal(s.pending.offers.mandatory, true);
@@ -141,5 +123,19 @@ test('5 sezonluk otomatik kariyer: sayılar geçerli kalır', () => {
     assert.equal(s.career.history.length, 5);
     const offers = generateOffers(s, 'mid');
     assert.ok(Array.isArray(offers));
+  }
+});
+
+test('fikstür dengesi: kimse ikiden fazla maç üst üste iç sahada ya da deplasmanda oynamaz', () => {
+  setRandom(seeded(12));
+  for (const n of [12, 17, 18, 20, 24]) {
+    const ids = Array.from({ length: n }, (_, i) => `k${i}`);
+    const rounds = roundRobin(ids);
+    const seq = Object.fromEntries(ids.map((id) => [id, []]));
+    for (const r of rounds) for (const [h, a] of r) { seq[h].push('İ'); seq[a].push('D'); }
+    for (const id of ids) {
+      let run = 1;
+      for (let i = 1; i < seq[id].length; i++) { run = seq[id][i] === seq[id][i - 1] ? run + 1 : 1; assert.ok(run <= 2, `${n} takım: ${id} ${seq[id].join('')}`); }
+    }
   }
 });

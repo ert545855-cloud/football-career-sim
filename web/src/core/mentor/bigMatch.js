@@ -2,8 +2,9 @@
 // BÜYÜK MAÇLAR — derbi, sezon finali, zirve ve kader maçları. Bu maçlarda oyuncu heyecanlanır:
 // mini oyunlarda etkin yetenek düşer, oyun temposu artar ve şut nişangahı titrer.
 // Soğukkanlı mentor heyecanı %20 azaltır ve nişangahı yavaşlatır.
-import { CLUB_BY_ID, SEASON_WEEKS } from '../data.js';
-import { fixtureFor, leagueIdIn, positionOf } from '../league.js';
+import { CLUB_BY_ID } from '../data.js';
+import { scaleWeek, seasonWeeks } from '../calendar.js';
+import { clubFixtures, fixtureFor, leagueIdIn, positionOf, zoneRules } from '../league.js';
 
 /** Kurgusal kulüpler arasındaki geleneksel rekabetler. */
 export const RIVALRIES = [
@@ -52,13 +53,16 @@ export function derbyName(a, b) {
 export function bigMatchFor(state, m) {
   const derby = derbyName(m.myId, m.oppId);
   if (derby) return { kind: 'derby', label: 'Derbi', title: derby, base: BIG_MATCH_KINDS.derby.base };
-  if (m.week === SEASON_WEEKS) return { kind: 'final', label: 'Final', title: 'Sezon Finali', base: BIG_MATCH_KINDS.final.base };
-  if (m.week >= 6 && state.world?.leagues) {
+  // ligin son haftası (kısa liglerde son maç sezonun son haftasından önce olabilir)
+  const lastWeek = (state.world?.leagues && clubFixtures(state.world, m.myId).at(-1)?.week) || seasonWeeks();
+  if (m.week === lastWeek) return { kind: 'final', label: 'Final', title: 'Sezon Finali', base: BIG_MATCH_KINDS.final.base };
+  if (m.week >= scaleWeek(6) && state.world?.leagues) {
     const a = positionOf(state.world, m.myId);
     const b = positionOf(state.world, m.oppId);
     const n = Object.keys(state.world.leagues[leagueIdIn(state.world, m.myId)]?.table || {}).length || 12;
     if (a <= 3 && b <= 3) return { kind: 'summit', label: 'Zirve Maçı', title: 'Zirve Maçı', base: BIG_MATCH_KINDS.summit.base };
-    if (m.week >= 15 && a > n - 3 && b > n - 3) return { kind: 'decider', label: 'Kader Maçı', title: 'Kümede Kalma Finali', base: BIG_MATCH_KINDS.decider.base };
+    const zone = Math.max(3, zoneRules(leagueIdIn(state.world, m.myId)).down || 0);
+    if (m.week >= scaleWeek(15) && a > n - zone && b > n - zone) return { kind: 'decider', label: 'Kader Maçı', title: 'Kümede Kalma Finali', base: BIG_MATCH_KINDS.decider.base };
   }
   return null;
 }

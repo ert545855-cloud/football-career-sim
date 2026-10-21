@@ -8,6 +8,7 @@
 //     Kabul edilirse    : her hafta kulüp nüfuzu +2, kulüp sadakati, hoca ve yönetim ilişkisi artar
 //  5) Bonuslar          : bonuses() → Çalışkan / Lider / Soğukkanlı etkileri; sync() oyuncuya yazar
 import { random } from '../rng.js';
+import { midWindowWeek } from '../calendar.js';
 import { CLUB_BY_ID } from '../data.js';
 import { MENTOR_RULES, MENTOR_TRAITS, Mentorship, NO_BONUS, SquadPlayer, TEAM_ROLES, traitBonus } from './models.js';
 import { advanceSquad, generateSquad, windowSigning } from './squad.js';
@@ -424,7 +425,7 @@ export class MentorManager {
       out.legacy = { influence, changes, note };
     }
     // Devre arası: kulübe genç transfer gelebilir
-    if (this.state.calendar.week === 11) out.signing = windowSigning(this.ensureSquad(), this.clubRating(), this.rnd, { avoidNames: [this.state.player.name] });
+    if (this.state.calendar.week === midWindowWeek()) out.signing = windowSigning(this.ensureSquad(), this.clubRating(), this.rnd, { avoidNames: [this.state.player.name] });
     out.requests = this.generateRequests(out.signing ? 0.8 : 0.12);
     return out;
   }

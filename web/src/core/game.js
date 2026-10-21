@@ -1,13 +1,14 @@
 // OYUN AKIŞI — hafta, aksiyonlar, maç günü, sezon sonu. Arayüz sadece bu fonksiyonları çağırır.
 import {
-  CLUBS, CLUB_BY_ID, GAME_WEIGHTS, LEAGUES, MAX_TRAININGS_PER_WEEK, MID_WINDOW_WEEK, leagueAt,
-  SEASON_WEEKS, START_MONEY, STATS, TRAINING, WEEK_SLOTS,
+  CLUBS, CLUB_BY_ID, GAME_WEIGHTS, LEAGUES, MAX_TRAININGS_PER_WEEK, leagueAt, leaguesAt,
+  START_MONEY, STATS, TRAINING, WEEK_SLOTS,
 } from './data.js';
+import { midWindowWeek, seasonWeeks } from './calendar.js';
 import { chance, pick, randInt, round1, roundTo } from './rng.js';
 import {
   addProgress, ageUp, changeEnergy, changeFame, changeMorale, changeRel, createPlayer, effectiveSkill, form, ovr, trainingAmount,
 } from './player.js';
-import { DEFAULT_FOCUS, addFocus, countryFocus, aiTopScorerGoals, clubRating, createWorld, evolveRatings, flushPostponed, leagueIdIn, leagueOf, positionOf, simulateWeek, sortedTable, useWorld } from './league.js';
+import { DEFAULT_FOCUS, addFocus, countryFocus, aiTopScorerGoals, clubRating, createWorld, evolveRatings, fixturesForWeek, flushPostponed, leagueIdIn, leagueOf, positionOf, setWorldWeeks, simulateWeek, sortedTable, useWorld, zoneRules } from './league.js';
 import { acceptOffer, generateOffers, itemEffects, wageFor, weeklyFinance } from './economy.js';
 import { finalizeMatch, planMatch, selection } from './match.js';
 import { pickEvent, resolveEvent } from './events.js';
@@ -23,7 +24,7 @@ import {
 } from './onboarding/index.js';
 import { random } from './rng.js';
 import { agentNetworkOffers, agentSponsorMult, ensureAgent } from './agent.js';
-import { NATIONAL_WEEKS, ensureNational, nationalWindow } from './national.js';
+import { ensureNational, nationalWeeks, nationalWindow } from './national.js';
 import { ballonOnEurope, ballonOnMatch, ballonRank, ballonSeasonEnd, ensureBallon } from './ballondor.js';
 import { ChirpTriggerEngine, FABRICIO } from './chirp/index.js';
 import { achievementsOnMatch, achievementsOnTraining, checkAchievements, ensureAchievements } from './achievements.js';
@@ -69,9 +70,9 @@ export function newGame(setup) {
   const cc = player.nationality || 'tr';
   const world = useWorld(createWorld(1, null, { focus: countryFocus(cc) }));
   world.europe = createEurope(1, world, null);
-  // vatandaşlık: kariyer o ülkenin 2. kademesinde başlar (Türkiye: 1. Lig)
-  const second = LEAGUES[leagueAt(cc, 2)] ? leagueAt(cc, 2) : 'first';
-  const pool = CLUBS.filter((c) => c.league === second).sort((a, b) => a.rating - b.rating).slice(0, 4);
+  // vatandaşlık: kariyer o ülkenin 2. kademesinde başlar (Türkiye: 1. Lig; gruplu kademede tüm gruplar)
+  const second = leaguesAt(cc, 2).length ? leaguesAt(cc, 2) : ['first'];
+  const pool = CLUBS.filter((c) => second.includes(c.league)).sort((a, b) => a.rating - b.rating).slice(0, 4);
   const club = pick(pool);
   const state = {
     version: SAVE_VERSION,
@@ -104,6 +105,10 @@ export function newGame(setup) {
     applyStarterOffer(state, setup.start);
   }
   if (setup.tryout) state.career.tryout = setup.tryout;
+  // takvim: sezonun hafta sayısı oyuncunun liginin tur sayısı (18 takım → 34 hafta, 20 → 38 …)
+  addFocus(world, leagueIdIn(world, state.career.clubId));
+  setWorldWeeks(world, state.career.clubId);
+  useWorld(world);
   ensureChirp(state);
   ensureMentor(state);
   ensureAchievements(state);
@@ -317,14 +322,26 @@ export function finishTraining(state, stat, result, diff = state.training?.diff 
 // MAÇ GÜNÜ
 // ─────────────────────────────────────────────────────────────
 
+/** Bu hafta ligde maçın var mı? (tek sayıda takımda bay haftası, kısa ligde boş hafta yok) */
+export const hasLeagueMatch = (state) => fixturesForWeek(state.world, state.career.clubId, state.calendar.week).length > 0;
+
+/** Bu haftanın ligde ikinci (sıkışık takvim) maçları: hafta içine alınır */
+const extraFixtures = (state, week) => fixturesForWeek(state.world, state.career.clubId, week).slice(1);
+function scheduleExtras(state, week) {
+  const extra = extraFixtures(state, week);
+  for (const [h, a] of extra) (state.pending.makeups ||= []).push({ h, a, week, season: state.calendar.season, due: week, why: 'midweek' });
+  return extra.map(([h, a]) => ({ h, a }));
+}
+
 export function getMatch(state) {
   const id = `${state.calendar.season}-${state.calendar.week}`;
+  if (!hasLeagueMatch(state)) return null;
   if (!state.pending.match || state.pending.match.id !== id) {
     ensureCoach(state);
     state.pending.match = planMatch(state);
     // Ağır kar / dondurucu soğuk: maç ertelenebilir (son haftada ertelenmez: maç sezon bitmeden hafta içine alınır)
     const wx = state.pending.match.weather;
-    if (wx?.postpone && state.calendar.week <= SEASON_WEEKS - 1) state.pending.match.postponed = wx.id === 'storm' ? 'storm' : wx.temp <= -8 && wx.id !== 'snow' ? 'frost' : 'snow';
+    if (wx?.postpone && state.calendar.week <= seasonWeeks() - 1) state.pending.match.postponed = wx.id === 'storm' ? 'storm' : wx.temp <= -8 && wx.id !== 'snow' ? 'frost' : 'snow';
     // Basın toplantısı (büyük maç, yeni hoca, formsuzluk, gol yağmuru)
     state.pending.match.press = state.pending.match.postponed ? null : planPress(state, state.pending.match);
   }
@@ -339,7 +356,7 @@ export function completeMatch(state, match) {
   questsOn(state, 'match', summary); // haftalık görevler
   const hg = match.isHome ? match.score.my : match.score.opp;
   const ag = match.isHome ? match.score.opp : match.score.my;
-  const results = simulateWeek(state.world, match.week, { h: match.homeId, a: match.awayId, hg, ag });
+  const results = simulateWeek(state.world, match.week, { h: match.homeId, a: match.awayId, hg, ag }, { skip: scheduleExtras(state, match.week) });
   state.pending.match = null;
   // Avrupa kupaları (bu haftanın maç günü varsa); oyuncunun kulübü oynuyorsa katkısı
   const europe = europeWeek(state, match.week);
@@ -395,7 +412,7 @@ export function completeMatch(state, match) {
   achievementsOnMatch(state, summary, match);
   ballonOnMatch(state, summary);
   // Devre arası: Altın Top yarışında ilk 10'daysan transfer gazetecisi yazar
-  if (state.calendar.week === MID_WINDOW_WEEK) {
+  if (state.calendar.week === midWindowWeek()) {
     const rank = ballonRank(state);
     if (rank <= 10) chirp.push(new ChirpTriggerEngine(state).post(FABRICIO, 'ballon', 'Altın Top yarışında ara sıralama: {player} {rank}. sırada! Avrupa devleri gözlerini Türkiye\'ye çevirdi.', { rank }));
   }
@@ -408,9 +425,9 @@ export function completeMatch(state, match) {
  * Hava muhalefeti: maç ertelendi. Lig haftası senin maçın olmadan oynanır; maç 2 hafta sonra hafta içine alınır.
  */
 export function postponeMatch(state, match) {
-  const results = simulateWeek(state.world, match.week, null, { skip: { h: match.homeId, a: match.awayId } });
+  const results = simulateWeek(state.world, match.week, null, { skip: [{ h: match.homeId, a: match.awayId }, ...scheduleExtras(state, match.week)] });
   state.pending.match = null;
-  (state.pending.makeups ||= []).push({ h: match.homeId, a: match.awayId, week: match.week, season: state.calendar.season, due: Math.min(match.week + 2, SEASON_WEEKS), why: match.postponed });
+  (state.pending.makeups ||= []).push({ h: match.homeId, a: match.awayId, week: match.week, season: state.calendar.season, due: Math.min(match.week + 2, seasonWeeks()), why: match.postponed });
   const why = { snow: 'yoğun kar yağışı', frost: 'dondurucu soğuk ve buzlanan zemin', storm: 'şiddetli fırtına' }[match.postponed] || 'hava muhalefeti';
   addNews(state, `${CLUB_BY_ID[match.homeId].short}-${CLUB_BY_ID[match.awayId].short} maçı ${why} nedeniyle ertelendi. Maç hafta içine alınacak.`, 'info');
   const europe = europeWeek(state, match.week);
@@ -418,6 +435,20 @@ export function postponeMatch(state, match) {
   state.career.lastRole = match.role;
   const weekEnd = endWeek(state, { summary: null, postponed: true });
   return { summary: null, postponed: true, results, weekEnd, europe, chirp: [...euroTweets, ...weekEnd.chirp] };
+}
+
+/**
+ * Maçsız hafta (tek sayıda takımlı ligde bay, ya da kısa ligin boş haftası): dünya oynar, sen dinlenirsin.
+ */
+export function freeWeek(state) {
+  const week = state.calendar.week;
+  const results = simulateWeek(state.world, week);
+  state.pending.match = null;
+  const europe = europeWeek(state, week);
+  const euroTweets = chirpOnEurope(state, europe);
+  addNews(state, `${week}. hafta ligde maçın yoktu (bay haftası).`, 'info');
+  const weekEnd = endWeek(state, { summary: null, free: true });
+  return { summary: null, free: true, results, weekEnd, europe, chirp: [...euroTweets, ...weekEnd.chirp] };
 }
 
 function endWeek(state, ctx) {
@@ -497,8 +528,8 @@ function endWeek(state, ctx) {
 
   let offers = null;
   // Kiralıkta / altyapıdayken devre arası transfer penceresi kapalı
-  if (calendar.week === MID_WINDOW_WEEK) for (const n of worldStarsWindow(state, 'mid')) addNews(state, n, 'info');
-  if (calendar.week === MID_WINDOW_WEEK && !isTransferLocked(state)) {
+  if (calendar.week === midWindowWeek()) for (const n of worldStarsWindow(state, 'mid')) addNews(state, n, 'info');
+  if (calendar.week === midWindowWeek() && !isTransferLocked(state)) {
     offers = agentNetworkOffers(state, generateOffers(state, 'mid'), 'mid');
     offers = interestOffers(state, offers, (id) => offerFor(state, id));
     const loan = loanOffer(state, (id) => offerFor(state, id));
@@ -511,7 +542,7 @@ function endWeek(state, ctx) {
   // Milli ara: bu hafta çağrı varsa kulüp maçından sonra kampa gidilir
   const national = nationalWindow(state);
   // Milli ara: kadro açıklaması (çağrılsan da çağrılmasan da)
-  if (NATIONAL_WEEKS.includes(calendar.week)) chirpTweets.push(chirpNationalSquad(state, national));
+  if (nationalWeeks().includes(calendar.week)) chirpTweets.push(chirpNationalSquad(state, national));
   if (national) addNews(state, `Milli takım çağrısı: ${national.level === 'A' ? 'A Milli Takım' : national.level === 'U21' ? 'U-21' : 'U-19'} kadrosundasın!`, 'good');
 
   // Kupa: bu hafta tur varsa diğer maçlar oynanır, senin eşleşmen hafta içi oynanır (pending.cupTie)
@@ -521,12 +552,12 @@ function endWeek(state, ctx) {
     const i = state.pending.makeups.findIndex((m) => m.season === calendar.season && m.due <= calendar.week + 1);
     if (i >= 0) {
       const mk = state.pending.makeups.splice(i, 1)[0];
-      state.pending.cupTie = { kind: 'makeup', round: 'makeup', h: mk.h, a: mk.a, week: mk.week, name: 'Ertelenen lig maçı', season: mk.season };
+      state.pending.cupTie = { kind: 'makeup', round: 'makeup', h: mk.h, a: mk.a, week: mk.week, name: mk.why === 'midweek' ? 'Hafta içi lig maçı' : 'Ertelenen lig maçı', season: mk.season, midweek: mk.why === 'midweek' };
     }
   }
   const cupTie = cupTie0 || (state.pending.cupTie?.kind === 'makeup' ? state.pending.cupTie : null);
 
-  const seasonOver = calendar.week >= SEASON_WEEKS;
+  const seasonOver = calendar.week >= seasonWeeks();
   if (seasonOver) calendar.phase = 'seasonEnd';
   else {
     calendar.week += 1;
@@ -633,8 +664,8 @@ export function endSeason(state) {
 
   // Sözleşme maddeleri: sadakat primi; küme düşme maddesi (düşerse sözleşme feshedilir)
   const lgRows = sortedTable(world.leagues[leagueId]);
-  const hasLower = Object.values(LEAGUES).some((l) => l.country === league.country && !l.youth && l.tier === league.tier + 1);
-  const relegated = hasLower && position > lgRows.length - 3;
+  const zr = zoneRules(leagueId);
+  const relegated = zr.down > 0 && position > lgRows.length - zr.down;
   const cl = clausesOnSeasonEnd(state, relegated);
   if (cl?.loyalty) addNews(state, `Sözleşmendeki sadakat primi yattı: €${cl.loyalty.toLocaleString('tr-TR')}.`, 'good');
   if (cl?.released) addNews(state, 'Küme düşme maddesi devrede: sözleşmen feshedildi, istediğin kulübe gidebilirsin.', 'info');
@@ -654,19 +685,22 @@ export function endSeason(state) {
   const superPair = LEAGUES[leagueId]?.tier === 1 ? cupSeasonEnd(state, myTable[0]?.id, myTable[1]?.id) : (cupSeasonEnd(state, null, null), null);
   const cupWinner = state.lastCup?.winner;
   if (cupWinner) addNews(state, `${state.lastCup.name}: ${CLUB_BY_ID[cupWinner].name} şampiyon!`, cupWinner === career.clubId ? 'good' : 'info');
-  const nextWorld = createWorld(calendar.season + 1, evolveRatings(world), { prev: world, focus: countryFocus(CLUB_BY_ID[career.clubId]?.country || 'tr', state.player.nationality) });
+  const nextWorld = createWorld(calendar.season + 1, evolveRatings(world), { prev: world, clubId: career.clubId, focus: countryFocus(CLUB_BY_ID[career.clubId]?.country || 'tr', state.player.nationality) });
   // Avrupa: bu sezonun kazananları, gelecek sezonun katılımcıları (bu sezonun tablolarından)
   const euroWinners = europeWinners(world);
   nextWorld.europe = createEurope(calendar.season + 1, nextWorld, world);
   state.world = useWorld(nextWorld);
   addFocus(nextWorld, leagueIdIn(nextWorld, career.clubId));
+  setWorldWeeks(nextWorld, career.clubId);
   const myMove = nextWorld.moves.find((m) => m.clubId === career.clubId);
   if (myMove) addNews(state, myMove.up ? `${CLUB_BY_ID[career.clubId].name} ${myMove.playoff ? 'play-off finalini kazandı ve ' : ''}${dative(LEAGUES[myMove.to].name)} yükseldi! 🎉` : `${CLUB_BY_ID[career.clubId].name} ${dative(LEAGUES[myMove.to].name)} düştü.`, myMove.up ? 'good' : 'bad');
   // play-off'ta kaybettiysek
   const po = nextWorld.playoffs?.[leagueId];
-  if (po && !myMove && po.semis.flat().includes(career.clubId)) {
+  if (po && !myMove && (po.all || po.semis.flat()).includes(career.clubId)) {
+    const inCross = (po.cross || []).some((p) => p.includes(career.clubId));
     const inFinal = po.final?.includes(career.clubId);
-    addNews(state, inFinal ? `Play-off finalinde ${CLUB_BY_ID[po.winner]?.name || 'rakibe'} kaybettik. Yükselme hayali gelecek sezona kaldı.` : 'Play-off yarı finalinde elendik.', 'bad');
+    const finalOpp = inFinal ? po.final.find((x) => x !== career.clubId) : null;
+    addNews(state, inCross ? 'Grup play-off\'unu kazandık ama gruplar arası son turda elendik. Yükselme gelecek sezona kaldı.' : inFinal ? `Play-off finalinde ${CLUB_BY_ID[finalOpp]?.name || 'rakibe'} kaybettik. Yükselme hayali gelecek sezona kaldı.` : 'Play-off\'ta elendik.', 'bad');
   }
   delete nextWorld.playoffs;
   const report = {
@@ -755,6 +789,12 @@ export function takeOffer(state, offer) {
   if (offer.guarantee) state.career.guarantee = { untilSeason: state.calendar.season + (state.calendar.week > 1 ? 1 : 0), reason: 'contract' };
   state.pending.offers = null;
   state.pending.match = null; // eski kulübün planlanmış maçı geçersiz
+  // sezon başlamadan imzalandıysa takvim yeni ligin tur sayısına göre yeniden kurulur (kupa da onunla)
+  if (state.calendar.week === 1 && !state.career.season.apps && state.world) {
+    const before = state.world.weeks;
+    setWorldWeeks(state.world, state.career.clubId);
+    if (state.world.weeks !== before && !offer.renewal) { state.cup = null; ensureCup(state); }
+  }
   addNews(state, text, 'good');
   return text;
 }

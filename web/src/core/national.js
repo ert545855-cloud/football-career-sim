@@ -1,15 +1,18 @@
 // MİLLİ TAKIM — U-19, U-21 ve A Milli Takım; milli aralar, kritik anlı milli maçlar ve büyük turnuvalar.
 //
 //  • Çağrı: OVR, form, ün ve Federasyon ilişkisinden bir "çağrı puanı". Yaşa göre en üst uygun takım.
-//  • Milli ara (NATIONAL_WEEKS): kulüp maçından sonra çağrı gelir. Kampa katılırsan bir milli maç oynanır
+//  • Milli ara (nationalWeeks(): sezon uzunluğuna ölçekli iki pencere): kulüp maçından sonra çağrı gelir. Kampa katılırsan bir milli maç oynanır
 //    (oyuncunun kritik anı mini oyunla), reddedersen dinlenirsin ama Federasyon ve taraftar küser.
 //  • Yorgunluk dengesi: milli maç enerji götürür; yorgunken gidersen sakatlık riski artar.
 //  • Büyük turnuva: çift sezonların sonunda (Avrupa Şampiyonası / Dünya Kupası) A takımdaysan.
 //    Grup + çeyrek + yarı otomatik; finalde kritik an senin.
 import { chance, clamp, pick, poisson, rand, randInt, round1, shuffle } from './rng.js';
 import { changeEnergy, changeFame, changeMorale, changeRel, form, ovr } from './player.js';
+import { scaleWeek } from './calendar.js';
 
+/** Milli aralar (22 haftalık tasarım takviminde 6. ve 16. hafta; bu sezonun uzunluğuna ölçekli) */
 export const NATIONAL_WEEKS = [6, 16];
+export const nationalWeeks = () => NATIONAL_WEEKS.map((w) => scaleWeek(w));
 
 export const NATIONAL_TEAMS = {
   U19: { id: 'U19', name: 'U-19 Milli Takımı', short: 'U-19', maxAge: 19, minScore: 28, base: 58, fame: 1, fans: 1 },
@@ -175,7 +178,7 @@ const lambda = (a, b) => 1.25 * Math.exp((a - b) / 18);
  */
 export function nationalWindow(state) {
   const n = ensureNational(state);
-  if (!NATIONAL_WEEKS.includes(state.calendar.week)) return null;
+  if (!nationalWeeks().includes(state.calendar.week)) return null;
   const level = callUpLevel(state);
   if (!level) return null;
   const team = NATIONAL_TEAMS[level];

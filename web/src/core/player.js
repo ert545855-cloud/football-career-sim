@@ -2,6 +2,7 @@ import { COUNTRIES, STAT_KEYS, POSITIONS, GROWTH } from './data.js';
 import { clamp, lerp } from './rng.js';
 import { RELATION_DEFAULTS } from './chirp/relationships.js';
 import { potentialMult, styleGrowth } from './character.js';
+import { seasonPace } from './calendar.js';
 const COUNTRY_IDS = new Set(COUNTRIES.map((c) => c.id));
 
 /**
@@ -104,7 +105,8 @@ export function addProgress(player, stat, amount) {
   const room = Math.max(0.06, 1 - player.stats[stat] / 105);
   // Potansiyel tavanı ve oyun tarzı (ilgili statlarda bonus)
   const pot = player.potential ? potentialMult(player, ovr(player)) : 1;
-  player.progress[stat] += amount * growthMult(player, stat) * ageFactor(player.age) * room * pot * styleGrowth(player, stat);
+  // seasonPace: uzun sezonlarda (34–38 hafta) hafta başına gelişim azalır → sezonluk gelişim lig büyüklüğünden bağımsız
+  player.progress[stat] += amount * growthMult(player, stat) * ageFactor(player.age) * room * pot * styleGrowth(player, stat) * seasonPace();
   let gained = 0;
   while (player.progress[stat] >= 1 && player.stats[stat] < 99) {
     player.progress[stat] -= 1;
