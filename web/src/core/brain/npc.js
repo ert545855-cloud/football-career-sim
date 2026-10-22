@@ -13,7 +13,7 @@ const OBSERVERS = [
     text: `${cx.coach}: "Sahada ağır görünüyorsun, yağ oranın %${f1(cx.fx.fat)}. 5 hafta içinde %13,5'in altına in."`,
     fx: { manager: -2 },
     expect: {
-      key: 'fat', who: cx.coach, metric: 'fat', dir: -1, target: 13.5, weeks: 5, text: "yağ oranımı %13,5'in altına indirmemi", ok: { manager: 6 }, fail: { manager: -6, doubt: 3 },
+      key: 'fat', who: cx.coach, metric: 'fat', dir: -1, target: 13.5, weeks: 5, text: "yağ oranımı %13,5'in altına indirmemi", goal: "Yağ oranı %13,5'in altına", ok: { manager: 6 }, fail: { manager: -6, doubt: 3 },
       okText: `${cx.coach}: "Hafiflemişsin, sahada fark ediliyor. Aferin."`, failText: `${cx.coach}: "Sana 5 hafta verdim, hâlâ ağırsın. Bir süre kulübeden izleyeceksin."`,
     },
   },
@@ -22,7 +22,7 @@ const OBSERVERS = [
     text: `${cx.coach}: "Geceleri dışarıda olduğunu duydum. Bu takımda profesyonel olmayan forma giymez."`,
     fx: { manager: -3 },
     expect: {
-      key: 'party', who: cx.coach, metric: 'party', dir: -1, target: 0.3, weeks: 6, text: 'gece hayatını bırakmamı', ok: { manager: 5 }, fail: { manager: -5, doubt: 2 },
+      key: 'party', who: cx.coach, metric: 'party', dir: -1, target: 0.3, weeks: 6, text: 'gece hayatını bırakmamı', goal: 'Gece hayatına son', ok: { manager: 5 }, fail: { manager: -5, doubt: 2 },
       okText: `${cx.coach}: "Gecelerin sakinleşti, antrenmanda farkı görüyorum. Güvenim tazelendi."`, failText: `${cx.coach}: "Sözüne güvenmiştim. Hâlâ geceleri dışarıdasın; forma garantin yok."`,
     },
   },

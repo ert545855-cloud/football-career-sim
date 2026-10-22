@@ -53,9 +53,8 @@ async function installSheet(app, isIOS) {
   }
   await sheet({
     html: `<h3>${icon('download')} Uygulama gibi oyna</h3>
-      <p class="muted" style="margin:0 0 10px">${isIOS
-        ? 'Safari\'de alttaki <b>Paylaş</b> düğmesine, ardından <b>Ana Ekrana Ekle</b>\'ye dokun.'
-        : 'Tarayıcı menüsünden (⋮) <b>Ana ekrana ekle</b> ya da <b>Uygulamayı yükle</b>\'yi seç.'} Oyun tam ekran açılır ve internet olmadan da çalışır.</p>
+      <p class="muted" style="margin:0 0 6px">${isIOS ? 'Safari\'de alttaki Paylaş düğmesine, ardından Ana Ekrana Ekle seçeneğine dokun.' : 'Tarayıcı menüsünden (⋮) Ana ekrana ekle ya da Uygulamayı yükle seçeneğine dokun.'}</p>
+      <p class="muted" style="margin:0 0 10px">Oyun tam ekran açılır ve internet olmadan da çalışır.</p>
       <button class="btn primary block" data-close="">Tamam</button>`,
   });
 }

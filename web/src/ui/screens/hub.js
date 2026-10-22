@@ -42,7 +42,8 @@ function restructuredCard(s) {
   if (!r || r.season !== s.calendar.season) return '';
   return `<div class="card restructured">
     <b>${icon('trophy', 'ico sm')} Ligler gerçek takım sayılarına geçti</b>
-    <p class="small" style="margin:6px 0 0">${esc(leagueLabel(r.leagueId))} artık <b>${r.teams} takımlı</b>; sezon ${r.weeks} hafta sürüyor. Kaldığın yer yeni takvimde ${r.week}. haftaya denk geldi. Puan durumu yeni fikstürle yeniden hesaplandı; kendi istatistiklerin, paran ve sözleşmen aynen duruyor. Kupa da yeni biçimde: üst lig kulüpleri doğrudan gruplardan başlar.</p>
+    <p class="small" style="margin:6px 0 0">${esc(leagueLabel(r.leagueId))}: ${r.teams} takım, ${r.weeks} hafta.</p>
+    <p class="small" style="margin:4px 0 0">Kaldığın yer yeni takvimde ${r.week}. haftaya denk geldi. Puan durumu yeni fikstürle yeniden hesaplandı; kendi istatistiklerin, paran ve sözleşmen aynen duruyor. Kupa da yeni biçimde: üst lig kulüpleri doğrudan gruplardan başlar.</p>
     <div class="row" style="gap:8px;margin-top:10px"><button class="btn sm primary" data-restructured-table>${icon('table', 'ico sm')} Puan durumunu gör</button><button class="btn sm ghost" data-restructured-ok>Tamam</button></div>
   </div>`;
 }

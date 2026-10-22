@@ -8,6 +8,7 @@ import * as mentor from './core/mentor/index.js';
 import { runMiniGame } from './games/index.js';
 import { loadSprites } from './assets/sprites.js';
 import { setLang } from './i18n/index.js';
+import { playStudioIntro } from './ui/studioIntro.js';
 
 // Sprite atlası (≈180 KB) ilk ekranla paralel yüklenir; hazır olana kadar SVG/çizim yedekleri görünür
 loadSprites();
@@ -35,6 +36,8 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
 }
 
 app.go('title');
+// Açılış: stüdyo introsu (oturum başına bir kez, dokununca atlanır); giriş ekranı altında hazır bekler
+playStudioIntro(root.closest('.app') || root.querySelector('.app') || root);
 window.__krampon = app;
 // Test modu (?autoplay=1): Chirp/mentor tetikleyicilerini ve mini oyunları testten çağırabilmek için
 if (app.autoplay) {

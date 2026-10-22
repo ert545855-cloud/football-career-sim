@@ -150,7 +150,7 @@ export function bodyScreen(app) {
       ${g || b.npc.expect?.length ? `<div class="h-sec">Hedefler ve istekler</div>
       <div class="card" style="display:grid;gap:10px">
         ${g ? `<div><div class="row between small"><b>🎯 Kendine hedefin: ${esc(g.text)}</b><span class="muted">${Math.max(0, g.due - b.t)} hf</span></div><div class="bar" style="margin-top:6px"><i style="--c:var(--accent)" data-w="${gp}"></i></div></div>` : ''}
-        ${(b.npc.expect || []).map((e) => `<div class="row between small"><span>${icon('clipboard', 'ico sm')} <b>${esc(e.who)}</b> senden ${esc(e.text)} istiyor</span><span class="muted">${Math.max(0, e.due - b.t)} hf</span></div>`).join('')}
+        ${(b.npc.expect || []).map((e) => `<div class="row between small"><span>${icon('clipboard', 'ico sm')} ${esc(e.who)}: ${esc(e.goal || e.text)}</span><span class="muted">${Math.max(0, e.due - b.t)} hf</span></div>`).join('')}
       </div>` : ''}
 
       <div class="h-sec">Anıların</div>

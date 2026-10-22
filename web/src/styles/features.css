@@ -1230,3 +1230,36 @@ button.thought { cursor: pointer; }
 .bl-grid b { font-size: 18px; font-variant-numeric: tabular-nums; }
 .bl-grid small { font-size: 10.5px; color: var(--muted); }
 @media (max-width: 360px) { .body-card { grid-template-columns: 1fr; } .body-fig { height: 240px; } }
+
+/* ── Stüdyo introsu (Odd Sparrow Studios) ── */
+.studio-intro { position: absolute; inset: 0; z-index: 120; background: #000; display: grid; place-items: center; overflow: hidden; cursor: pointer; transition: opacity 0.6s ease; }
+.studio-intro.out { opacity: 0; pointer-events: none; }
+.studio-intro .si-glow { position: absolute; inset: -20%; background: radial-gradient(40% 32% at 50% 44%, rgba(203, 170, 106, 0.16), transparent 70%); opacity: 0; }
+.studio-intro .si-stage { position: relative; display: flex; flex-direction: column; align-items: center; width: min(78vw, 360px); }
+.studio-intro .si-bird { position: relative; width: 52%; aspect-ratio: 394 / 567; opacity: 0; }
+.studio-intro .si-bird img { width: 100%; height: 100%; display: block; }
+.studio-intro .si-shine { position: absolute; inset: 0; -webkit-mask: url(/studio/bird.webp) center / contain no-repeat; mask: url(/studio/bird.webp) center / contain no-repeat;
+  background: linear-gradient(115deg, transparent 35%, rgba(255, 236, 190, 0.95) 48%, transparent 60%) -160% 0 / 260% 100% no-repeat; mix-blend-mode: screen; }
+.studio-intro .si-sparks { position: absolute; left: 48%; top: 22%; width: 0; height: 0; }
+.studio-intro .si-sparks i { position: absolute; width: var(--s); height: var(--s); background: #cbaa6a; opacity: 0; box-shadow: 0 0 6px rgba(203, 170, 106, 0.8); }
+.studio-intro .si-word { width: 100%; margin-top: 9%; opacity: 0; clip-path: inset(0 100% 0 0); }
+.studio-intro .si-sub { width: 46%; margin-top: 5%; opacity: 0; }
+.studio-intro .si-line { display: block; height: 2px; width: 0; margin-top: 6%; border-radius: 2px; box-shadow: 0 0 10px rgba(203, 170, 106, 0.6); }
+.studio-intro.play .si-glow { animation: siGlow 3.2s ease forwards; }
+.studio-intro.play .si-bird { animation: siBird 1s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
+.studio-intro.play .si-bird img { animation: siShards 1s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
+.studio-intro.play .si-shine { animation: siShine 1.1s 0.75s ease-in-out forwards; }
+.studio-intro.play .si-sparks i { animation: siSpark var(--d) 0.95s ease-out forwards; }
+.studio-intro.play .si-word { animation: siWord 0.75s 1.05s cubic-bezier(0.3, 0.8, 0.3, 1) forwards; }
+.studio-intro.play .si-sub { animation: siSub 0.6s 1.6s ease forwards; }
+.studio-intro.play .si-line { animation: siLine 0.6s 1.75s cubic-bezier(0.3, 0.8, 0.3, 1) forwards; }
+@keyframes siGlow { 0% { opacity: 0; } 40% { opacity: 1; } 100% { opacity: 0.7; } }
+@keyframes siBird { from { opacity: 0; transform: translateY(14px) scale(0.92); filter: blur(6px); } 60% { opacity: 1; filter: blur(0); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes siShards { from { clip-path: polygon(0% 100%, 0% 100%, 0% 100%); } 55% { clip-path: polygon(0% 100%, 0% -10%, 110% 100%); } to { clip-path: polygon(0% 100%, 0% -115%, 215% 100%); } }
+@keyframes siShine { from { background-position: -160% 0; } to { background-position: 160% 0; } }
+@keyframes siSpark { 0% { opacity: 0; transform: translate(0, 0) scale(1); } 15% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--x), var(--y)) scale(0.4); } }
+@keyframes siWord { from { opacity: 0; clip-path: inset(0 100% 0 0); letter-spacing: 0.2em; } to { opacity: 1; clip-path: inset(0 0 0 0); } }
+@keyframes siSub { from { opacity: 0; transform: translateY(6px); letter-spacing: 0.4em; } to { opacity: 1; transform: none; } }
+@keyframes siLine { from { width: 0; } to { width: 36%; } }
+.studio-intro.reduced.play .si-bird, .studio-intro.reduced.play .si-word, .studio-intro.reduced.play .si-sub { animation: none; opacity: 1; clip-path: none; }
+.studio-intro.reduced.play .si-line { animation: none; width: 36%; }
