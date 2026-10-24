@@ -93,7 +93,7 @@ export function titleScreen(app) {
       // Bulut: başka cihazda daha yeni bir kayıt varsa (oturumda bir kez) sor
       if (!app.cloudChecked) {
         app.cloudChecked = true;
-        checkCloudOnStart(app);
+        checkCloudOnStart(app).catch(() => {});
       }
       const root = el.querySelector('.title-screen') || el;
       const cv = root.querySelector('.title-bg');
@@ -101,18 +101,6 @@ export function titleScreen(app) {
       const club = s ? CLUB_BY_ID[s.career?.clubId] : null;
       let look = null;
       try { look = s ? playerLook(s) : null; } catch { look = null; }
-      if (cv) {
-        mountTitleScene(cv, {
-          look,
-          colors: club?.colors,
-          board: club ? `${club.short || club.name}  -  NEW FOOTBALL STARS` : 'NEW FOOTBALL STARS  -  FUTBOL KARİYERİ',
-          anchor: () => {
-            const r = stage.getBoundingClientRect();
-            return { top: r.top, bottom: r.bottom };
-          },
-          winter: () => !!root.closest('.app')?.classList.contains('winter'),
-        });
-      }
       root.addEventListener('click', async (e) => {
         const act = e.target.closest('[data-act]')?.dataset.act;
         if (!act) return;
@@ -132,6 +120,21 @@ export function titleScreen(app) {
         if (act === 'lang' && (await langSheet(app))) app.go('title');
         if (act === 'install') await installSheet(app, isIOS);
       });
+      // Arka plan sahnesi çizilemese bile butonlar çalışsın
+      try {
+        if (cv) mountTitleScene(cv, {
+          look,
+          colors: club?.colors,
+          board: club ? `${club.short || club.name}  -  NEW FOOTBALL STARS` : 'NEW FOOTBALL STARS  -  FUTBOL KARİYERİ',
+          anchor: () => {
+            const r = stage.getBoundingClientRect();
+            return { top: r.top, bottom: r.bottom };
+          },
+          winter: () => !!root.closest('.app')?.classList.contains('winter'),
+        });
+      } catch (err) {
+        console.error('Başlık sahnesi açılamadı:', err);
+      }
     },
   };
 }
