@@ -653,7 +653,7 @@
 @media (min-width: 560px) { .bc-wrap { margin: 0; } .bc { border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.1); } }
 .bc-cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .bc-sb { position: absolute; left: 7px; top: 7px; display: flex; align-items: stretch; height: 25px; border-radius: 5px; overflow: hidden; background: rgba(7, 12, 26, 0.92); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45); font-weight: 900; font-size: 12.5px; color: #fff; letter-spacing: 0.02em; }
-.bc-time { display: grid; place-items: center; min-width: 46px; padding: 0 7px; background: rgba(255, 255, 255, 0.09); font-variant-numeric: tabular-nums; }
+.bc-time { display: grid; flex: 0 0 58px; box-sizing: border-box; place-items: center; min-width: 58px; padding: 0 4px; white-space: nowrap; background: rgba(255, 255, 255, 0.09); font-variant-numeric: tabular-nums; }
 .bc-tm { display: flex; align-items: center; gap: 4px; padding: 0 6px; box-shadow: inset 3px 0 0 var(--tc); }
 .bc-tm.r { box-shadow: inset -3px 0 0 var(--tc); }
 .bc-tm .bc-crest, .bc-tm svg { width: 17px; height: 17px; }

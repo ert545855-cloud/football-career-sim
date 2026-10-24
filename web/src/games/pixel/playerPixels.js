@@ -3,6 +3,7 @@
 // Yönler: 'down' (önden, kameraya bakar), 'up' (arkadan, sırtında numara), 'side' (sağa bakar; sola için çevrilir).
 // Kareler: idle, run0–run3 (koşu döngüsü), lunge (uzanma), ready (kaleci/kollar yukarı), kick.
 // Görünüş (look): ten, saç modeli ve rengi, forma (desen), şort, tozluk, krampon, eldiven, saç bandı, uzun kol, numara.
+import { BALL_DESIGNS } from '../../core/matchBall.js';
 
 export const PW = 20;
 export const PH = 28;
@@ -434,11 +435,23 @@ export function buildBall(frame = 0, variant = 'white') {
   const M = frame % 2 === 0
     ? ['..OOOOO..', '.OKWWWKO.', 'OKKWWWKKO', 'OWWWKWWWO', 'OWWKKKWSO', 'OWWWKWWSO', 'OKKWWWKKO', '.OKWWSKO.', '..OOOOO..']
     : ['..OOOOO..', '.OWWKWWO.', 'OWWKKKWWO', 'OKWWKWWKO', 'OKKWWWKKO', 'OKWWWWWKO', 'OWWWKWWSO', '.OWKKKSO.', '..OOOOO..'];
-  const C = variant === 'orange'
-    ? { O: OUTLINE, W: '#ff8a1f', K: '#1e293b', S: '#d9650b' }
-    : { O: OUTLINE, W: '#f4f4f0', K: '#22262b', S: '#b9bfc4' };
+  const design = BALL_DESIGNS[variant] || BALL_DESIGNS.white;
+  const C = { O: OUTLINE, W: design.light, K: design.dark, S: design.shade };
   const px = [];
-  for (const row of M) for (const ch of row) px.push(C[ch] || null);
+  for (let y = 0; y < M.length; y++) {
+    for (let x = 0; x < M[y].length; x++) {
+      const ch = M[y][x];
+      const accent = ch === 'W' || ch === 'S';
+      const pattern = design.pattern;
+      const mark = pattern === 'diagonal' ? (x - y + 18) % 5 === 0
+        : pattern === 'cross' ? x === 4 || y === 4
+          : pattern === 'vertical' ? x === 3 || x === 5
+            : pattern === 'horizontal' ? y === 3 || y === 5
+              : pattern === 'geometric' ? (x + y) % 4 === 0 || (x - y + 18) % 5 === 0
+                : false;
+      px.push(accent && mark ? design.accent : C[ch] || null);
+    }
+  }
   return { w: 9, h: 9, px };
 }
 

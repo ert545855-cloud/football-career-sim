@@ -28,6 +28,8 @@ import { TENSION_KINDS, attitudeKind, grudgeChance, resolveTension, tensionOptio
 import { runTutorial } from '../tutorial.js';
 import { playerCanvas } from '../../games/pixel/sprites.js';
 import { shortName as shortOf } from '../../core/lineups.js';
+import { selectMatchBall } from '../../core/matchBall.js';
+import { formatMatchClock } from '../../core/matchClock.js';
 
 const CHANTS = [
   (t) => `Ooo ${t} ooo! Ooo ${t} ooo!`,
@@ -96,6 +98,13 @@ export function matchScreen(app, { match }) {
   if (match.subMinute) timeline.push({ minute: match.subMinute, order: 1, kind: 'sub' });
   if (match.subOff) timeline.push({ minute: match.subOff, order: 5, kind: 'subOff' });
   const w = match.weather;
+  const ballVariant = selectMatchBall({
+    weather: w,
+    country: home.country || (match.national ? COUNTRY_OF_NATION[match.homeId] : null),
+    league: home.league,
+    tournament: match.national ? match.tournament?.name || 'international' : match.cup?.name || null,
+    night: !!(match.night || match.kickoff?.night),
+  });
   if (w && w.id !== 'clear' && w.id !== 'cloudy') timeline.push({ minute: 20 + Math.floor(Math.random() * 45), order: 1, kind: 'wx' });
   if (w && (w.id === 'snow' || w.temp <= 0)) timeline.push({ minute: 50 + Math.floor(Math.random() * 35), order: 1, kind: 'wx' });
   timeline.push({ minute: 45, order: 4, kind: 'ht' });
@@ -182,6 +191,7 @@ export function matchScreen(app, { match }) {
         lineups: match.lineups || {},
         me: { look: meLook, num: s.player.number, name: shortName, pos: s.player.position, onPitch: match.role === 'starter', celebration: celebrationOf(s) },
         weather: match.weather,
+        ballVariant,
         speed: () => app.settings.speed || 1,
         auto: app.autoplay,
         names: {
@@ -282,7 +292,7 @@ export function matchScreen(app, { match }) {
         void scoreEl.offsetWidth;
         scoreEl.classList.add('score-pop');
       };
-      const clock = (mm) => `${String(Math.floor(mm)).padStart(2, '0')}:${String(Math.floor((mm % 1) * 60)).padStart(2, '0')}`;
+      const clock = formatMatchClock;
       // Maç saati evreleri: ilk yarı → ilk yarı uzatması → devre arası → ikinci yarı → uzatma → bitiş
       let phase = 'h1';
       let stopT = 0;

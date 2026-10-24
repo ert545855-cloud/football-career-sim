@@ -28,8 +28,9 @@ function drawInto(canvas, look, { dir = 'down', frame = 'idle', both = false } =
 export function wardrobeHTML(app) {
   const s = app.state;
   const c = ensureCosmetics(s);
-  const view = (app.wardrobeView ||= { slot: 'boots', training: false, preview: null });
-  const items = COSMETICS.filter((it) => it.slot === view.slot);
+  const view = (app.wardrobeView ||= { slot: 'boots', training: false, offPitch: false, preview: null, outfitCategory: 'tracksuit' });
+  const outfitCats = [['tracksuit', 'Eşofman'], ['daily', 'Günlük'], ['suit', 'Takım elbise'], ['special', 'Özel']];
+  const items = COSMETICS.filter((it) => it.slot === view.slot && (view.slot !== 'casual' || it.outfitCategory === view.outfitCategory));
   const slot = COSMETIC_SLOTS.find((x) => x.id === view.slot);
   const cards = items.map((it) => {
     const owned = c.owned.includes(it.id);
@@ -39,7 +40,7 @@ export function wardrobeHTML(app) {
       ? `<button class="btn sm ghost block" disabled>${icon('check', 'ico sm')} Giyili</button>`
       : owned
         ? `<button class="btn sm block" data-equip="${it.id}">Giy</button>`
-        : `<button class="btn sm ${afford ? 'primary' : ''} block" data-buy-c="${it.id}" ${afford ? '' : 'disabled'}>${money(it.price)}</button>`;
+        : `<button class="btn sm ${afford ? 'primary' : ''} block" data-buy-c="${it.id}" ${afford ? '' : 'disabled'}>Satın al · ${money(it.price)}</button>`;
     return `<div class="item wr-item ${on ? 'owned' : ''}" data-try="${it.id}">
       <canvas class="wr-px" data-px="${it.id}" aria-hidden="true"></canvas>
       <h4>${esc(it.name)}</h4>
@@ -53,16 +54,18 @@ export function wardrobeHTML(app) {
       <canvas class="wr-big" data-big aria-label="Oyuncunun görünüşü"></canvas>
       <div class="wr-side">
         <div class="seg" style="margin-bottom:8px">
-          <button class="${view.training ? '' : 'on'}" data-wr-mode="match">Maç</button>
+          <button class="${!view.training && !view.offPitch ? 'on' : ''}" data-wr-mode="match">Maç</button>
           <button class="${view.training ? 'on' : ''}" data-wr-mode="training">Antrenman</button>
+          <button class="${view.offPitch ? 'on' : ''}" data-wr-mode="casual">Serbest stil</button>
         </div>
-        <p class="muted small" style="margin:0">${view.preview ? `Deniyorsun: <b>${esc(COSMETIC_BY_ID[view.preview]?.name || '')}</b>` : 'Bir ürüne dokun, üstünde dene.'}</p>
+        <p class="muted small" style="margin:0">${view.preview ? `Deniyorsun: <b>${esc(COSMETIC_BY_ID[view.preview]?.name || '')}</b>` : view.offPitch ? 'Maç dışı kıyafet; kulüp formanı değiştirmez.' : 'Bir ürüne dokun, üstünde dene.'}</p>
         <p class="muted small" style="margin:6px 0 0">${esc(slot?.where || '')}</p>
       </div>
     </div>
     <div class="scroller" style="margin:12px 0">
       ${COSMETIC_SLOTS.map((x) => `<button class="opt ${view.slot === x.id ? 'on' : ''}" data-wr-slot="${x.id}">${x.name}</button>`).join('')}
     </div>
+    ${view.slot === 'casual' ? `<div class="scroller" style="margin:0 0 12px">${outfitCats.map(([id, name]) => `<button class="opt ${view.outfitCategory === id ? 'on' : ''}" data-wr-cat="${id}">${name}</button>`).join('')}</div>` : ''}
     <div class="shop-grid">${cards}</div>`;
 }
 
@@ -71,23 +74,33 @@ export function mountWardrobe(app, el) {
   const view = app.wardrobeView;
   const redraw = () => {
     const big = el.querySelector('[data-big]');
-    const look = view.preview ? previewLook(s, view.preview, { training: view.training }) : playerLook(s, { training: view.training });
+    const lookOpts = { training: view.training, offPitch: view.offPitch };
+    const look = view.preview ? previewLook(s, view.preview, lookOpts) : playerLook(s, lookOpts);
     if (big) drawInto(big, look, { both: true });
-    el.querySelectorAll('[data-px]').forEach((cv) => { const it = COSMETIC_BY_ID[cv.dataset.px]; drawInto(cv, previewLook(s, cv.dataset.px, { training: view.training || it?.slot === 'training' }), it?.pose ? { dir: it.pose.dir, frame: it.pose.frame } : { dir: 'down' }); });
+    el.querySelectorAll('[data-px]').forEach((cv) => { const it = COSMETIC_BY_ID[cv.dataset.px]; drawInto(cv, previewLook(s, cv.dataset.px, { training: view.training || it?.slot === 'training', offPitch: it?.slot === 'casual' }), it?.pose ? { dir: it.pose.dir, frame: it.pose.frame } : { dir: 'down' }); });
   };
   requestAnimationFrame(redraw);
   el.addEventListener('click', (e) => {
-    const t = e.target.closest('[data-wr-slot],[data-wr-mode],[data-equip],[data-buy-c],[data-try]');
+    const t = e.target.closest('[data-wr-slot],[data-wr-mode],[data-wr-cat],[data-equip],[data-buy-c],[data-try]');
     if (!t) return;
     if (t.dataset.wrSlot) {
       app.click();
       view.slot = t.dataset.wrSlot;
       view.preview = null;
-      view.training = view.slot === 'training' ? true : view.training;
+      view.offPitch = view.slot === 'casual';
+      view.training = view.slot === 'training';
+      app.go('shop');
+    } else if (t.dataset.wrCat) {
+      app.click();
+      view.outfitCategory = t.dataset.wrCat;
+      view.preview = null;
       app.go('shop');
     } else if (t.dataset.wrMode) {
       app.click();
+      view.offPitch = t.dataset.wrMode === 'casual';
       view.training = t.dataset.wrMode === 'training';
+      if (view.offPitch) view.slot = 'casual';
+      else if (view.slot === 'casual') view.slot = 'boots';
       app.go('shop');
     } else if (t.dataset.equip) {
       const r = equipCosmetic(s, t.dataset.equip);
@@ -100,7 +113,8 @@ export function mountWardrobe(app, el) {
     } else if (t.dataset.try) {
       view.preview = t.dataset.try;
       const big = el.querySelector('[data-big]');
-      if (big) drawInto(big, previewLook(s, view.preview, { training: view.training || COSMETIC_BY_ID[view.preview]?.slot === 'training' }), { both: true });
+      const opts = { training: view.training || COSMETIC_BY_ID[view.preview]?.slot === 'training', offPitch: view.offPitch || COSMETIC_BY_ID[view.preview]?.slot === 'casual' };
+      if (big) drawInto(big, previewLook(s, view.preview, opts), { both: true });
       const p = el.querySelector('.wr-side p');
       if (p) p.innerHTML = `Deniyorsun: <b>${esc(COSMETIC_BY_ID[view.preview]?.name || '')}</b>`;
     }

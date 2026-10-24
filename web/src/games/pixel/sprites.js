@@ -135,9 +135,9 @@ let BALL_VARIANT = 'white';
 /** Top rengi (karlı maçta turuncu top). Mini oyun katmanı oyun başında ayarlar, sonunda sıfırlar. */
 export function setBallVariant(v = 'white') { BALL_VARIANT = v || 'white'; }
 
-export function drawPixelBall(ctx, x, y, size, rot = 0, { shadow = true, lift = 0 } = {}) {
+export function drawPixelBall(ctx, x, y, size, rot = 0, { shadow = true, lift = 0, variant = null } = {}) {
   const frame = Math.floor(Math.abs(rot) * 1.6) % 2;
-  const v = BALL_VARIANT;
+  const v = variant || BALL_VARIANT;
   const c = cached(`b|${frame}|${v}`, () => buildBall(frame, v));
   const s = crispScale(ctx, size / 9);
   const w = 9 * s;

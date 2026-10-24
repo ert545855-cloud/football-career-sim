@@ -157,7 +157,7 @@ export function avatarSVG(avatar = {}, kit = {}, number = 9, cls = '') {
 export function playerAvatar(state, cls = '') {
   const club = CLUB_BY_ID[state.career.clubId];
   // piksel portre (oyundaki görünüş); tarayıcı dışında SVG avatar
-  return portraitHTML(playerLook(state), cls) || avatarSVG(state.player.avatar, club, state.player.number, cls);
+  return portraitHTML(playerLook(state, { offPitch: true }), cls) || avatarSVG(state.player.avatar, club, state.player.number, cls);
 }
 
 // ─────────────────────────────────────────────────────────────

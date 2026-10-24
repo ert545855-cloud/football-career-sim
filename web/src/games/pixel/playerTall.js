@@ -167,7 +167,23 @@ function torsoFront(g, L, oy, dir) {
     }
   }
   const acc = L.kit.accent;
-  if (dir === 'down' && L.zip) {
+  if (L.casualFit === 'suit') {
+    // Open jacket, shirt and tie; no club badge or sponsor strip on street clothes.
+    g.set(8, oy, '#f4f4f0'); g.set(9, oy, '#f4f4f0');
+    g.set(8, oy + 1, '#f4f4f0'); g.set(9, oy + 1, '#f4f4f0');
+    g.set(8, oy + 2, acc); g.set(9, oy + 2, acc);
+    g.set(8, oy + 3, shade(acc, -0.18));
+    g.set(7, oy + 1, shade(k.body, 0.15)); g.set(10, oy + 1, shade(k.body, 0.15));
+  } else if (L.casualFit === 'tshirt') {
+    g.set(8, oy, shade(L.skin, -0.1)); g.set(9, oy, shade(L.skin, -0.1));
+    g.set(8, oy + 1, shade(k.body, -0.12)); g.set(9, oy + 1, shade(k.body, -0.12));
+    g.set(8, oy + 4, shade(k.body, -0.15)); g.set(9, oy + 4, shade(k.body, -0.15));
+  } else if (L.casualFit) {
+    g.set(8, oy, shade(k.body, 0.2)); g.set(9, oy, shade(k.body, 0.2));
+    if (L.casualFit === 'hoodie') {
+      g.set(7, oy + 1, shade(k.body, -0.25)); g.set(10, oy + 1, shade(k.body, -0.25));
+    }
+  } else if (dir === 'down' && L.zip) {
     // eşofman üstü: dik yaka (fermuar torso üstüne ayrıca çizilir)
     g.set(8, oy, shade(L.kit.body, 0.2)); g.set(9, oy, shade(L.kit.body, 0.2));
     g.set(10, oy + 2, shade(acc, -0.5));
@@ -377,14 +393,15 @@ function frontBody(g, L, frame, dir) {
   torsoFront(g, L, oy, dir);
   if (L.zip && dir === 'down') for (let y = oy + 1; y < oy + 8; y++) g.set(9, y, shade(L.kit.body, 0.35)); // eşofman fermuarı
   if (frame === 'cross' || frame === 'clap' || frame.startsWith('clip')) armsOverTorso(g, L, frame, oy);
-  // şort (oy+8..oy+11)
+  // Şort (maç görünümü) veya üstü/kalçası tamamlanmış uzun pantolon (serbest stil).
   const sh = L.kit.shorts;
   const hw = L.build === 'heavy' ? 1 : 0; // kilolu: kalça geniş
   for (let r = 0; r < 4; r++) for (let x = 5 - (r < 2 ? hw : 0); x <= 12 + (r < 2 ? hw : 0); x++) {
     if (r === 3 && (x === 8 || x === 9)) continue;
-    g.set(x, oy + 8 + r, x >= 10 ? shade(sh, -0.16) : r === 0 ? shade(sh, -0.08) : sh);
+    const color = L.pants ? (x >= 10 ? shade(sh, -0.16) : r === 0 ? shade(sh, 0.08) : sh) : (x >= 10 ? shade(sh, -0.16) : r === 0 ? shade(sh, -0.08) : sh);
+    g.set(x, oy + 8 + r, color);
   }
-  if (lum(sh) > 0.6) { g.set(6, oy + 10, L.kit.body); } // şort kenarında küçük şerit
+  if (!L.pants && lum(sh) > 0.6) { g.set(6, oy + 10, L.kit.body); } // şort kenarında küçük şerit
   const legTop = oy + 12;
   const spread = frame === 'lunge' ? 3 : frame === 'barDown' ? 2 : 0;
   const liftL = run === 0 ? 2 : 0;

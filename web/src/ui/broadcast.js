@@ -4,7 +4,7 @@
 // Tüm kulüp, sponsor ve oyuncu isimleri kurgusaldır.
 import { awayBanner, bannerTexts as localBanners, brandTexts, nameLangOf } from '../core/world/locale.js';
 import { randomName } from '../core/world/names.js';
-import { drawPixelPlayer, drawPixelBall, dirFromVelocity, runFrame, setBallVariant } from '../games/pixel/sprites.js';
+import { drawPixelPlayer, drawPixelBall, dirFromVelocity, runFrame } from '../games/pixel/sprites.js';
 import { npcLook, keeperLook, SKINS, HAIR_COLORS } from '../games/pixel/looks.js';
 import { defaultLook, shade } from '../games/pixel/playerPixels.js';
 import { weatherFx } from '../games/weatherFx.js';
@@ -1508,8 +1508,7 @@ export function createBroadcast(root, o) {
     const [sx, sy] = P(b.x, b.y);
     const s = sc(t);
     const size = Math.max(4, 0.42 * ppm() * s);
-    setBallVariant(snow ? 'orange' : 'white');
-    drawPixelBall(ctx, sx, sy - size * 0.42, size, b.rot, { lift: b.z * ppm() * s * 0.95 });
+    drawPixelBall(ctx, sx, sy - size * 0.42, size, b.rot, { lift: b.z * ppm() * s * 0.95, variant: o.ballVariant || (snow ? 'orange' : 'white') });
   }
 
   /** Geçiş: iris kapanır → logolu yayın jeneriği → iris açılır (gerçek zamanlı, ~1.5 sn) */

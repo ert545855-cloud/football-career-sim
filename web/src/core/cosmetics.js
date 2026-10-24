@@ -5,6 +5,7 @@ import { spriteBuild } from './brain/body.js';
 import { lookFromAvatar, kitFrom } from '../games/pixel/looks.js';
 
 export const COSMETIC_SLOTS = [
+  { id: 'casual', name: 'Serbest stil', where: 'Maç dışı profil ve dolap önizlemesi' },
   { id: 'boots', name: 'Krampon', where: 'Maç, antrenman, seçmeler' },
   { id: 'training', name: 'Antrenman forması', where: 'Antrenmanda (maçta kulüp forması giyilir)' },
   { id: 'band', name: 'Saç bandı', where: 'Her yerde' },
@@ -59,10 +60,20 @@ export const COSMETICS = [
   { id: 'cel_shush', slot: 'celebration', name: 'Sus işareti', price: 1500, celebration: 'shush', pose: { dir: 'down', frame: 'ready' }, desc: 'Deplasmanda rakip tribünü sustur.' },
   { id: 'cel_dance', slot: 'celebration', name: 'Dans', price: 2200, celebration: 'dance', pose: { dir: 'down', frame: 'run0' }, desc: 'Takım arkadaşlarınla koreografi.' },
   { id: 'cel_flip', slot: 'celebration', name: 'Ters takla', price: 3500, celebration: 'flip', pose: { dir: 'side', frame: 'ready' }, desc: 'Akrobatik: havada ters takla!' },
+  // Serbest stil kıyafetleri: maç kitinden ayrı saklanır ve yalnızca maç dışı görünüşte kullanılır.
+  { id: 'casual_tracksuit', slot: 'casual', outfitCategory: 'tracksuit', name: 'Başlangıç eşofmanı', price: 0, isDefault: true, kit: K('#243b63', '#c6ff3d', 'solid', '#17253c', '#243b63'), boots: { main: '#263449', accent: '#e5e7eb' }, casualFit: 'tracksuit', longSleeve: true, stripes: true },
+  { id: 'casual_training', slot: 'casual', outfitCategory: 'tracksuit', name: 'Modern antrenman takımı', price: 4200, kit: K('#174b65', '#38bdf8', 'solid', '#173446', '#174b65'), boots: { main: '#f4f4f0', accent: '#38bdf8' }, casualFit: 'tracksuit', longSleeve: true, stripes: true },
+  { id: 'casual_heritage', slot: 'casual', outfitCategory: 'tracksuit', name: 'Retro spor takımı', price: 6500, kit: K('#772f39', '#f4f4f0', 'solid', '#44242d', '#772f39'), boots: { main: '#e5e7eb', accent: '#772f39' }, casualFit: 'tracksuit', longSleeve: true, stripes: true },
+  { id: 'casual_tee_jeans', slot: 'casual', outfitCategory: 'daily', name: 'Tişört ve kot', price: 1800, kit: K('#e8e7df', '#38bdf8', 'solid', '#25415f', '#25415f'), boots: { main: '#334155', accent: '#e5e7eb' }, casualFit: 'tshirt', longSleeve: false },
+  { id: 'casual_hoodie', slot: 'casual', outfitCategory: 'daily', name: 'Sweatshirt ve jogger', price: 3200, kit: K('#374151', '#c6ff3d', 'solid', '#262d37', '#262d37'), boots: { main: '#1f2937', accent: '#c6ff3d' }, casualFit: 'hoodie', longSleeve: true, zip: true },
+  { id: 'casual_street', slot: 'casual', outfitCategory: 'daily', name: 'Şehir stili', price: 5600, kit: K('#7c3aed', '#f4f4f0', 'solid', '#25223d', '#25223d'), boots: { main: '#f4f4f0', accent: '#7c3aed' }, casualFit: 'hoodie', longSleeve: true, stripes: true },
+  { id: 'casual_suit_black', slot: 'casual', outfitCategory: 'suit', name: 'Klasik siyah takım', price: 9000, kit: K('#20242e', '#f4f4f0', 'solid', '#20242e', '#20242e'), boots: { main: '#17191e', accent: '#b9bfc4' }, casualFit: 'suit', longSleeve: true },
+  { id: 'casual_suit_blue', slot: 'casual', outfitCategory: 'suit', name: 'Modern gece mavisi', price: 14000, kit: K('#18334d', '#d8e3ed', 'solid', '#18334d', '#18334d'), boots: { main: '#17191e', accent: '#d8e3ed' }, casualFit: 'suit', longSleeve: true },
+  { id: 'casual_awards', slot: 'casual', outfitCategory: 'special', name: 'Ödül gecesi', price: 22000, kit: K('#392b4d', '#fbbf24', 'solid', '#282333', '#282333'), boots: { main: '#fbbf24', accent: '#fff7d6' }, casualFit: 'suit', longSleeve: true },
 ];
 
 export const COSMETIC_BY_ID = Object.fromEntries(COSMETICS.map((c) => [c.id, c]));
-const DEFAULT_EQ = { boots: 'boots_black', training: 'tr_club', band: 'band_none', gloves: 'gloves_none', sleeve: 'sleeve_short', celebration: 'cel_corner' };
+const DEFAULT_EQ = { boots: 'boots_black', training: 'tr_club', band: 'band_none', gloves: 'gloves_none', sleeve: 'sleeve_short', celebration: 'cel_corner', casual: 'casual_tracksuit' };
 
 /** Giyili gol sevinci (canlı yayın animasyonu) */
 export const celebrationOf = (state) => COSMETIC_BY_ID[ensureCosmetics(state).eq.celebration]?.celebration || 'corner';
@@ -96,8 +107,8 @@ export function buyCosmetic(state, id) {
   if (state.career.money < it.price) return { ok: false, msg: 'Paran yetmiyor.' };
   state.career.money -= it.price;
   c.owned.push(id);
-  equipCosmetic(state, id);
-  return { ok: true, msg: `${it.name} alındı ve giyildi.` };
+  if (it.slot !== 'casual') equipCosmetic(state, id);
+  return { ok: true, msg: it.slot === 'casual' ? `${it.name} satın alındı. Önizlemeden sonra “Giy” ile seçebilirsin.` : `${it.name} alındı ve giyildi.` };
 }
 
 export function equipCosmetic(state, id) {
@@ -119,12 +130,12 @@ export function cosmeticFame(state) {
 /**
  * Oyuncunun piksel görünüşü. training: antrenman/seçme kıyafeti (antrenman forması varsa onu giyer).
  */
-export function playerLook(state, { training = false, club = null } = {}) {
+export function playerLook(state, { training = false, club = null, offPitch = false } = {}) {
   const c = ensureCosmetics(state);
   const kitClub = club || CLUB_BY_ID[state.career?.clubId] || { colors: ['#2563eb', '#ffffff'] };
   const get = (slot) => COSMETIC_BY_ID[c.eq[slot]] || {};
   const tr = training ? get('training').kit : null;
-  return lookFromAvatar(state.player?.avatar || {}, kitClub, {
+  const look = lookFromAvatar(state.player?.avatar || {}, kitClub, {
     kit: tr ? { ...tr } : kitFrom(kitClub),
     boots: { ...(get('boots').boots || { main: '#16181d', accent: '#e5e7eb' }) },
     band: get('band').band || null,
@@ -133,6 +144,21 @@ export function playerLook(state, { training = false, club = null } = {}) {
     number: String(state.player?.number ?? ''),
     build: spriteBuild(state.brain?.body), // Beden & Zihin: kaslı / kilolu gövde
   });
+  if (offPitch) {
+    const outfit = get('casual');
+    if (outfit.kit) look.kit = { ...outfit.kit };
+    if (outfit.boots) look.boots = { ...outfit.boots };
+    look.pants = true;
+    look.casualFit = outfit.casualFit || 'tracksuit';
+    look.casual = true;
+    look.number = '';
+    look.longSleeve = outfit.longSleeve ?? true;
+    look.zip = !!outfit.zip;
+    look.stripes = !!outfit.stripes;
+    look.band = null;
+    look.gloves = null;
+  }
+  return look;
 }
 
 /** Önizleme: bir ürünü denemek (satın almadan) için görünüş. */
@@ -143,6 +169,19 @@ export function previewLook(state, id, opts) {
   const L = { ...base };
   if (it.boots) L.boots = { ...it.boots };
   if (it.slot === 'training' && it.kit) L.kit = { ...it.kit };
+  if (it.slot === 'casual') {
+    if (it.kit) L.kit = { ...it.kit };
+    if (it.boots) L.boots = { ...it.boots };
+    L.pants = true;
+    L.casualFit = it.casualFit || 'tracksuit';
+    L.casual = true;
+    L.number = '';
+    L.longSleeve = it.longSleeve ?? true;
+    L.zip = !!it.zip;
+    L.stripes = !!it.stripes;
+    L.band = null;
+    L.gloves = null;
+  }
   if (it.slot === 'band') L.band = it.band;
   if (it.slot === 'gloves') L.gloves = it.gloves;
   if (it.slot === 'sleeve') L.longSleeve = it.longSleeve;
