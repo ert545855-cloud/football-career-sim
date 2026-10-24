@@ -1,0 +1,19 @@
+node_modules/
+web/dist/
+.DS_Store
+*.log
+# Unity
+unity/Library/
+unity/Temp/
+unity/Obj/
+unity/Logs/
+unity/UserSettings/
+# Satın alınan/indirilen ham asset paketleri (lisans gereği repoya girmez; atlas buradan üretilir)
+web/assets-src/
+__pycache__/
+
+# Replit kullanılmıyor (yayın: Render)
+.replit
+replit.nix
+.upm/
+.config/
