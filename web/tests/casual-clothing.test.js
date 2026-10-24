@@ -46,3 +46,18 @@ test('clothing purchase rejects insufficient balance without mutating inventory'
   assert.equal(state.career.money, 10);
   assert.ok(!state.cosmetics.owned.includes('casual_suit_black'));
 });
+
+test('her günlük kıyafet tipi ön/arka gövde çizimini hatasız tamamlar (giriş akışı donmasın)', async () => {
+  const { buildPlayerTall } = await import('../src/games/pixel/playerTall.js');
+  const { COSMETICS } = await import('../src/core/cosmetics.js');
+  const casuals = (COSMETICS || []).filter((c) => c.casualFit);
+  const fits = new Set();
+  for (const c of casuals) {
+    fits.add(c.casualFit);
+    const look = { skin: '#e8b58f', hair: 'short', hairColor: '#2a1a10', boots: c.boots, kit: c.kit, casualFit: c.casualFit, longSleeve: c.longSleeve, zip: c.zip, stripes: c.stripes, casual: true, pants: true, number: '' };
+    for (const dir of ['down', 'up', 'side']) {
+      assert.doesNotThrow(() => buildPlayerTall(look, dir, 'idle'), `${c.id} / ${dir}`);
+    }
+  }
+  assert.ok(fits.has('tracksuit'), 'varsayılan eşofman tipi test edilmeli');
+});
