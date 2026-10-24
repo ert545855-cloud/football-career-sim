@@ -11,3 +11,9 @@ unity/UserSettings/
 # Satın alınan/indirilen ham asset paketleri (lisans gereği repoya girmez; atlas buradan üretilir)
 web/assets-src/
 __pycache__/
+
+# Replit kullanılmıyor (yayın: Render)
+.replit
+replit.nix
+.upm/
+.config/
