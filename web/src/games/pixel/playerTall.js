@@ -151,6 +151,7 @@ function torsoFront(g, L, oy, dir) {
   // omuz 5–12, bel 6–11 (satır oy..oy+7)
   // gövde tipi (Beden & Zihin): kaslı → geniş omuz (V), kilolu → göbek ve geniş bel
   const build = L.build;
+  const k = L.kit;
   for (let r = 0; r < 8; r++) {
     let a = r < 6 ? 5 : 6;
     let b = r < 6 ? 12 : 11;
