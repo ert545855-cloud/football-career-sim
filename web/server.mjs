@@ -26,6 +26,10 @@ const MIME = {
   '.ico': 'image/x-icon',
   '.txt': 'text/plain; charset=utf-8',
   '.woff2': 'font/woff2',
+  '.webp': 'image/webp',
+  '.mp4': 'video/mp4',
+  '.webm': 'video/webm',
+  '.mp3': 'audio/mpeg',
   // Unity WebGL derlemesi (public/unity/Build)
   '.wasm': 'application/wasm',
   '.data': 'application/octet-stream',
@@ -82,6 +86,25 @@ const server = createServer(async (req, res) => {
     const useGz = gz && /\bgzip\b/.test(req.headers['accept-encoding'] || '');
     if (useGz) headers['Content-Encoding'] = 'gzip';
     const out = useGz ? gz : body;
+    // Video/ses için parça parça (Range) istek desteği: iOS Safari bunsuz video oynatmaz
+    if (!useGz) {
+      headers['Accept-Ranges'] = 'bytes';
+      const m = /^bytes=(\d*)-(\d*)$/.exec(String(req.headers.range || '').trim());
+      if (m && (m[1] !== '' || m[2] !== '')) {
+        const size = out.length;
+        let start = m[1] === '' ? Math.max(0, size - Number(m[2])) : Number(m[1]);
+        let end = m[1] === '' || m[2] === '' ? size - 1 : Math.min(size - 1, Number(m[2]));
+        if (!(start <= end) || start >= size) {
+          res.writeHead(416, { 'Content-Range': `bytes */${size}` }).end();
+          return;
+        }
+        headers['Content-Range'] = `bytes ${start}-${end}/${size}`;
+        headers['Content-Length'] = end - start + 1;
+        res.writeHead(206, headers);
+        res.end(req.method === 'HEAD' ? undefined : out.subarray(start, end + 1));
+        return;
+      }
+    }
     headers['Content-Length'] = out.length;
     res.writeHead(200, headers);
     res.end(req.method === 'HEAD' ? undefined : out);

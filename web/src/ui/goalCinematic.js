@@ -7,7 +7,35 @@ import { playerCanvas } from '../games/pixel/sprites.js';
 const SRC = `${import.meta.env?.BASE_URL || '/'}media/goal-celebration`;
 /** Videodaki isim plakasının yeri (16:9 kareye göre %) ve görünme aralığı (sn) */
 const PLATE = { left: 1.2, top: 64.2, width: 53.6, height: 28.6, in: 1.95, out: 7.05 };
-const MAX_WAIT_MS = 2500;
+const MAX_WAIT_MS = 6000;
+
+// Önceden indirme: maç başında video bir kez belleğe alınır (blob), gol anında beklemeden ve
+// sunucunun parça parça (Range) desteğine ihtiyaç duymadan oynar.
+let blobUrl = null;
+let warming = null;
+const pickExt = () => {
+  try {
+    const v = document.createElement('video');
+    if (v.canPlayType('video/mp4; codecs="avc1.640028"')) return 'mp4';
+    if (v.canPlayType('video/webm; codecs="vp9"')) return 'webm';
+  } catch { /* yok */ }
+  return 'mp4';
+};
+/** Videoyu arka planda indir (oturum başına bir kez). Hazır olunca blob adresini verir. */
+export function warmGoalCinematic() {
+  if (blobUrl) return Promise.resolve(blobUrl);
+  if (warming) return warming;
+  const ext = pickExt();
+  warming = fetch(`${SRC}.${ext}`)
+    .then((r) => (r.ok ? r.blob() : null))
+    .then((b) => {
+      if (b && b.size > 10000) blobUrl = URL.createObjectURL(new Blob([b], { type: `video/${ext}` }));
+      return blobUrl;
+    })
+    .catch(() => null)
+    .finally(() => { warming = null; });
+  return warming;
+}
 
 /** Oyuncu yüzü: piksel oyuncunun baş-omuz kısmı, kulüp rengi zeminde */
 function faceCanvas(look) {
@@ -28,7 +56,9 @@ function faceCanvas(look) {
  * @param {{look?:object, name:string, number?:number|string, minute?:number, club?:string, colors?:string[]}} o
  * @returns {Promise<'ended'|'skipped'|'failed'>}
  */
-export function playGoalCinematic(host, o = {}) {
+export async function playGoalCinematic(host, o = {}) {
+  // indirme sürüyorsa biraz bekle; olmazsa ağdan akışla dene
+  const ready = blobUrl || (await Promise.race([warmGoalCinematic(), new Promise((r) => setTimeout(() => r(null), 4000))]));
   return new Promise((resolve) => {
     if (!host) { resolve('failed'); return; }
     const [c1 = '#c8102e', c2 = '#ffd200'] = o.colors || [];
@@ -60,6 +90,10 @@ export function playGoalCinematic(host, o = {}) {
     }
     video.muted = true; // sesi yok; iOS otomatik oynatma için de şart
     video.defaultMuted = true;
+    if (ready) {
+      for (const el of video.querySelectorAll('source')) el.remove();
+      video.src = ready;
+    }
 
     let done = false;
     let raf = 0;
@@ -95,7 +129,7 @@ export function playGoalCinematic(host, o = {}) {
     wrap.addEventListener('pointerdown', (e) => { e.stopPropagation(); finish('skipped'); });
     video.addEventListener('ended', () => finish('ended'));
     video.addEventListener('error', () => finish('failed'));
-    wrap.querySelector('source:last-of-type').addEventListener('error', () => finish('failed')); // hiçbir biçim çalmazsa
+    wrap.querySelector('source:last-of-type')?.addEventListener('error', () => finish('failed')); // hiçbir biçim çalmazsa
     const timer = setTimeout(() => { if (video.readyState < 2) finish('failed'); }, MAX_WAIT_MS);
     video.addEventListener('playing', () => clearTimeout(timer), { once: true });
 
