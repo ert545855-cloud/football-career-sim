@@ -74,10 +74,16 @@ function offersSheet(offers, title, lead) {
 
 // ─────────────────────────── Teknik direktör ekranı ───────────────────────────
 
+/** Emeklilik yolu henüz seçilmemişken (doğrudan açılırsa) gösterilen boş ekran */
+function afterEmpty(title, text) {
+  return { tabs: true, html: `<h2 style="margin:6px 0 10px">${esc(title)}</h2><div class="card"><p class="muted" style="margin:0">${esc(text)}</p></div>` };
+}
+
 export function coachScreen(app) {
   const s = app.state;
   const a = ensureAfter(s);
   const co = a.coach;
+  if (!co) return afterEmpty('Teknik direktörlük', 'Futbolu bıraktıktan sonra Kariyer sekmesinden teknik direktörlüğe başlayabilirsin.');
   const club = CLUB_BY_ID[co.clubId];
   const pick = { tactic: 'balanced', transfer: 'keep', training: 'normal' };
   const seg = (key) => `<div class="seg wrap" data-seg="${key}">${COACH_CHOICES[key].map((c) => `<button class="${c.id === pick[key] ? 'on' : ''}" data-v="${c.id}">${esc(c.label)}</button>`).join('')}</div><p class="muted small" data-desc="${key}" style="margin:6px 0 0">${esc(COACH_CHOICES[key].find((c) => c.id === pick[key]).desc)}</p>`;
@@ -172,6 +178,7 @@ export function punditScreen(app) {
   const s = app.state;
   const a = ensureAfter(s);
   const p = a.pundit;
+  if (!p) return afterEmpty('TV yorumculuğu', 'Futbolu bıraktıktan sonra Kariyer sekmesinden TV yorumculuğuna başlayabilirsin.');
   const showId = p.shows?.[p.showIndex];
   const show = SHOWS.find((x) => x.id === showId);
   const done = a.age >= MAX_AFTER_AGE;

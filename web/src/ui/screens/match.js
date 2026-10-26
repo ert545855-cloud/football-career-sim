@@ -102,9 +102,12 @@ export function matchScreen(app, { match }) {
     weather: w,
     country: home.country || (match.national ? COUNTRY_OF_NATION[match.homeId] : null),
     league: home.league,
-    tournament: match.national ? match.tournament?.name || 'international' : match.cup?.name || null,
+    // turnuva topu yalnız milli maçlarda; yerel kupa ve ertelenen lig maçı ülkenin topuyla oynanır
+    tournament: match.national ? match.tournament?.name || 'international' : null,
     night: !!(match.night || match.kickoff?.night),
   });
+  match.ball = ballVariant; // kupa penaltı atışları da aynı topla
+  const night = !!(match.night || match.kickoff?.night);
   if (w && w.id !== 'clear' && w.id !== 'cloudy') timeline.push({ minute: 20 + Math.floor(Math.random() * 45), order: 1, kind: 'wx' });
   if (w && (w.id === 'snow' || w.temp <= 0)) timeline.push({ minute: 50 + Math.floor(Math.random() * 35), order: 1, kind: 'wx' });
   timeline.push({ minute: 45, order: 4, kind: 'ht' });
@@ -123,7 +126,7 @@ export function matchScreen(app, { match }) {
     html: `
       <div class="bc-wrap">
         <div class="bc" data-bc>
-          <canvas class="bc-cv"></canvas>
+          <canvas class="bc-cv"></canvas>${night ? '<div class="bc-night" aria-hidden="true"></div>' : ''}
           <div class="bc-sb">
             <span class="bc-time" data-min>00:00</span>
             <span class="bc-tm" style="--tc:${home.colors?.[0] || '#fff'}">${crest(home, 'crest bc-crest')}<b>${esc(hs)}</b></span>
@@ -148,7 +151,7 @@ export function matchScreen(app, { match }) {
         <span class="chip ${match.role === 'starter' ? 'accent' : 'warn'}" data-role>${icon('user')} ${roleText}</span>
         <span class="chip">${match.moments.length ? `${match.moments.length} kritik an` : 'Kritik an yok'}</span>
       </div>
-      ${w ? `<div class="wx-strip wx-${w.id}"><span class="wx-e">${w.emoji}</span><b>${esc(w.name)}</b><span>${w.temp}°C</span>${w.windKmh >= 12 ? `<span>${windArrow(w.wind)} ${w.windKmh} km/sa</span>` : ''}<span class="grow"></span><span class="cond-txt" data-condtxt>${match.role !== 'out' ? '%100' : ''}</span></div>` : ''}
+      ${w ? `<div class="wx-strip wx-${w.id}"><span class="wx-e">${w.emoji}</span><b>${esc(w.name)}</b><span>${w.temp}°C</span>${match.kickoff ? `<span class="ko">${night ? '🌙' : '🕑'} ${match.kickoff.time}</span>` : ''}${w.windKmh >= 12 ? `<span>${windArrow(w.wind)} ${w.windKmh} km/sa</span>` : ''}<span class="grow"></span><span class="cond-txt" data-condtxt>${match.role !== 'out' ? '%100' : ''}</span></div>` : ''}
       ${match.big ? `<div class="big-banner ${match.big.cool ? 'cool' : ''}">${icon(match.big.kind === 'derby' ? 'fire' : match.big.kind === 'final' ? 'trophy' : match.big.kind === 'national' ? 'flag' : 'star', 'ico sm')}<b>${esc(match.big.title)}</b><span>Heyecan %${Math.round(match.big.nerves * 100)}${match.big.cool ? ' · Soğukkanlı' : ''}</span></div>` : ''}
       <div class="mom-bar"><i data-mom></i></div>
       <div class="feed" data-feed></div>
@@ -437,6 +440,7 @@ export function matchScreen(app, { match }) {
           auto: app.autoplay,
           big: match.big,
           weather: match.weather,
+          ball: ballVariant,
           fatigue,
           cond: condOf(s),
         });

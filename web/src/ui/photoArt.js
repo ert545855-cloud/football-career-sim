@@ -69,7 +69,7 @@ function selfie(g, s, seed) {
   // arka plan flu (ön plandaki yüz öne çıksın)
   g.fillStyle = 'rgba(15,23,42,.35)';
   g.fillRect(0, 0, PW, PH);
-  const look = playerLook(s);
+  const look = playerLook(s, { offPitch: true });
   const src = playerCanvas(look, 'down', 'idle');
   // yakın plan: kafa, omuzlar ve forma (ızgaranın üst 20 satırı), hafif eğik selfie açısı
   const rows = 20;
@@ -136,7 +136,7 @@ function trophy(g, s, seed) {
     px(g, x + 1, 59, 8, 3, '#a16207');
     px(g, x + 2, 47, 2, 6, '#fef08a');
   }
-  drawPixelPlayer(g, PW / 2, 104, 40, playerLook(s), { dir: 'down', frame: 'cheer', shadow: false });
+  drawPixelPlayer(g, PW / 2, 104, 40, playerLook(s, { offPitch: true }), { dir: 'down', frame: 'cheer', shadow: false });
   void seed;
 }
 
@@ -153,7 +153,7 @@ function car(g, s, seed) {
   const c = canvas(CW, CH);
   drawCar(c.getContext('2d'), 0, carLook(s, id));
   g.drawImage(c, 0, 0, CW, CH, 0, (PH - CH) / 2, PW, CH);
-  drawPixelPlayer(g, 30, PH - 8, 46, playerLook(s), { dir: 'down', frame: 'idle' });
+  drawPixelPlayer(g, 30, PH - 8, 46, playerLook(s, { offPitch: true }), { dir: 'down', frame: 'idle' });
 }
 
 const SCENES = {

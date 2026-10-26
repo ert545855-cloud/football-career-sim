@@ -1,4 +1,5 @@
 // MİLLİ TAKIM ARAYÜZÜ — arma, çağrı/maç akışı, turnuva akışı.
+import { selectMatchBall } from '../core/matchBall.js';
 import { GAME_WEIGHTS } from '../core/data.js';
 import { condOf } from '../core/gym.js';
 import { effectiveSkill } from '../core/player.js';
@@ -67,6 +68,7 @@ async function playMoment(app, title, minute, oppShort) {
     number: s.player.number,
     name: s.player.name.split(' ')[0].toUpperCase(),
     auto: app.autoplay,
+    ball: selectMatchBall({ tournament: 'national' }), // milli maçlarda turnuva topu
   });
 }
 

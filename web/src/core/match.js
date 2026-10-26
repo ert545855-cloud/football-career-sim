@@ -125,6 +125,19 @@ export function buildMoments(position, role, subMinute = null, subOff = null, o 
 }
 
 /**
+ * Başlama saati: maç kimliğinden sabit (aynı maç hep aynı saatte, rastgele akışını bozmaz).
+ * Kupa ve büyük maçlar akşam; lig maçları öğleden gece yarısına dağılır.
+ * @returns {{time:string, night:boolean}}
+ */
+export function kickoffFor(id, { cup = null, big = null } = {}) {
+  let h = 0;
+  for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  const slots = cup || big ? ['19:00', '20:00', '21:45'] : ['13:30', '16:00', '19:00', '21:45'];
+  const time = slots[h % slots.length];
+  return { time, night: parseInt(time, 10) >= 19 };
+}
+
+/**
  * Maç planı. o: kupa/özel maç için {homeId, awayId, id, cup, knockout, big} (verilmezse lig fikstürü)
  */
 export function planMatch(state, o = {}) {
@@ -174,8 +187,13 @@ export function planMatch(state, o = {}) {
   const att = attitudeMatchFx(state, { isHome, big });
   if (big && att.nerves) big.nerves = clamp((big.nerves || 0) + att.nerves, 0, 0.9);
   const mid = o.id || `${calendar.season}-${week}`;
+  const kickoff = kickoffFor(mid, { cup: o.cup, big });
+  // açık havada akşam maçı: güneş yerine ay
+  const wx = kickoff.night && weather.id === 'clear' ? { ...weather, emoji: '🌙' } : weather;
   return {
     id: mid,
+    /** Başlama saati; 19:00 ve sonrası projektör altında akşam maçı (gece topu, gece ışığı) */
+    kickoff,
     cup: o.cup || null,
     knockout: !!o.knockout,
     season: calendar.season,
@@ -191,7 +209,7 @@ export function planMatch(state, o = {}) {
     reason: sel.reason,
     subMinute,
     subOff,
-    weather,
+    weather: wx,
     energy0: player.energy,
     sore0: soreFatigue(state), // spor salonundan kalan kas ağrısı
     stoppage: randInt(1, 5),

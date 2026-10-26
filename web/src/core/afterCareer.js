@@ -189,6 +189,8 @@ export function doShow(state, toneId) {
   const p = a.pundit;
   const tone = TONES.find((t) => t.id === toneId) || TONES[0];
   const show = SHOWS.find((s) => s.id === p.shows[p.showIndex]);
+  // sezonun programları bitti (çift dokunma vb.): yeni program yok
+  if (!show) return { show: null, tone, dPop: 0, dCon: 0, fee: 0, backlash: false, note: '', done: true };
   // Tartışma çok yüksekse sert üslup geri teper
   const backlash = tone.id === 'harsh' && p.controversy > 55 && chance(0.45);
   const dPop = backlash ? -6 : tone.pop + Math.round(rand(-1, 2));

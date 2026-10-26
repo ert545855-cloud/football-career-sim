@@ -101,7 +101,7 @@ export async function finishCupMatch(app, match) {
     shootout = await runMiniGame({
       type: 'shot', context: 'penalty', skill: effectiveSkill(s.player, { shooting: 1 }) * 0.95,
       title: 'Seri Penaltılar', text: 'Kader anı: gol olursa kupada şansımız artar.',
-      myKit: CLUB_BY_ID[match.myId], me: playerLook(s, { club: CLUB_BY_ID[match.myId] }), oppKit: opp,
+      myKit: CLUB_BY_ID[match.myId], me: playerLook(s, { club: CLUB_BY_ID[match.myId] }), oppKit: opp, ball: match.ball,
       keeper: Math.min(0.95, clubRating(s.world, match.oppId) / 90), number: s.player.number, auto: app.autoplay,
       big: { title: 'Seri penaltılar', nerves: 0.45, tempo: 1.2, cool: false },
     });

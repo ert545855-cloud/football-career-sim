@@ -91,8 +91,8 @@ export async function runMiniGame(o) {
     result = { success, accuracy: success ? Math.random() : 0, outcome: success ? 'goal' : 'save' };
   } else {
     const common = { skill: o.skill, context: o.context, myKit: o.myKit, oppKit: o.oppKit, me: o.me, number: o.number, tempo: big ? big.tempo : 1, nerves: big ? big.nerves : 0, weather: w, fatigue: fat, heavy: fat, frozen };
-    // Karlı maçta turuncu top
-    setBallVariant(w?.surface === 'snow' ? 'orange' : 'white');
+    // Maçın topu (core/matchBall.js: kar → turuncu, yağmur, akşam, turnuva, ülke); verilmezse karda turuncu
+    setBallVariant(o.ball || (w?.surface === 'snow' ? 'orange' : 'white'));
     // 3B mod (Ayarlar): pas ve şut anları Unity WebGL derlemesinde oynanır; yüklenemezse 2B oyuna düşer
     if ((o.type === 'pass' || (o.type === 'shot' && o.context !== 'corner' && o.context !== 'freekick')) && loadSettings().unity3d && (await unityBuildAvailable())) {
       result = await playIn3D(host, o, big).catch(() => null);

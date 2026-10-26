@@ -520,6 +520,8 @@
 .wr-stage { display: flex; gap: 14px; align-items: center; padding: 12px; background: linear-gradient(180deg, rgba(34,135,63,.35), rgba(31,122,58,.15)); }
 .wr-big { width: 170px; height: 150px; flex: none; image-rendering: pixelated; }
 .wr-side { min-width: 0; flex: 1; }
+.wr-side .seg { display: grid; grid-auto-flow: row; grid-template-columns: 1fr; }
+.wr-side .seg button { white-space: nowrap; padding: 7px 6px; }
 .wr-item { cursor: pointer; }
 .wr-px { width: 100%; height: 84px; image-rendering: pixelated; }
 .c-like { appearance: none; border: 0; background: none; color: var(--muted); display: inline-flex; align-items: center; gap: 4px; font: inherit; font-size: 12px; padding: 2px 4px; border-radius: 8px; cursor: pointer; }
@@ -652,6 +654,11 @@
 .bc { position: relative; width: 100%; aspect-ratio: 16 / 10.2; overflow: hidden; background: #0a0f18; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
 @media (min-width: 560px) { .bc-wrap { margin: 0; } .bc { border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.1); } }
 .bc-cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+/* Akşam maçı: projektör altında koyulaşan gökyüzü ve üstten vuran sıcak ışık (tuvalin üstünde, yayın grafiklerinin altında) */
+.bc-night { position: absolute; inset: 0; pointer-events: none; background:
+  radial-gradient(60% 45% at 8% 0%, rgba(255, 246, 214, 0.2), rgba(255, 246, 214, 0) 70%),
+  radial-gradient(60% 45% at 92% 0%, rgba(255, 246, 214, 0.2), rgba(255, 246, 214, 0) 70%),
+  linear-gradient(180deg, rgba(4, 9, 28, 0.55) 0%, rgba(4, 9, 28, 0.24) 40%, rgba(4, 9, 28, 0.34) 100%); }
 .bc-sb { position: absolute; left: 7px; top: 7px; display: flex; align-items: stretch; height: 25px; border-radius: 5px; overflow: hidden; background: rgba(7, 12, 26, 0.92); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45); font-weight: 900; font-size: 12.5px; color: #fff; letter-spacing: 0.02em; }
 .bc-time { display: grid; flex: 0 0 58px; box-sizing: border-box; place-items: center; min-width: 58px; padding: 0 4px; white-space: nowrap; background: rgba(255, 255, 255, 0.09); font-variant-numeric: tabular-nums; }
 .bc-tm { display: flex; align-items: center; gap: 4px; padding: 0 6px; box-shadow: inset 3px 0 0 var(--tc); }
