@@ -51,7 +51,7 @@ function welcome(c, state) {
   const from = c.from ? CLUB_BY_ID[c.from] : null;
   return `<div class="cc cc-welcome" style="--h:${C.colors[0]};--a:${C.colors[1]}">
     <div class="cc-wm">${crestSVG(C, 'crest xl')}</div>
-    <div class="cc-hello">HOŞ<br>GELDİN</div>
+    <div class="cc-hello">HOŞ GELDİN</div>
     <div class="cc-player">${avatarSVG(look, { colors: C.colors, pattern: C.pattern }, c.number ?? '')}</div>
     <div class="cc-name"><b>${esc(c.name)}</b><span>${crestSVG(C, 'crest xs')} ${esc(C.name)}</span></div>
     <div class="cc-deal">

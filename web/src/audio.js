@@ -28,6 +28,11 @@ export function unlock() {
     master = ctx.createGain();
     master.gain.value = 0.6;
     master.connect(ctx.destination);
+    // Fizik çarpma sesleri (audiorective): ayrı parça olarak sonradan yüklenir
+    import('./audioImpacts.js').then((m) => {
+      impactEngine = m.startImpacts(ctx, master);
+      impactEngine.impacts.params.surface.value = impactSurface;
+    }).catch(() => { /* ses motoru yüklenemezse eski seslerle devam */ });
   }
   if (ctx.state === 'suspended') ctx.resume();
   for (const fn of unlockHooks) { try { fn(ctx); } catch { /* yoksay */ } }
@@ -99,6 +104,28 @@ const SFX = {
   backfire: () => { noise(0.12, { gain: 0.5, freq: 500, type: 'lowpass' }); tone(70, 0.12, { gain: 0.4, slide: -30 }); },
   camera: () => { noise(0.04, { gain: 0.35, freq: 4000 }); tone(1800, 0.05, { type: 'square', gain: 0.05, delay: 0.05 }); noise(0.05, { gain: 0.25, freq: 3000, delay: 0.09 }); },
 };
+
+let impactEngine = null;
+let impactSurface = 'dry';
+const IMPACT_FALLBACK = { kick: 'kick', bounce: null, post: 'post', net: null, body: 'tackle', glove: 'save' };
+
+/** Fizik çarpma sesi: kind = kick | bounce | post | net | body | glove, value = çarpma hızı (m/s). */
+export function impact(kind, value = 10) {
+  if (!enabled || !ctx) return;
+  try {
+    const im = impactEngine?.impacts;
+    if (im && typeof im[kind] === 'function') im[kind](value);
+    else if (IMPACT_FALLBACK[kind]) SFX[IMPACT_FALLBACK[kind]]();
+  } catch {
+    /* ses hatası oyunu durdurmasın */
+  }
+}
+
+/** Sekme seslerinin zemini (dry | wet | heavy | snow) */
+export function setImpactSurface(surface = 'dry') {
+  impactSurface = surface || 'dry';
+  if (impactEngine) impactEngine.impacts.params.surface.value = impactSurface;
+}
 
 export function sfx(name) {
   if (!enabled || !ctx) return;

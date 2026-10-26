@@ -153,7 +153,7 @@ function paparazzi(state, outing, tier) {
   if (outing.kind === 'teammate') fx(state, changes, 'teammates', 1, 'Takım');
   return {
     id: 'paparazzi', icon: 'camera', tone: 'good', title: 'Kahve molası magazinde',
-    text: `${where}'da ${outing.person?.name || 'kahveni içerken'} görüntülendin. Samimi kareler taraftarın hoşuna gitti.`,
+    text: `${where}'da ${outing.person ? `${outing.person.name} ile birlikte` : 'kahveni içerken'} görüntülendin. Samimi kareler taraftarın hoşuna gitti.`,
     short: 'Paparazzi: kahve molası', changes,
     tabloid: { ...base, tone: 'good', headline: 'YILDIZIN SADE HAYATI', sub: `${me}, ${where}'da ${outing.person ? `${outing.person.name} ile` : 'tek başına'} kahve keyfi yaparken görüntülendi.`, tweet: `${me} ${where}'da kahve keyfinde. Ne kadar da sade bir yıldız! ☕` },
   };

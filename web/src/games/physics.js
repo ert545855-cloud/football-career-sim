@@ -1,18 +1,25 @@
 // FİZİK MOTORU — gerçek birimler (metre, saniye, kg). Kuşbakışı 2.5B: x,y zemin düzlemi (ekranda y aşağı), z yükseklik.
 // Top: hava direnci, Magnus (falso), yerçekimi, sekme, çimde yuvarlanma. Oyuncular: ivme, azami hız, dönüş ataleti, çarpışma.
 // Tuval/DOM bağımlılığı yok → Node testlerinde çalışır. Mini oyunlar metreyi piksele kendileri çevirir (ppm).
+// Sürüm 2: hıza bağlı hava direnci (drag crisis), doygunluğa ulaşan Magnus, sekmede dönüş–sürtünme etkileşimi
+// (kayma → yuvarlanma, üst falso topu öne kaçırır, alt falso frenler), top–oyuncu ve top–kale direği çarpışması,
+// kaleye şut çözücü (solveShot).
 
 export const G = 9.81;
 export const BALL_R = 0.11;
+/** Kale ölçüleri (m) ve direk yarıçapı */
+export const GOAL = { w: 7.32, h: 2.44, postR: 0.06, depth: 2 };
+const SAT = 0.45; // Magnus doygunluğu: spin parametresi S = r·ω/v bunun üstünde etkisi düzleşir
 
 /** Zemin ve hava ayarları. Hava durumu bunları değiştirebilir (ıslak çim = daha az sürtünme, daha alçak sekme). */
 export const ENV = {
-  drag: 0.013, // hava direnci katsayısı: a = −k·|v|·v  (0.5·ρ·Cd·A / m)
+  drag: 0.013, // hava direnci katsayısı (hızlı topta, Cd≈0.25): a = −k·|v|·v  (0.5·ρ·Cd·A / m)
+  dragLow: 1.75, // yavaş topta katsayı çarpanı (Cd≈0.45); geçiş ≈11 m/s civarında (drag crisis)
   magnus: 0.006, // falso: a⊥ = k·ω·|v|
   roll: 0.9, // yuvarlanma sabit yavaşlaması (m/s²)
   rollDamp: 0.16, // hızla orantılı çim sürtünmesi (1/s)
   bounce: 0.55, // dikey sekme katsayısı
-  skid: 0.84, // sekmede yatay hız kaybı
+  mu: 0.42, // top–çim sürtünme katsayısı (sekmede ve kayarken)
   spinDecayAir: 0.3,
   spinDecayGround: 0.9,
   groundMagnus: 0.65, // yerde giden topta falsonun etkisi (hava ile kıyasla)
@@ -22,9 +29,9 @@ export const ENV = {
 
 export const SURFACES = {
   dry: {},
-  wet: { roll: 0.55, rollDamp: 0.1, bounce: 0.42, skid: 0.93 }, // yağmur: top kayar, alçak seker
-  heavy: { roll: 1.6, rollDamp: 0.26, bounce: 0.4, skid: 0.72, grip: 0.86 }, // çamur/ağır zemin
-  snow: { roll: 1.9, rollDamp: 0.3, bounce: 0.3, skid: 0.68, grip: 0.8 }, // kar: top çabuk durur, alçak seker, kaygan
+  wet: { roll: 0.55, rollDamp: 0.1, bounce: 0.42, mu: 0.2 }, // yağmur: top kayar (sekmede hız kaybetmez), alçak seker
+  heavy: { roll: 1.6, rollDamp: 0.26, bounce: 0.4, mu: 0.6, grip: 0.86 }, // çamur/ağır zemin
+  snow: { roll: 1.9, rollDamp: 0.3, bounce: 0.3, mu: 0.66, grip: 0.8 }, // kar: top çabuk durur, alçak seker, kaygan
 };
 SURFACES.wet.grip = 0.9;
 
@@ -92,14 +99,28 @@ export function kick(b, { dirX, dirY, speed, loft = 0, spin = 0, top = 0 }) {
   b.vy = (dirY / l) * h;
   b.vz = speed * Math.sin(loft);
   b.spin = spin;
-  b.top = top;
   b.air = b.vz > 0.05 || b.z > 0.01;
+  // Yerden vuruş yuvarlanarak başlar (ω = v/r); havadan vuruşta falso verilmezse top dönmeden gider,
+  // yere değince kayar, sürtünmeyle ileri dönüş kazanır ve yavaşlar.
+  b.top = top || (b.air ? 0 : h / BALL_R);
   b.bounces = 0;
   b.t = 0;
   return b;
 }
 
-/** Tek fizik adımı (h saniye). */
+/** Hıza bağlı hava direnci katsayısı (drag crisis): yavaş topta yüksek, hızlı topta düşük. */
+export function dragAt(speed, env = ENV) {
+  const lo = env.drag * (env.dragLow ?? 1);
+  return lo + (env.drag - lo) / (1 + Math.exp(-(speed - 11) / 1.6));
+}
+
+/** Magnus doygunluğu: S = r·ω/v büyüdükçe kaldırma katsayısı düzleşir (yavaş ama çok dönen top sonsuz kıvrılmaz). */
+export function magnusFactor(omega, speed) {
+  const S = (BALL_R * Math.abs(omega)) / Math.max(1, speed);
+  return 1 / Math.sqrt(1 + (S / SAT) ** 2);
+}
+
+/** Tek fizik adımı (h saniye). Yere çarpma olursa b.impact = çarpma hızı (m/s, ses/titreşim için). */
 export function stepBall(b, h, env = ENV) {
   const wx = env.wind?.x || 0;
   const wy = env.wind?.y || 0;
@@ -108,24 +129,36 @@ export function stepBall(b, h, env = ENV) {
   const ry = b.vy - wy;
   const sp3 = hyp(rx, ry, b.vz);
   const spH = hyp(b.vx, b.vy);
-  let ax = -env.drag * sp3 * rx;
-  let ay = -env.drag * sp3 * ry;
-  let az = airborne ? -env.drag * sp3 * b.vz - G : 0;
-  // Magnus: z ekseni dönüşü yatay kuvvet üretir (sağa/sola kıvrılma)
-  const m = env.magnus * b.spin * (airborne ? 1 : env.groundMagnus);
+  const k = dragAt(sp3, env);
+  let ax = -k * sp3 * rx;
+  let ay = -k * sp3 * ry;
+  let az = airborne ? -k * sp3 * b.vz - G : 0;
+  // Magnus: z ekseni dönüşü yatay kuvvet üretir (sağa/sola kıvrılma); üst falso dikey kuvvet (+ = düşürür, − = asılı kalır)
+  const fM = airborne ? magnusFactor(hyp(b.spin, b.top || 0), sp3) : 1; // yerde: oyun ayarı groundMagnus
+  const m = env.magnus * b.spin * fM * (airborne ? 1 : env.groundMagnus);
   ax += m * -b.vy;
   ay += m * b.vx;
-  if (airborne && b.top) az -= env.magnus * b.top * spH; // üst falso: top düşer
+  if (airborne && b.top) az -= env.magnus * b.top * fM * spH;
 
   b.vx += ax * h;
   b.vy += ay * h;
+  b.impact = 0;
   if (!airborne) {
-    // çimde yuvarlanma: hız yönüne ters, sıfırı geçmez
     const s = hyp(b.vx, b.vy);
     if (s > 0) {
-      const ns = Math.max(0, s - (env.roll + env.rollDamp * s) * h);
+      let ns = s;
+      // kayma: temas noktası kayıyorsa (v ≠ ω·r) sürtünme hızı ω·r'ye yaklaştırır
+      const slip = s - (b.top || 0) * BALL_R;
+      if (Math.abs(slip) > 0.05) {
+        const dv = Math.min(env.mu * G * h, (2 / 7) * Math.abs(slip));
+        ns -= Math.sign(slip) * dv;
+        b.top = (b.top || 0) + (Math.sign(slip) * dv * 2.5) / BALL_R;
+      }
+      // çimde yuvarlanma: hız yönüne ters, sıfırı geçmez
+      ns = Math.max(0, ns - (env.roll + env.rollDamp * ns) * h);
       b.vx *= ns / s;
       b.vy *= ns / s;
+      if (Math.abs(slip) <= 0.05) b.top = ns / BALL_R; // yuvarlanma koşulu
     }
     b.vz = 0;
     b.z = 0;
@@ -138,16 +171,26 @@ export function stepBall(b, h, env = ENV) {
   if (b.z < 0) {
     b.z = 0;
     if (b.vz < -1.1) {
-      b.vz = -b.vz * env.bounce;
-      b.vx *= env.skid;
-      b.vy *= env.skid;
-      b.spin *= 0.55;
-      b.top *= 0.5;
+      const vn = -b.vz;
+      b.vz = vn * env.bounce;
+      // teğetsel sürtünme darbesi: kayma = yatay hız − ω·r; en fazla yuvarlanma koşuluna (2/7·kayma) kadar
+      const s = hyp(b.vx, b.vy);
+      if (s > 1e-6) {
+        const slip = s - (b.top || 0) * BALL_R;
+        const dv = Math.min(env.mu * (1 + env.bounce) * vn, (2 / 7) * Math.abs(slip)) * Math.sign(slip);
+        const ns = Math.max(0, s - dv);
+        b.vx *= ns / s;
+        b.vy *= ns / s;
+        b.top = (b.top || 0) + (dv * 2.5) / BALL_R;
+      }
+      b.spin *= 0.7;
       b.bounces++;
+      b.impact = vn;
     } else b.vz = 0;
   }
   b.air = b.z > 0.0005 || b.vz > 0.0005;
   b.spin *= Math.exp(-(b.air ? env.spinDecayAir : env.spinDecayGround) * h);
+  if (b.air && b.top) b.top *= Math.exp(-env.spinDecayAir * h);
   b.rot += (hyp(b.vx, b.vy) / BALL_R) * h * 0.08;
   b.t += h;
   return b;
@@ -156,7 +199,7 @@ export function stepBall(b, h, env = ENV) {
 /** Topun gelecekteki yolu (kopya üzerinde). Her örnek: {t,x,y,z,v}. */
 export function predict(b, { T = 4, h = 1 / 60, env = ENV, every = 1, noSpin = false } = {}) {
   const c = cloneBall(b);
-  if (noSpin) { c.spin = 0; c.top = 0; }
+  if (noSpin) { c.spin = 0; if (c.air) c.top = 0; } // yerdeki topun yuvarlanma dönüşü falso değildir
   const out = [{ t: 0, x: c.x, y: c.y, z: c.z, v: groundSpeed(c) }];
   const n = Math.ceil(T / h);
   for (let i = 1; i <= n; i++) {
@@ -468,4 +511,186 @@ export function solveKick(from, to, { loft = 0, dir = null, spin = 0, arrive = 7
   }
   const d = solveSpin ? { x: dirX, y: dirY } : rotate(cx, cy, ang);
   return { dirX: d.x, dirY: d.y, speed, loft, spin, err: hyp(res.lat, res.lon), end: { x: res.x, y: res.y }, arriveV: res.v, t: res.t };
+}
+
+// ─────────────────────────────────────────────────────────────
+// TOP – OYUNCU / KALE ÇARPIŞMASI
+// ─────────────────────────────────────────────────────────────
+/**
+ * Top oyuncu gövdesine (dikey silindir) çarparsa seker: oyuncu topa göre çok ağırdır, topun bağıl hızı
+ * normal yönde e katsayısıyla yansır, oyuncunun hızı eklenir. Çarpma hızını döndürür (0 = değmedi).
+ */
+export function collideBallBody(b, p, { height = 1.85, e = 0.3 } = {}) {
+  if (b.z > height) return 0;
+  const dx = b.x - p.x;
+  const dy = b.y - p.y;
+  const d = hyp(dx, dy);
+  const min = p.radius + BALL_R;
+  if (d >= min || d < 1e-6) return 0;
+  const nx = dx / d;
+  const ny = dy / d;
+  b.x = p.x + nx * min;
+  b.y = p.y + ny * min;
+  const rvx = b.vx - (p.vx || 0);
+  const rvy = b.vy - (p.vy || 0);
+  const rel = rvx * nx + rvy * ny;
+  if (rel >= 0) return 0;
+  const tx = rvx - rel * nx;
+  const ty = rvy - rel * ny;
+  b.vx = (p.vx || 0) + tx * 0.75 - e * rel * nx;
+  b.vy = (p.vy || 0) + ty * 0.75 - e * rel * ny;
+  b.spin *= 0.4;
+  b.top = (b.top || 0) * 0.5;
+  return -rel;
+}
+
+/**
+ * Top ile bir çubuk (direk/üst direk: A→B doğru parçası, yarıçap r) çarpışması. Çarpma hızını döndürür.
+ * h verilirse son adımın yolu taranır (hızlı top direğin içinden geçip kaçmasın: sürekli çarpışma).
+ */
+export function collideBallBar(b, A, B, { r = GOAL.postR, e = 0.62, h = 0 } = {}) {
+  const abx = B.x - A.x;
+  const aby = B.y - A.y;
+  const abz = B.z - A.z;
+  const L2 = abx * abx + aby * aby + abz * abz || 1;
+  const min = r + BALL_R;
+  const dist = (x, y, z) => {
+    const t = clamp(((x - A.x) * abx + (y - A.y) * aby + (z - A.z) * abz) / L2, 0, 1);
+    const dx = x - (A.x + abx * t);
+    const dy = y - (A.y + aby * t);
+    const dz = z - (A.z + abz * t);
+    return { dx, dy, dz, d: hyp(dx, dy, dz) };
+  };
+  let q = dist(b.x, b.y, b.z);
+  if (h > 0) {
+    // önceki konumdan şimdikine küçük adımlarla ilk temas anını bul
+    const len = hyp(b.vx, b.vy, b.vz) * h;
+    const n = Math.min(24, Math.ceil(len / (BALL_R * 0.4)));
+    for (let i = 1; i <= n; i++) {
+      const f = 1 - i / n; // geriye: f = 1 → önceki konum
+      const x = b.x - b.vx * h * f;
+      const y = b.y - b.vy * h * f;
+      const z = b.z - b.vz * h * f;
+      const c = dist(x, y, z);
+      if (c.d < min) { b.x = x; b.y = y; b.z = z; q = c; break; }
+    }
+  }
+  const { dx, dy, dz, d } = q;
+  if (d >= min || d < 1e-6) return 0;
+  const nx = dx / d;
+  const ny = dy / d;
+  const nz = dz / d;
+  b.x += nx * (min - d);
+  b.y += ny * (min - d);
+  b.z += nz * (min - d);
+  const vn = b.vx * nx + b.vy * ny + b.vz * nz;
+  if (vn >= 0) return 0;
+  const k = (1 + e) * vn;
+  b.vx = (b.vx - k * nx) * 0.94;
+  b.vy = (b.vy - k * ny) * 0.94;
+  b.vz = (b.vz - k * nz) * 0.94;
+  b.spin *= -0.5; // direkten dönen top falsosunu büyük ölçüde kaybeder
+  b.top = (b.top || 0) * -0.4;
+  b.air = true;
+  return -vn;
+}
+
+/** Kale çerçevesi: kale çizgisi y = 0, saha y > 0, kalenin içi y < 0; orta x = 0. */
+export const GOAL_FRAME = (() => {
+  const hw = GOAL.w / 2;
+  return [
+    { part: 'post', A: { x: -hw, y: 0, z: 0 }, B: { x: -hw, y: 0, z: GOAL.h } },
+    { part: 'post', A: { x: hw, y: 0, z: 0 }, B: { x: hw, y: 0, z: GOAL.h } },
+    { part: 'bar', A: { x: -hw, y: 0, z: GOAL.h }, B: { x: hw, y: 0, z: GOAL.h } },
+  ];
+})();
+
+/** Topu kale direkleri ve üst direkle çarpıştırır. {part, speed} ya da null. */
+export function collideGoalFrame(b, opts = {}) {
+  for (const f of GOAL_FRAME) {
+    const v = collideBallBar(b, f.A, f.B, opts);
+    if (v > 0) return { part: f.part, speed: v };
+  }
+  return null;
+}
+
+/** Ağlar: kale içindeki top arka fileye ve tavana çarpınca enerjisini kaybeder. Çarptıysa hızı döndürür. */
+export function collideNet(b, { depth = GOAL.depth, damp = 0.12 } = {}) {
+  if (b.y >= 0 || Math.abs(b.x) > GOAL.w / 2 || b.z > GOAL.h) return 0;
+  let hit = 0;
+  if (b.y < -depth + BALL_R && b.vy < 0) {
+    hit = -b.vy;
+    b.y = -depth + BALL_R;
+    b.vy = -b.vy * damp;
+    b.vx *= 0.35;
+    b.vz *= 0.35;
+    b.spin *= 0.2;
+  }
+  if (b.z > GOAL.h - BALL_R && b.vz > 0) { hit = Math.max(hit, b.vz); b.z = GOAL.h - BALL_R; b.vz *= -0.2; }
+  return hit;
+}
+
+// ─────────────────────────────────────────────────────────────
+// KALEYE ŞUT ÇÖZÜCÜ
+// ─────────────────────────────────────────────────────────────
+/** Topu kale çizgisine (y = 0) varana kadar sürer; geçiş noktası {x, z, t} (doğrusal ara değer). */
+function crossGoalLine(b, env, h = 1 / 120, T = 4) {
+  let px = b.x;
+  let py = b.y;
+  let pz = b.z;
+  for (let t = 0; t < T; t += h) {
+    stepBall(b, h, env);
+    if (b.y <= 0) {
+      const f = py / Math.max(1e-6, py - b.y);
+      return { x: px + (b.x - px) * f, z: pz + (b.z - pz) * f, t: b.t - h + h * f };
+    }
+    if (!b.air && groundSpeed(b) < 0.3) break;
+    px = b.x;
+    py = b.y;
+    pz = b.z;
+  }
+  return { x: b.x, z: b.z, t: Infinity };
+}
+
+/**
+ * Kaleye şut: top from {x, y>0}'dan çıkıp kale çizgisini to {x, z} noktasından yaklaşık T saniyede geçsin.
+ * spin (yan falso) ve top (üst falso) sabit verilir; çıkış yönü, yükselme açısı ve hız çözülür.
+ * @returns {{dirX,dirY,speed,loft,spin,top,err,t}}
+ */
+export function solveShot(from, to, { T = 0.7, spin = 0, top = 0, env = ENV, maxSpeed = 40, iters = 18 } = {}) {
+  const D = Math.max(1, hyp(to.x - from.x, from.y));
+  let yaw = Math.atan2(to.x - from.x, from.y);
+  let vh = Math.min(maxSpeed, (D / T) * 1.06);
+  let vz = (to.z + 0.5 * G * T * T) / T;
+  let best = null;
+  for (let it = 0; it < iters; it++) {
+    const speed = Math.min(maxSpeed, hyp(vh, vz));
+    const loft = Math.atan2(vz, vh);
+    const k = { dirX: Math.sin(yaw), dirY: -Math.cos(yaw), speed, loft, spin, top };
+    const r = crossGoalLine(kick(createBall(from.x, from.y, 0), k), env);
+    const ex = r.x - to.x;
+    const ez = r.z - to.z;
+    const et = Number.isFinite(r.t) ? r.t - T : 1;
+    const err = hyp(ex, ez) + Math.abs(et) * 2;
+    if (!best || err < best.err) best = { ...k, err, t: r.t, hit: { x: r.x, z: r.z } };
+    if (Math.abs(ex) < 0.02 && Math.abs(ez) < 0.02 && Math.abs(et) < 0.01) break;
+    yaw -= ex / D;
+    const tr = Number.isFinite(r.t) ? r.t : T * 1.5;
+    vh = Math.min(maxSpeed, vh * clamp(tr / T, 0.75, 1.35));
+    vz -= (ez / Math.max(0.25, tr)) * 0.95;
+  }
+  return best;
+}
+
+/** Çözülmüş şutun yolu (çizim/önizleme): from'dan başlayıp kale çizgisinin until metre ötesine kadar örnekler. */
+export function shotPath(from, k, { env = ENV, h = 1 / 120, until = -GOAL.depth, T = 3, frame = false } = {}) {
+  const b = kick(createBall(from.x, from.y, 0), k);
+  const out = [{ t: 0, x: b.x, y: b.y, z: b.z }];
+  for (let t = 0; t < T; t += h) {
+    stepBall(b, h, env);
+    const hit = frame ? collideGoalFrame(b, { h }) : null;
+    out.push({ t: b.t, x: b.x, y: b.y, z: b.z, impact: b.impact, hit: hit?.part });
+    if (hit || b.y < until) break;
+  }
+  return { path: out, ball: b };
 }

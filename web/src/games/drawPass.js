@@ -15,7 +15,7 @@ import { FixedStep, createBall, kick, stepBall, createBody, steer, stepBody, bod
 import { weatherFx } from './weatherFx.js';
 import { drawPixelPlayer, drawMovingPlayer, drawPixelBall } from './pixel/sprites.js';
 import { npcLook, lookFromAvatar, keeperLook } from './pixel/looks.js';
-import { sfx, buzz } from '../audio.js';
+import { sfx, buzz, impact, setImpactSurface } from '../audio.js';
 
 export function playDrawPass(host, opts) {
   return new Promise((resolve) => {
@@ -47,6 +47,7 @@ export function playDrawPass(host, opts) {
     const fixed = new FixedStep(1 / 120, 30);
     // Hava ve zemin: ıslak/karlı/çamurlu zemin topu ve oyuncuları etkiler, rüzgâr havadaki topu iter
     const ENV = envFor(opts.weather);
+    setImpactSurface(opts.weather?.surface);
     const wfx = weatherFx(opts.weather);
 
     let L = null;
@@ -249,7 +250,7 @@ export function playDrawPass(host, opts) {
       S.through = runner >= 0 && offsideOn && !S.offside && L.mates[runner].body.y < offsideLine() + 1.5;
       L.mates.forEach((m) => { m.run = null; m.plan = 0; });
       if (runner >= 0 && !tryout) L.mates[runner].run = { x: path.p3.x / L.ppm, y: path.p3.y / L.ppm };
-      sfx('kick');
+      impact('kick', groundSpeed(S.pb || {}) || 14);
       buzz('kick');
     }
 
@@ -569,6 +570,7 @@ export function playDrawPass(host, opts) {
           const pb = S.pb;
           S.flightT += h;
           stepBall(pb, h, ENV);
+          if (pb.impact > 1.2) impact('bounce', pb.impact);
           if (ballContacts()) return false;
           const px = pb.x * L.ppm;
           const py = pb.y * L.ppm;

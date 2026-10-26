@@ -454,7 +454,7 @@
 .cc-motm { margin-top: 8px; text-align: center; font-size: 12px; color: #fde68a; }
 .cc-welcome { min-height: 190px; background: radial-gradient(120% 100% at 80% 0%, color-mix(in srgb, var(--h) 85%, #fff 0%), color-mix(in srgb, var(--h) 45%, #000) 70%); }
 .cc-wm { position: absolute; right: -18px; bottom: -22px; opacity: 0.16; transform: rotate(-12deg); }
-.cc-hello { position: relative; font-size: 34px; line-height: 0.92; font-weight: 900; letter-spacing: 0.02em; text-shadow: 0 3px 0 rgba(0, 0, 0, 0.25); }
+.cc-hello { position: relative; width: min-content; word-break: keep-all; font-size: 34px; line-height: 0.92; font-weight: 900; letter-spacing: 0.02em; text-shadow: 0 3px 0 rgba(0, 0, 0, 0.25); }
 .cc-player { position: absolute; right: 10px; bottom: 0; width: 132px; height: 132px; }
 .cc-player svg { width: 100%; height: 100%; }
 .cc-player.sm { position: static; width: 70px; height: 70px; flex: none; }

@@ -5,8 +5,13 @@ import { FAN_SPRITES, FLAG_SPRITES, drawSprite, spriteSize } from '../assets/spr
 import { drawPixelPlayer, drawPixelBall } from './pixel/sprites.js';
 import { keeperLook, npcLook } from './pixel/looks.js';
 import { weatherFx } from './weatherFx.js';
+import { FixedStep, GOAL, collideGoalFrame, collideNet, createBall, envFor, kick, shotPath, solveShot, stepBall } from './physics.js';
+import { impact, setImpactSurface } from '../audio.js';
 
 const persp = (p) => 1 - Math.pow(1 - clamp(p, 0, 1), 1.5);
+/** Şut mesafesi (m, kale çizgisine) ve yakın plan ölçek çarpanı (topun yanı kaleye göre büyük görünür) */
+const WORLD_D = { penalty: 11, box: 14, edge: 20, freekick: 23 };
+const NEAR = 1.6;
 
 /**
  * @param {HTMLElement} host
@@ -110,6 +115,42 @@ export function playShot(host, opts) {
     const backY = (y) => y - (y - L.hy) * 0.16;
     const backX = (x) => L.cx + (x - L.cx) * 0.9;
 
+    // ── FİZİK DÜNYASI: x = kale ortasına yanal (m), y = kale çizgisine uzaklık (m, kale içi < 0), z = yükseklik ──
+    const penv = envFor(weather || 'dry');
+    setImpactSurface(weather?.surface);
+    const wD = () => (WORLD_D[type] ?? 14) * (S.rebound ? 0.55 : 1);
+    const sxAt = (pp) => (lerp(NEAR, 1, pp) * L.gw) / GOAL.w;
+    const szAt = (pp) => (lerp(NEAR, 1, pp) * L.gh) / GOAL.h;
+    /** Dünya noktası → ekran (top için: x, y, gölge zemini gy, yükseklik alt, yarıçap r) */
+    function proj(X, Y, Z) {
+      if (Y >= 0) {
+        const pp = persp(1 - Y / wD());
+        const g = lerp(L.by, L.gl, pp);
+        const alt = Z * szAt(pp);
+        return { x: L.cx + sxAt(pp) * X, gy: g, y: g - alt, alt, r: lerp(L.r0, L.r1, pp) };
+      }
+      const q = -Y / GOAL.depth; // kale çizgisinin gerisi: ağlar ve tribüne doğru
+      const k = Math.max(0.3, 1 - 0.05 * q);
+      const g = Math.max(L.hy - 24, L.gl - (L.gl - L.hy) * 0.08 * q);
+      const alt = (Z * k * L.gh) / GOAL.h;
+      return { x: L.cx + (k * L.gw * X) / GOAL.w, gy: g, y: g - alt, alt, r: L.r1 * k };
+    }
+    /** Nişan + sapma → fiziksel vuruş (çıkış yönü, hız, yükselme; falso ve üst falso) */
+    function planShot({ u, v, T, power, curl = 0, block = false, outcome = null, panenka = false }) {
+      const from = { x: (L.bx - L.cx) / sxAt(0), y: wD() };
+      const arc = fk && !block; // barajı aşan frikik: daha yavaş, üst falsolu, kavisli
+      const Tp = arc ? lerp(1.3, 1.0, clamp(power / 1.1, 0, 1)) : T;
+      const to = { x: (clamp(u, -1.7, 1.7) * GOAL.w) / 2, z: clamp(v, 0, 1.8) * GOAL.h };
+      if (outcome === 'post') {
+        // direğe/üst direğe tam çarpacak nokta (biraz kaçıklıkla: top farklı açılarla seker)
+        if (Math.abs(u) > 0.965 && v <= 1.04) to.x = Math.sign(u || 1) * (GOAL.w / 2 + (Math.random() - 0.5) * 0.14);
+        else to.z = GOAL.h + (Math.random() - 0.5) * 0.14;
+      }
+      const top = arc ? 40 * clamp(v, 0, 1.2) : panenka ? -18 : 6 * power;
+      const sol = solveShot(from, to, { T: Tp, spin: curl * 45, top, env: penv });
+      return { from, sol };
+    }
+
     // Büyük maç heyecanı: nişangah titrer. Salınım oyun zamanıyla (tempo) ilerler,
     // bu yüzden Soğukkanlı mentorla nişangah daha yavaş ve daha az sallanır.
     const nerves = clamp(opts.nerves ?? 0, 0, 1);
@@ -156,6 +197,21 @@ export function playShot(host, opts) {
       const wallTop = w.h * 1.04;
       const inWall = w.xs.some((x) => Math.abs(xAt - x) < w.w / 2 + L.r0 * 0.5);
       return inWall && altAt < wallTop;
+    }
+
+    /** Nişan önizlemesi: fizik motorunun öngördüğü yol (sapmasız). Nişan değişince yeniden hesaplanır. */
+    function previewPts(aim, ok) {
+      const curl = aim.curl || 0;
+      const key = `${aim.u.toFixed(2)}|${aim.v.toFixed(2)}|${aim.power.toFixed(2)}|${curl.toFixed(2)}|${ok}|${L.W}`;
+      if (S.preview?.key === key) return S.preview.pts;
+      let T = lerp(1.0, 0.42, clamp(aim.power / 1.1, 0, 1));
+      if (fk) T *= 1.25;
+      const plan = planShot({ u: aim.u + curl * 0.1, v: aim.v, T, power: aim.power, curl, block: fk && !ok });
+      const { path } = shotPath(plan.from, plan.sol, { env: penv, until: 0 });
+      const pts = [];
+      for (let i = 4; i < path.length; i += 4) pts.push(proj(path[i].x, Math.max(0, path[i].y), path[i].z));
+      S.preview = { key, pts };
+      return pts;
     }
 
     function shoot(aim) {
@@ -237,10 +293,15 @@ export function playShot(host, opts) {
         k.reactAt = 0.25;
         k.diveV = Math.min(v, 0.9);
       }
-      S.shot = { u, v, T, power: aim.power, t: 0, xg: gx(clamp(u, -1.6, 1.6)), curl, arc: fk ? 0.35 + 0.9 * clamp(v, 0, 1.2) : panenka ? 0.55 : 0.25 * aim.power };
+      S.frameHit = null;
+      const plan = planShot({ u, v, T, power: aim.power, curl, block: blocked, outcome, panenka });
+      S.pb = kick(createBall(plan.from.x, plan.from.y, 0), plan.sol);
+      S.fs = new FixedStep(1 / 120);
+      S.phys = true;
+      S.shot = { u, v, T: Number.isFinite(plan.sol.t) ? plan.sol.t : T, power: aim.power, t: 0, xg: gx(clamp(u, -1.6, 1.6)), curl, speed: plan.sol.speed };
       S.outcome = outcome;
       S.phase = 'flight';
-      sfx('kick');
+      impact('kick', plan.sol.speed);
       buzz('shot');
     }
 
@@ -280,6 +341,7 @@ export function playShot(host, opts) {
         S.after = { vx: (b.x - L.cx) * 0.1, vy: -20, shrink: 0.996 };
       } else if (o === 'goal') {
         netHit(b.x, b.y, 1);
+        impact('net', S.shot?.speed || 20);
         S.excite = 1;
         big.show(S.panenka ? 'PANENKA!' : S.rebound ? 'DÖNEN TOPTA GOL!' : fk && Math.abs(S.shot.curl) > 0.3 ? 'FALSOLU GOL!' : 'GOOOL!', '#c6ff3d', S.rebound ? 58 : 76);
         particles.burst(b.x, b.y, { n: 40, colors: ['#c6ff3d', '#ffcf3d', '#fff', myKit[0]], speed: 380, gravity: 500, life: 1.4, size: 5 });
@@ -294,26 +356,41 @@ export function playShot(host, opts) {
         const caught = S.panenka || (S.shot.v < 0.55 && Math.abs(S.shot.u - S.k.to) < 0.12);
         // Çelinen top ceza sahasında kalabilir: ikinci şans (bir kez)
         S.reboundNext = !caught && !S.rebound && Math.random() < reboundP;
-        S.after = caught ? { caught: true } : { vx: (b.x < gx(S.k.u) ? -1 : 1) * 260, vy: 160, grow: 1.01 };
+        S.after = caught ? { caught: true } : { phys: true };
+        if (!caught && S.pb) {
+          // eldivenden seker: kaleden uzağa, yana ve yukarı
+          const pb = S.pb;
+          const kx = (S.k.to * GOAL.w) / 2;
+          pb.vy = Math.abs(pb.vy) * 0.3 + 1.5;
+          pb.vx = Math.sign(pb.x - kx || 1) * (3 + Math.random() * 4) + pb.vx * 0.2;
+          pb.vz = 1.5 + Math.random() * 2.5;
+          pb.spin *= 0.2;
+          impact('glove', Math.hypot(pb.vx, pb.vy) * 3);
+        }
         particles.burst(b.x, b.y, { n: 14, colors: ['#fff', keeperColor], speed: 200, life: 0.6 });
       } else if (o === 'post') {
         big.show('DİREK!', '#ffcf3d', 64);
         sfx('post');
         buzz('post');
         stage.shake(8);
-        S.after = { vx: (b.x < L.cx ? 1 : -1) * 120, vy: 300, grow: 1.012 };
+        S.after = { phys: true };
+        if (S.pb) {
+          if (S.pb.vy < 0.5) S.pb.vy = Math.abs(S.pb.vy) * 0.6 + 1; // direkten dışarı
+          impact('post', S.frameHit?.speed || 20);
+        }
       } else if (o === 'block') {
         big.show(L.wall ? 'BARAJ!' : 'BLOK!', '#ff5d6c', 60);
         if (L.wall) L.wall.jump = 1;
         sfx('tackle');
         buzz('bump');
-        S.after = { vx: (Math.random() - 0.5) * 400, vy: 260, grow: 1.01 };
+        S.after = { phys: true };
+        impact('body', S.shot?.speed || 15);
         if (L.def) L.def.jump = 1;
       } else {
         big.show(o === 'over' ? 'ÜSTTEN!' : 'AUT!', '#ff5d6c', 60);
         sfx('miss');
         buzz('miss');
-        S.after = { vx: (S.shot.xg - L.bx) * 0.9, vy: -L.H * 0.35, shrink: 0.985 };
+        S.after = { phys: true };
       }
     }
 
@@ -338,6 +415,9 @@ export function playShot(host, opts) {
       L.by = lerp(L.gl, L.by, 0.55);
       L.r0 *= 0.85;
       S.ball = { x: L.bx, y: L.by, r: L.r0, alt: 0, gy: L.by };
+      S.pb = null;
+      S.phys = false;
+      S.preview = null;
       big.show('DÖNEN TOP!', '#ffcf3d', 52);
       sfx('swish');
       buzz('bump');
@@ -378,16 +458,35 @@ export function playShot(host, opts) {
           }
         } else if (S.phase === 'flight') {
           const sh = S.shot;
-          sh.t += dt;
-          const p = clamp(sh.t / sh.T, 0, 1);
-          const pp = persp(p);
+          const pb = S.pb;
+          const D = wD();
+          const blockAt = L.wall ? L.wall.fd : L.def?.fd;
+          let end = false;
+          S.fs.run(dt, (h) => {
+            stepBall(pb, h, penv);
+            if (pb.impact > 1.2) impact('bounce', pb.impact);
+            if (S.outcome === 'post') {
+              const hit = collideGoalFrame(pb, { h });
+              if (hit) { S.frameHit = hit; end = true; return false; }
+            }
+            if (S.outcome === 'block' && 1 - pb.y / D >= blockAt) {
+              // barajdan/savunmacıdan seker: geri ve yukarı, rastgele yana
+              pb.vy = Math.abs(pb.vy) * 0.28 + 1;
+              pb.vx = pb.vx * 0.3 + (Math.random() - 0.5) * 7;
+              pb.vz = Math.abs(pb.vz) * 0.4 + 2 + Math.random() * 2;
+              pb.spin *= 0.3;
+              end = true;
+              return false;
+            }
+            if (pb.y <= 0 || pb.t > 3) { end = true; return false; }
+            return true;
+          });
+          sh.t = pb.t;
+          const p = clamp(1 - pb.y / D, 0, 1);
+          const q = proj(pb.x, Math.max(0, pb.y), pb.z);
           const b = S.ball;
-          b.x = lerp(L.bx, sh.xg, pp) + (sh.curl || 0) * 0.55 * (L.gw / 2) * Math.sin(Math.PI * p);
-          b.gy = lerp(L.by, L.gl, pp);
-          b.alt = sh.v * L.gh * pp + Math.sin(Math.PI * p) * L.gh * (sh.arc ?? 0.25 * sh.power);
-          b.y = b.gy - b.alt;
-          b.r = lerp(L.r0, L.r1, pp);
-          S.rot += dt * 14;
+          b.x = q.x; b.y = q.y; b.gy = q.gy; b.alt = q.alt; b.r = q.r;
+          S.rot += dt * (6 + sh.speed * 0.4) * (1 + Math.abs(sh.curl || 0));
           // kaleci hareketi
           const k = S.k;
           if (sh.t > (k.reactAt ?? 0.25)) {
@@ -400,9 +499,7 @@ export function playShot(host, opts) {
           }
           if (L.def && p > L.def.fd - 0.15 && p < L.def.fd + 0.1) L.def.jump = Math.max(L.def.jump, 0.6);
           if (L.wall && p > 0.02 && p < L.wall.fd + 0.12) L.wall.jump = Math.max(L.wall.jump, 0.85);
-          const blockAt = L.wall ? L.wall.fd : L.def?.fd;
-          if (S.outcome === 'block' && p >= blockAt) startAfter();
-          else if (p >= 1) startAfter();
+          if (end) startAfter();
         } else if (S.phase === 'after') {
           S.afterT += dt;
           const b = S.ball;
@@ -410,6 +507,23 @@ export function playShot(host, opts) {
           if (a.caught) {
             b.x = gx(S.k.u) + Math.sin(S.k.angle) * L.gh * 0.6;
             b.y = L.gl - L.gh * 0.55 - S.k.lift;
+          } else if (a.phys) {
+            // Fiziksel devam: sekme, yuvarlanma, ağlar; tribüne giden top kale arkasında kaybolur
+            const pb = S.pb;
+            S.fs.run(dt, (h) => {
+              if (pb.y < -14) return false;
+              stepBall(pb, h, penv);
+              if (pb.impact > 1.2) impact('bounce', pb.impact);
+              if (S.outcome === 'post' || S.outcome === 'save' || S.outcome === 'block') {
+                const hit = collideGoalFrame(pb, { h });
+                if (hit) impact('post', hit.speed);
+                const n = collideNet(pb);
+                if (n > 1) impact('net', n);
+              }
+              return true;
+            });
+            const q = proj(pb.x, pb.y, pb.z);
+            b.x = q.x; b.y = q.y; b.gy = q.gy; b.alt = q.alt; b.r = q.r;
           } else {
             b.x += (a.vx || 0) * dt;
             b.y += (a.vy || 0) * dt;
@@ -523,7 +637,7 @@ export function playShot(host, opts) {
         drawSprite(ctx, 'corner_flag', W - 10, L.gl + 2, { h: L.gh * 0.62, anchor: 'bottom', flip: true });
         wfx.ground(ctx, W, H);
 
-        const ballBehind = S.outcome === 'goal' && S.phase === 'after';
+        const ballBehind = (S.outcome === 'goal' && S.phase === 'after') || (S.phase === 'after' && S.pb && S.pb.y < -0.05);
         drawNet(ctx, t);
         if (ballBehind) drawBallAll(ctx);
         drawPosts(ctx);
@@ -544,9 +658,9 @@ export function playShot(host, opts) {
             ctx.strokeStyle = ok ? 'rgba(198,255,61,.85)' : 'rgba(255,93,108,.85)';
             ctx.lineWidth = 3;
             ctx.beginPath();
+            const pts = previewPts(aim, ok);
             ctx.moveTo(L.bx, L.by);
-            const bend = (aim.curl || 0) * 0.55 * L.gw;
-            ctx.quadraticCurveTo((L.bx + tx) / 2 + bend, Math.min(L.by, ty) - L.gh * (fk ? 0.9 + 0.9 * clamp(aim.v, 0, 1.2) : 0.4 * aim.power), tx, ty);
+            for (const q of pts) ctx.lineTo(q.x, q.y);
             ctx.stroke();
             ctx.setLineDash([]);
             ctx.beginPath();
@@ -650,7 +764,7 @@ export function playShot(host, opts) {
       const b = S.ball;
       if (!b) return;
       const shadowY = b.gy ?? L.by;
-      if (S.phase !== 'after' || S.outcome === 'save' || S.outcome === 'post' || S.outcome === 'block') {
+      if (S.phase !== 'after' || S.after?.phys || S.outcome === 'save' || S.outcome === 'post' || S.outcome === 'block') {
         drawShadow(ctx, b.x + (b.alt || 0) * 0.05, shadowY + b.r * 0.6, b.r * clamp(1.1 - (b.alt || 0) / (L.gh * 3), 0.3, 1.1), b.r * 0.35, 0.35);
       }
       drawPixelBall(ctx, b.x, b.y, b.r * 2.1, S.rot, { shadow: false });
