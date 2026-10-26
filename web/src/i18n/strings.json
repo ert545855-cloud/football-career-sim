@@ -32,9 +32,6 @@
  ". Her hata bir hak götürür. Sonunda kalan hakların": [
   "src/ui/screens/tryouts.js:76"
  ],
- ". Şimdi her hata 1 can götürür.": [
-  "src/games/tryoutStation.js:96"
- ],
  "…topu ayağından hiç düşürmeyen çocuk.": [
   "src/ui/intro.js:30"
  ],
@@ -262,6 +259,7 @@
  "(prefers-reduced-motion: reduce)": [
   "src/ui/bodyArt.js:146",
   "src/ui/snow.js:13",
+  "src/ui/studioIntro.js:25",
   "src/ui/titleScene.js:53"
  ],
  "(stüdyoda kahkahalar)": [
@@ -6974,6 +6972,9 @@
  "Gece hayatı rutinin oldu (haftada {0} gece).": [
   "src/core/brain/traits.js:58"
  ],
+ "Gece hayatına son": [
+  "src/core/brain/npc.js:25"
+ ],
  "gece hayatını bırakmamı": [
   "src/core/brain/npc.js:25"
  ],
@@ -7403,9 +7404,6 @@
  ],
  "Görüşürüz, maçta başarılar.": [
   "src/core/social/dialogues2.js:146"
- ],
- "götürür.": [
-  "src/games/tryoutStation.js:96"
  ],
  "Göz kırp, gülümse": [
   "src/core/attitude.js:153"
@@ -8692,10 +8690,10 @@
  "Isınma denemesi · hak gitmez": [
   "src/games/tryoutStation.js:67"
  ],
- "Isınma denemesiydi:": [
+ "Isınma denemesiydi: can gitmedi.": [
   "src/games/tryoutStation.js:96"
  ],
- "Isınma tamam! Şimdi her hata": [
+ "Isınma tamam!": [
   "src/games/tryoutStation.js:96"
  ],
  "ISKA!": [
@@ -12315,6 +12313,9 @@
  "Odaklı": [
   "src/core/brain/mind.js:97"
  ],
+ "ODD SPARROW": [
+  "src/ui/studioIntro.js:36"
+ ],
  "Of be!": [
   "src/ui/broadcast.js:1039"
  ],
@@ -15265,6 +15266,9 @@
  "Stres": [
   "src/ui/screens/body.js:120"
  ],
+ "STUDIOS": [
+  "src/ui/studioIntro.js:36"
+ ],
  "Stüdyo daire": [
   "src/core/social/home.js:13"
  ],
@@ -15425,6 +15429,10 @@
  ],
  "Şiddetli yağmur yüzünden yarınki antrenman iptal edildi.": [
   "src/core/events.js:206"
+ ],
+ "Şimdi her hata 1 can götürür.": [
+  "src/games/tryoutStation.js:96",
+  "src/games/tryoutStation.js:96"
  ],
  "Şimdi tahtaya çiziyorum, bakın: sol iç koridorda üçüncü adam koşusu, sonra derinlik—": [
   "src/core/siyahShow.js:45"
@@ -16931,6 +16939,9 @@
  ],
  "Yağ oranı": [
   "src/ui/screens/body.js:75"
+ ],
+ "Yağ oranı %13,5'in altına": [
+  "src/core/brain/npc.js:16"
  ],
  "yağ oranımı %13,5'in altına indirmemi": [
   "src/core/brain/npc.js:16"
