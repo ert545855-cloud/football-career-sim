@@ -1270,3 +1270,18 @@ button.thought { cursor: pointer; }
 @keyframes siLine { from { width: 0; } to { width: 36%; } }
 .studio-intro.reduced.play .si-bird, .studio-intro.reduced.play .si-word, .studio-intro.reduced.play .si-sub { animation: none; opacity: 1; clip-path: none; }
 .studio-intro.reduced.play .si-line { animation: none; width: 36%; }
+
+/* Gol sinematiği (maçtaki ilk golünden sonra 8 sn'lik sessiz video + oyuncunun isim plakası) */
+.gcine { position: absolute; inset: 0; z-index: 60; display: grid; place-items: center; background: #000; animation: gcineIn 0.25s ease-out; cursor: pointer; }
+.gcine.out { opacity: 0; transition: opacity 0.3s; }
+.gcine-box { position: relative; overflow: hidden; }
+.gcine-box video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.gcine-plate { position: absolute; left: var(--l); top: var(--t); width: var(--w); height: var(--h); display: flex; align-items: stretch; gap: 0.5em; opacity: 0; pointer-events: none; filter: drop-shadow(0 0.25em 0 rgba(0, 0, 0, 0.45)); }
+.gcine-face { flex: 0 0 auto; aspect-ratio: 1; height: 100%; box-sizing: border-box; border: 0.28em solid #fff; border-radius: 0.5em; background: linear-gradient(160deg, var(--c1), #0b1424); display: grid; place-items: end center; overflow: hidden; }
+.gcine-face canvas { width: 92%; height: auto; image-rendering: pixelated; }
+.gcine-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; padding: 0.3em 0.9em; box-sizing: border-box; border-radius: 0.5em; background: linear-gradient(180deg, #13233b, #0b1424); border: 0.22em solid var(--c2); color: #fff; }
+.gcine-txt b { font: 900 2.6em/0.95 Impact, 'Arial Narrow', sans-serif; text-transform: uppercase; letter-spacing: 0.03em; text-shadow: 0 0.08em 0 #000; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gcine-txt b br { display: block; }
+.gcine-txt span { margin-top: 0.35em; font: 800 1.15em/1 system-ui, sans-serif; color: #c6ff3d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gcine-skip { position: absolute; right: 1.2em; top: 1em; padding: 0.3em 0.8em; border-radius: 999px; background: rgba(0, 0, 0, 0.55); color: #fff; font: 800 1.1em/1 system-ui, sans-serif; }
+@keyframes gcineIn { from { opacity: 0; } }

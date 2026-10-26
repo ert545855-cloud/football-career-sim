@@ -1,6 +1,6 @@
 // Çevrimdışı oynama için service worker.
 // Sayfa (index.html) önce ağdan gelir (güncellemeler hemen görünsün), diğer dosyalar önbellekten.
-const CACHE = 'nfstars-v41';
+const CACHE = 'nfstars-v42';
 const CORE = ['./', './index.html', './manifest.webmanifest', './logo.webp', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
@@ -21,7 +21,7 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(req.url);
   if (req.method !== 'GET' || url.origin !== self.location.origin) return;
   // Bulut kayıt API'si her zaman ağdan (önbellek eski kayıt döndürmesin); Unity 3B derlemesi çok büyük, önbelleğe alınmaz
-  if (url.pathname.includes('/api/') || url.pathname.includes('/unity/')) return;
+  if (url.pathname.includes('/api/') || url.pathname.includes('/unity/') || url.pathname.includes('/media/')) return; // video: tarayıcı parça parça (Range) ister
 
   if (req.mode === 'navigate') {
     e.respondWith(
