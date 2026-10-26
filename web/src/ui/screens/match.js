@@ -434,7 +434,8 @@ export function matchScreen(app, { match }) {
           myKit: my,
           me: playerLook(s, { club: my }),
           oppKit: opp,
-          keeper: match.oppKeeper ?? Math.min(0.95, clubRating(s.world, match.oppId) / 90),
+          // gol attıkça rakip seni yakın markaja alır: sonraki fırsatlarda kaleci ve savunma daha hazırlıklı
+          keeper: Math.min(0.97, (match.oppKeeper ?? Math.min(0.95, clubRating(s.world, match.oppId) / 90)) + 0.09 * (match.tally?.goals || 0)),
           number: s.player.number,
           name: shortName.toUpperCase(),
           auto: app.autoplay,

@@ -82,7 +82,7 @@ function makeMoment(position, minute, o = {}) {
   if (type === 'shot') {
     // Duran toplar: serbest vuruş (orta saha ustası), korner kafası (forvet ve stoper), penaltı
     const w = {
-      FW: [['box', 0.42], ['edge', 0.24], ['freekick', 0.1], ['corner', 0.14], ['penalty', 0.1]],
+      FW: [['box', 0.36], ['edge', 0.28], ['freekick', 0.1], ['corner', 0.18], ['penalty', 0.08]],
       MF: [['box', 0.3], ['edge', 0.36], ['freekick', 0.24], ['corner', 0.06], ['penalty', 0.04]],
       DF: [['box', 0.16], ['edge', 0.12], ['freekick', 0.06], ['corner', 0.62], ['penalty', 0.04]],
     }[position] || [['box', 0.55], ['edge', 0.35], ['penalty', 0.1]];
@@ -116,7 +116,7 @@ export function buildEvents(lMy, lOpp, myShare = 0.5) {
 export function buildMoments(position, role, subMinute = null, subOff = null, o = {}) {
   let count = 0;
   let from = 5;
-  if (role === 'starter') count = randInt(3, 4) + (chance(0.3) ? 1 : 0);
+  if (role === 'starter') count = randInt(3, 4) + (chance(0.1) ? 1 : 0);
   else if (subMinute) {
     count = randInt(1, 2);
     from = subMinute + 3;
@@ -178,7 +178,12 @@ export function planMatch(state, o = {}) {
   const myShare = clamp(0.5 + (myR - oppR) / 120, 0.2, 0.8);
   const events = buildEvents(lMy, lOpp, myShare);
 
-  const tactic = state.coach?.clubId === career.clubId ? { weights: momentWeights(state, POSITIONS[player.position].moments), ctx: contextWeights(state) } : {};
+  const ownCoach = state.coach?.clubId === career.clubId;
+  const baseW = ownCoach ? momentWeights(state, POSITIONS[player.position].moments) : POSITIONS[player.position].moments;
+  // Oyun üstünlüğü: topa daha çok sahip olan takımda gol fırsatı (şut/atak) artar, zayıf takımda savunma anı artar
+  const press = 0.75 + 0.5 * myShare;
+  const weights = Object.fromEntries(Object.entries(baseW).map(([k, v]) => [k, k === 'shot' || k === 'attack' ? v * press : k === 'tackle' ? v * (2 - press) : v]));
+  const tactic = { weights, ctx: ownCoach ? contextWeights(state) : undefined };
   const moments = buildMoments(player.position, role, subMinute, subOff, tactic);
 
   const big = o.big || bigMatchSetup(state, { myId, oppId, week });

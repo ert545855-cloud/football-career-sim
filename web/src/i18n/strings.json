@@ -115,7 +115,7 @@
   "src/ui/screens/camp.js:41"
  ],
  "· gol": [
-  "src/ui/nationalView.js:165"
+  "src/ui/nationalView.js:167"
  ],
  "· gol attın": [
   "src/core/national.js:261"
@@ -161,7 +161,7 @@
   "src/ui/europeView.js:48"
  ],
  "· Soğukkanlı": [
-  "src/ui/screens/match.js:143"
+  "src/ui/screens/match.js:155"
  ],
  "· Soğukkanlı mentor": [
   "src/ui/app.js:562"
@@ -187,7 +187,7 @@
   "src/ui/screens/social.js:176"
  ],
  "· Yıl {0}": [
-  "src/ui/screens/afterCareer.js:84"
+  "src/ui/screens/afterCareer.js:90"
  ],
  "· zor": [
   "src/ui/questsView.js:21"
@@ -217,13 +217,13 @@
   "src/ui/lifeView.js:158"
  ],
  "(A: sen)": [
-  "src/ui/screens/match.js:209"
+  "src/ui/screens/match.js:222"
  ],
  "(ağrı kesiciyle oynarken kötüleşti)": [
   "src/ui/injuryView.js:21"
  ],
  "(asist: {0})": [
-  "src/core/match.js:239"
+  "src/core/match.js:257"
  ],
  "(D)": [
   "src/ui/cupView.js:221",
@@ -248,7 +248,7 @@
   "src/core/nationalCamp.js:335",
   "src/ui/cupView.js:123",
   "src/ui/cupView.js:215",
-  "src/ui/nationalView.js:47",
+  "src/ui/nationalView.js:48",
   "src/ui/screens/camp.js:41"
  ],
  "(pen. {0}-{1})": [
@@ -272,7 +272,7 @@
   "src/ui/lifeView.js:107"
  ],
  "{0} - NEW FOOTBALL STARS": [
-  "src/ui/screens/title.js:108"
+  "src/ui/screens/title.js:128"
  ],
  "{0} – {1} {2} hava muhalefeti yüzünden gelecek hafta oynanacak.": [
   "src/ui/screens/hub.js:136"
@@ -412,7 +412,7 @@
   "src/core/brain/index.js:248"
  ],
  "{0} {1} bir pas çıkardı, {2} vuruşu yaptı ve GOL! ASİST {3}'ın. {4}": [
-  "src/core/match.js:417"
+  "src/core/match.js:435"
  ],
  "{0} {1} çıkışında {2} ile görüntülendi! Sevgilisi {3} ne diyecek? 📸": [
   "src/core/social/events.js:91"
@@ -451,7 +451,7 @@
   "src/core/game.js:712"
  ],
  "{0} {1}rakibini arkadan biçti: DOĞRUDAN KIRMIZI KART! Takım 10 kişi.": [
-  "src/core/match.js:487"
+  "src/core/match.js:505"
  ],
  "{0} {first} Token bu hafta {1}! {2} #{first}Token": [
   "src/core/chirp/feed.js:178"
@@ -490,7 +490,7 @@
   "src/ui/screens/agent.js:43"
  ],
  "{0} alındı ve giyildi.": [
-  "src/core/cosmetics.js:100"
+  "src/core/cosmetics.js:111"
  ],
  "{0} alındı. Şimdi evine yerleştir!": [
   "src/core/social/home.js:126"
@@ -502,19 +502,19 @@
   "src/core/onboarding/offers.js:179"
  ],
  "{0} ara pasını kesemedi, {1} golü buldu.{2} {3}": [
-  "src/core/match.js:502"
+  "src/core/match.js:520"
  ],
  "{0} ara pasını verdi ama arkadaşı ofsayttaydı. Yan hakem bayrağı kaldırdı.": [
-  "src/core/match.js:443"
+  "src/core/match.js:461"
  ],
  "{0} ara pasını verdi ama arkadaşı ofsayttaydı. Yan hakemin bayrağı havada.": [
-  "src/core/match.js:384"
+  "src/core/match.js:402"
  ],
  "{0} araya girip ortamı yatıştırdı.": [
   "src/core/attitude.js:231"
  ],
  "{0} araya girip topu kaptı!": [
-  "src/core/match.js:465"
+  "src/core/match.js:483"
  ],
  "{0} arması": [
   "src/ui/art.js:48"
@@ -529,7 +529,7 @@
   "src/ui/screens/agent.js:127"
  ],
  "{0} atağı başlatamadı, pas rakipte kaldı.": [
-  "src/core/match.js:384"
+  "src/core/match.js:402"
  ],
  "{0} Ayın Oyuncusu": [
   "src/core/archive.js:62"
@@ -541,7 +541,7 @@
   "src/core/social/events.js:331"
  ],
  "{0} baskıyla rakibin pasını boşa çıkardı.": [
-  "src/core/match.js:461"
+  "src/core/match.js:479"
  ],
  "{0} başladı ({1} hafta).": [
   "src/core/foundation.js:129"
@@ -619,10 +619,10 @@
   "src/ui/screens/wealth.js:220"
  ],
  "{0} çok bekledi, rakip topu ayağından aldı.": [
-  "src/core/match.js:440"
+  "src/core/match.js:458"
  ],
  "{0} çok bekledi, top elinden alındı.": [
-  "src/core/match.js:366"
+  "src/core/match.js:384"
  ],
  "{0} çok kırgın.": [
   "src/core/social/events.js:89"
@@ -634,7 +634,7 @@
   "src/core/mentor/bigMatch.js:43"
  ],
  "{0} direğe nişanladı... DİREK!": [
-  "src/core/match.js:364"
+  "src/core/match.js:382"
  ],
  "{0} dk önce": [
   "src/ui/cloudView.js:15"
@@ -664,11 +664,11 @@
   "src/core/social/events.js:252"
  ],
  "{0} falsolu bir pasla savunmayı deldi.": [
-  "src/core/match.js:430",
-  "src/core/match.js:433"
+  "src/core/match.js:448",
+  "src/core/match.js:451"
  ],
  "{0} faul yaptı; sakin tavrıyla hakemi ikna etti, sadece sözlü uyarı aldı.": [
-  "src/core/match.js:478"
+  "src/core/match.js:496"
  ],
  "{0} FİT": [
   "src/ui/screens/gym.js:78"
@@ -686,7 +686,7 @@
   "src/core/social/events.js:197"
  ],
  "{0} geçildi ama kaleci gole izin vermedi.": [
-  "src/core/match.js:504"
+  "src/core/match.js:522"
  ],
  "{0} gelişimi": [
   "src/ui/screens/gym.js:181"
@@ -751,7 +751,7 @@
   "src/ui/screens/wealth.js:169"
  ],
  "{0} harika bir atakla kaleciyle karşı karşıya kaldı... {1}": [
-  "src/core/match.js:395"
+  "src/core/match.js:413"
  ],
  "{0} hayal kırıklığında: istediği olmadı.": [
   "src/core/brain/index.js:269"
@@ -790,7 +790,7 @@
   "src/core/social/events.js:91"
  ],
  "{0} ikinci sarı kartını gördü: KIRMIZI KART! Oyundan atıldı, takım 10 kişi kaldı.": [
-  "src/core/match.js:487"
+  "src/core/match.js:505"
  ],
  "{0} ile {1} çıkışında yine görüntülendiniz. Taraftarlar çifti çok sevdi.": [
   "src/core/social/events.js:105"
@@ -853,10 +853,10 @@
   "src/core/agent.js:230"
  ],
  "{0} isabetli bir pasla oyunu kurdu.": [
-  "src/core/match.js:430"
+  "src/core/match.js:448"
  ],
  "{0} isabetli bir pasla oyunu yönlendirdi.": [
-  "src/core/match.js:433"
+  "src/core/match.js:451"
  ],
  "{0} istediğini yaptığını fark etti. Güveni arttı.": [
   "src/core/brain/index.js:263"
@@ -868,7 +868,7 @@
   "src/core/game.js:530"
  ],
  "{0} kafa topuna yükseldi ama savunma düelloyu kazandı.": [
-  "src/core/match.js:362"
+  "src/core/match.js:380"
  ],
  "{0} Kafe": [
   "src/core/business.js:62"
@@ -880,7 +880,7 @@
   "src/ui/app.js:698"
  ],
  "{0} kampı bitti": [
-  "src/ui/nationalView.js:155"
+  "src/ui/nationalView.js:157"
  ],
  "{0} karşılığında sat": [
   "src/ui/screens/invest.js:317"
@@ -904,10 +904,10 @@
   "src/ui/screens/invest.js:401"
  ],
  "{0} kayarak müthiş bir müdahale yaptı, tehlike geçti!": [
-  "src/core/match.js:463"
+  "src/core/match.js:481"
  ],
  "{0} kayarak rakibini düşürdü. Hakem onu yanına çağırdı: sözlü uyarı. \"Bir daha olursa kart!\"": [
-  "src/core/match.js:478"
+  "src/core/match.js:496"
  ],
  "{0} kazanıldı": [
   "src/ui/screens/sponsors.js:164"
@@ -925,16 +925,16 @@
   "src/ui/app.js:952"
  ],
  "{0} kilit pası verdi, {1} {2}. Gol olmadığı için asist yok.": [
-  "src/core/match.js:422"
+  "src/core/match.js:440"
  ],
  "{0} kişi": [
   "src/ui/screens/social.js:66"
  ],
  "{0} koridoru kapattı, pas ayağına geldi.": [
-  "src/core/match.js:459"
+  "src/core/match.js:477"
  ],
  "{0} kramp girdi, bacakları ağırlaştı. Hoca onu oyundan aldı; tribünler ayakta alkışlıyor.": [
-  "src/ui/screens/match.js:471"
+  "src/ui/screens/match.js:485"
  ],
  "{0} kulağına laf atıyor: \"Çok konuşuyorsun, maç daha bitmedi!\"": [
   "src/core/attitude.js:128"
@@ -970,7 +970,7 @@
   "src/ui/cupView.js:252"
  ],
  "{0} maça yedek kulübesinde başlıyor.": [
-  "src/ui/screens/match.js:400"
+  "src/ui/screens/match.js:413"
  ],
  "{0} maçı yaklaşıyor. Şimdiden heyecanlıyım.": [
   "src/core/brain/voice.js:40"
@@ -1009,15 +1009,15 @@
   "src/ui/screens/mentor.js:57"
  ],
  "{0} milli maç": [
-  "src/ui/nationalView.js:154",
-  "src/ui/nationalView.js:219"
+  "src/ui/nationalView.js:156",
+  "src/ui/nationalView.js:221"
  ],
  "{0} milli maç · {1} gol": [
   "src/ui/screens/national.js:24"
  ],
  "{0} milli takım arması": [
-  "src/ui/nationalView.js:26",
-  "src/ui/nationalView.js:33"
+  "src/ui/nationalView.js:27",
+  "src/ui/nationalView.js:34"
  ],
  "{0} Mn": [
   "src/ui/chirpProfile.js:10",
@@ -1052,22 +1052,22 @@
   "src/ui/cupView.js:253"
  ],
  "{0} Panenka denedi ama kaleci yerinde kaldı ve topu kucakladı! Tribünler şokta.": [
-  "src/core/match.js:359"
+  "src/core/match.js:377"
  ],
  "{0} pası boşluğa attı, kimse yetişemedi.": [
-  "src/core/match.js:442"
+  "src/core/match.js:460"
  ],
  "{0} pası çok sert attı, top taca çıktı.": [
-  "src/core/match.js:441"
+  "src/core/match.js:459"
  ],
  "{0} pası okudu, ayağını uzatıp araya girdi! Tehlike geçti.": [
-  "src/core/match.js:458"
+  "src/core/match.js:476"
  ],
  "{0} paylaşım": [
   "src/ui/chirpView.js:237"
  ],
  "{0} PFDK cezası nedeniyle bu maçta yok.": [
-  "src/ui/screens/match.js:400"
+  "src/ui/screens/match.js:413"
  ],
  "{0} piyasaya çıktı! Fiyatı senin performansına bağlı.": [
   "src/core/invest.js:567"
@@ -1088,7 +1088,7 @@
   "src/ui/screens/invest.js:209"
  ],
  "{0} puan · averaj {1}{2}": [
-  "src/ui/nationalView.js:190"
+  "src/ui/nationalView.js:192"
  ],
  "{0} puanın var.": [
   "src/ui/lifeView.js:69"
@@ -1097,13 +1097,13 @@
   "src/ui/cupView.js:87"
  ],
  "{0} rakibine arkadan kaydı! Hakem tereddüt etmeden SARI KART gösterdi.": [
-  "src/core/match.js:482"
+  "src/core/match.js:500"
  ],
  "{0} rakibini durduramadı: {1} topu ağlara gönderdi. {2}": [
-  "src/core/match.js:502"
+  "src/core/match.js:520"
  ],
  "{0} rakibini oyaladı, takım savunmaya döndü.": [
-  "src/core/match.js:462"
+  "src/core/match.js:480"
  ],
  "{0} rakip tribüne dönüp sus işareti yaptı! Tribün çıldırdı.": [
   "src/core/attitude.js:228"
@@ -1115,7 +1115,7 @@
   "src/ui/cloudView.js:15"
  ],
  "{0} sakatlığı nedeniyle bu maçta yok.": [
-  "src/ui/screens/match.js:400"
+  "src/ui/screens/match.js:413"
  ],
  "{0} sana sponsorluk teklif etti! (Sponsorlar ekranı)": [
   "src/core/sponsors.js:258"
@@ -1128,6 +1128,9 @@
  ],
  "{0} satıldı: +€{1}{2}": [
   "src/core/economy.js:86"
+ ],
+ "{0} satın alındı. Önizlemeden sonra “Giy” ile seçebilirsin.": [
+  "src/core/cosmetics.js:111"
  ],
  "{0} satın alma opsiyonunu kullandı (€{1}). Artık kalıcı olarak buradasın!": [
   "src/core/game.js:661"
@@ -1145,10 +1148,10 @@
   "src/core/onboarding/index.js:83"
  ],
  "{0} serbest vuruşu çerçeveye gönderdi, kaleci uçarak çıkardı!": [
-  "src/core/match.js:360"
+  "src/core/match.js:378"
  ],
  "{0} serbest vuruşu kullandı, top baraja takıldı.": [
-  "src/core/match.js:365"
+  "src/core/match.js:383"
  ],
  "{0} SERİ!": [
   "src/games/gym.js:242"
@@ -1214,7 +1217,7 @@
   "src/core/cup.js:48"
  ],
  "{0} şampiyonluk": [
-  "src/ui/screens/afterCareer.js:89"
+  "src/ui/screens/afterCareer.js:95"
  ],
  "{0} şampiyonu": [
   "src/ui/app.js:838",
@@ -1229,7 +1232,7 @@
   "src/core/nationalCamp.js:407"
  ],
  "{0} şutunu çekti, savunma bloke etti.": [
-  "src/core/match.js:365"
+  "src/core/match.js:383"
  ],
  "{0} tahrike kapılmadı, oyuna döndü.": [
   "src/core/attitude.js:230"
@@ -1265,7 +1268,7 @@
   "src/games/gymLogic.js:89"
  ],
  "{0} top sahibine yapıştı ve topu kaptı!": [
-  "src/core/match.js:460"
+  "src/core/match.js:478"
  ],
  "{0} topsuz alanda seni sertçe itti. Bugünkü performansını hazmedemiyor.": [
   "src/core/attitude.js:127"
@@ -1309,22 +1312,22 @@
   "src/core/social/events.js:107"
  ],
  "{0} ver-kaçla sıyrıldı ama son adamı geçemedi, atak söndü.": [
-  "src/core/match.js:389"
+  "src/core/match.js:407"
  ],
  "{0} vurdu ama top {1} auta gitti.": [
-  "src/core/match.js:367"
+  "src/core/match.js:385"
  ],
  "{0} vurdu, kaleci çeldi; dönen topta da gol çıkmadı!": [
-  "src/core/match.js:360"
+  "src/core/match.js:378"
  ],
  "{0} vurdu, kaleci kurtardı!": [
-  "src/core/match.js:360"
+  "src/core/match.js:378"
  ],
  "{0} yaş": [
   "src/ui/mentorView.js:167",
   "src/ui/mentorView.js:248",
-  "src/ui/screens/afterCareer.js:89",
-  "src/ui/screens/afterCareer.js:181",
+  "src/ui/screens/afterCareer.js:95",
+  "src/ui/screens/afterCareer.js:188",
   "src/ui/screens/mentor.js:34"
  ],
  "{0} yaş · {1} · {2} · {3} hafta": [
@@ -1370,7 +1373,7 @@
   "src/ui/app.js:418"
  ],
  "{0} yine adama girdi, hakem SARI KARTINI çıkardı!": [
-  "src/core/match.js:482"
+  "src/core/match.js:500"
  ],
  "{0} Yönetim ücreti haftalık %{1} (yılda ~%2); dengeleme komisyonları portföyden düşer.": [
   "src/ui/screens/invest.js:161"
@@ -1547,7 +1550,7 @@
   "src/core/realestate.js:209"
  ],
  "{0}: {1}. maç": [
-  "src/ui/nationalView.js:139"
+  "src/ui/nationalView.js:141"
  ],
  "{0}: {1}. sıra": [
   "src/ui/app.js:846"
@@ -1559,7 +1562,7 @@
   "src/core/business.js:183"
  ],
  "{0}: hava muhalefeti yüzünden ertelenen maç bu akşam oynanıyor.": [
-  "src/ui/screens/match.js:395"
+  "src/ui/screens/match.js:408"
  ],
  "{0}: hemen yanına bir rakip açıldı. Müşteri bölünecek.": [
   "src/core/business.js:182"
@@ -1586,7 +1589,7 @@
   "src/core/business.js:181"
  ],
  "{0}: tek maç, kaybeden veda ediyor!": [
-  "src/ui/screens/match.js:396"
+  "src/ui/screens/match.js:409"
  ],
  "{0}: yeni kiracı {1} ({2}), haftalık {3} €.": [
   "src/core/realestate.js:199"
@@ -1595,13 +1598,13 @@
   "src/core/business.js:186"
  ],
  "{0}! (alkış alkış alkış) {1}!": [
-  "src/ui/screens/match.js:36"
+  "src/ui/screens/match.js:38"
  ],
  "{0}! Tribünler ayakta, atmosfer elektrik yüklü.": [
-  "src/ui/screens/match.js:394"
+  "src/ui/screens/match.js:407"
  ],
  "{0}. (hedef {1})": [
-  "src/ui/screens/afterCareer.js:84"
+  "src/ui/screens/afterCareer.js:90"
  ],
  "{0}. Bu cihaza indirilsin mi?{1}": [
   "src/ui/cloudView.js:109"
@@ -1641,7 +1644,7 @@
  ],
  "{0}. sıra": [
   "src/ui/ballonView.js:92",
-  "src/ui/screens/afterCareer.js:148",
+  "src/ui/screens/afterCareer.js:154",
   "src/ui/screens/career.js:49"
  ],
  "{0}. sıradasınız": [
@@ -1717,22 +1720,22 @@
   "src/core/locker.js:84"
  ],
  "{assist} ara pasını verdi, {scorer} kaleciyle karşı karşıya affetmedi.": [
-  "src/core/match.js:265"
+  "src/core/match.js:283"
  ],
  "{assist} çizgiye indi, geri pas; {scorer} tek vuruşta ağlara gönderdi.": [
-  "src/core/match.js:266"
+  "src/core/match.js:284"
  ],
  "{assist} ile {scorer} duvar pası yaptı, {scorer} vuruşunda top ağlarda!": [
-  "src/core/match.js:270"
+  "src/core/match.js:288"
  ],
  "{assist} kornerden kesti, {scorer} yükseldi ve gol!": [
-  "src/core/match.js:267"
+  "src/core/match.js:285"
  ],
  "{assist} ortaladı, {scorer} kafayla filelere gönderdi! {team} golü buldu.": [
-  "src/core/match.js:264"
+  "src/core/match.js:282"
  ],
  "{assist} topuğuyla aktardı, {scorer} plaseyle köşeye bıraktı.": [
-  "src/core/match.js:269"
+  "src/core/match.js:287"
  ],
  "{bigClub}, {player} için resmi teklifini yaptı. Taraflar prensipte anlaşıyor. Detaylar netleşiyor.": [
   "src/core/chirp/triggers.js:26"
@@ -1897,7 +1900,7 @@
   "src/core/siyahShow.js:148"
  ],
  "{opp} kalecisi devleşti, {team} gol sevincini yarıda bıraktı.": [
-  "src/core/match.js:273"
+  "src/core/match.js:291"
  ],
  "{opp} maçı kötü geçti… İyi misin?": [
   "src/core/social/dialogues2.js:111"
@@ -1981,46 +1984,46 @@
   "src/core/chirp/content.js:34"
  ],
  "{scorer} ağları sarstı! {team} sevinç içinde.": [
-  "src/core/match.js:255"
+  "src/core/match.js:273"
  ],
  "{scorer} köşeye nefis bir vuruş yaptı, top ağlarda!": [
-  "src/core/match.js:256"
+  "src/core/match.js:274"
  ],
  "{scorer} penaltı noktasından affetmedi, {team} golü buldu.": [
-  "src/core/match.js:260"
+  "src/core/match.js:278"
  ],
  "{scorer} savunmadan sıyrıldı, kaleciyi de geçip topu ağlara yuvarladı.": [
-  "src/core/match.js:259"
- ],
- "{scorer} serbest vuruşu barajın üstünden aşırttı, kaleci çaresiz!": [
-  "src/core/match.js:261"
- ],
- "{scorer} uzaktan füzeyi ateşledi, top doksana!": [
-  "src/core/match.js:257"
- ],
- "{team} ağları sarstı!": [
-  "src/core/match.js:247"
- ],
- "{team} baskı kuruyor, şut kalenin üstünden.": [
-  "src/core/match.js:272"
- ],
- "{team} baskıyı artırıyor, korner kullanılacak.": [
-  "src/core/match.js:274"
- ],
- "{team} golü buldu ama ofsayt bayrağı kalktı.": [
   "src/core/match.js:277"
  ],
- "{team} korner kazandı.": [
-  "src/core/match.js:274"
+ "{scorer} serbest vuruşu barajın üstünden aşırttı, kaleci çaresiz!": [
+  "src/core/match.js:279"
  ],
- "{team} oyuncusu sert müdahale sonrası sarı kart gördü.": [
+ "{scorer} uzaktan füzeyi ateşledi, top doksana!": [
   "src/core/match.js:275"
  ],
+ "{team} ağları sarstı!": [
+  "src/core/match.js:265"
+ ],
+ "{team} baskı kuruyor, şut kalenin üstünden.": [
+  "src/core/match.js:290"
+ ],
+ "{team} baskıyı artırıyor, korner kullanılacak.": [
+  "src/core/match.js:292"
+ ],
+ "{team} golü buldu ama ofsayt bayrağı kalktı.": [
+  "src/core/match.js:295"
+ ],
+ "{team} korner kazandı.": [
+  "src/core/match.js:292"
+ ],
+ "{team} oyuncusu sert müdahale sonrası sarı kart gördü.": [
+  "src/core/match.js:293"
+ ],
  "{team} pozisyona girdi ama vuruş zayıf kaldı.": [
-  "src/core/match.js:272"
+  "src/core/match.js:290"
  ],
  "{team} tehlikeli geldi, top az farkla auta çıktı.": [
-  "src/core/match.js:272"
+  "src/core/match.js:290"
  ],
  "{top} kulübüyle 3 yıllık sözleşme": [
   "src/core/onboarding/offers.js:38"
@@ -2098,7 +2101,7 @@
   "src/core/brain/voice.js:46"
  ],
  "↺ TEKRAR": [
-  "src/ui/broadcast.js:1798"
+  "src/ui/broadcast.js:1797"
  ],
  "+ harç {0}": [
   "src/ui/screens/wealth.js:182"
@@ -2251,7 +2254,7 @@
   "src/ui/app.js:1006"
  ],
  "📸 Kare galeriye eklendi ({0}/{1})": [
-  "src/ui/screens/match.js:277"
+  "src/ui/screens/match.js:290"
  ],
  "🔓 PixelChain köprüsü hacklendi, fiyat {PXC}. Yatırımcılar şokta. #PixelChain": [
   "src/core/chirp/feed.js:152"
@@ -2411,10 +2414,10 @@
   "src/core/brain/index.js:315"
  ],
  "A Milli Takım kadrosundasın. Grup aşamasından finale uzanan yol başlıyor!": [
-  "src/ui/nationalView.js:177"
+  "src/ui/nationalView.js:179"
  ],
  "A milli: {0}. maç": [
-  "src/ui/nationalView.js:139"
+  "src/ui/nationalView.js:141"
  ],
  "A takıma yükselmek için kendini kanıtlaman lazım": [
   "src/core/onboarding/offers.js:47"
@@ -2599,7 +2602,7 @@
   "src/core/weather.js:58"
  ],
  "Ağır zeminde pas trafiği yavaşladı.": [
-  "src/ui/screens/match.js:73"
+  "src/ui/screens/match.js:75"
  ],
  "Ağırlıklar: güç %30 · lig ve kulüp %20 · ün %14 · kupalar %14 · milli takım %12 · form %10. Altın Top kürsüsü takipçini katlar.": [
   "src/ui/chirpProfile.js:51"
@@ -2708,7 +2711,7 @@
   "src/core/brain/voice.js:50"
  ],
  "Akrobatik: havada ters takla!": [
-  "src/core/cosmetics.js:61"
+  "src/core/cosmetics.js:62"
  ],
  "Aksoy Futbol": [
   "src/core/agent.js:26"
@@ -2788,7 +2791,7 @@
   "src/core/garage.js:58"
  ],
  "Altın Krampon": [
-  "src/core/cosmetics.js:29"
+  "src/core/cosmetics.js:30"
  ],
  "Altın Top": [
   "src/core/achievements.js:94",
@@ -2867,7 +2870,7 @@
   "src/ui/intro.js:52"
  ],
  "ama vuruş auta gitti.": [
-  "src/core/match.js:395"
+  "src/core/match.js:413"
  ],
  "Amatör": [
   "src/ui/cupView.js:251"
@@ -2917,7 +2920,7 @@
   "src/core/mentor/bigMatch.js:13"
  ],
  "Analizin uzmanlar arasında konuşuldu.": [
-  "src/core/afterCareer.js:205"
+  "src/core/afterCareer.js:207"
  ],
  "Ancak dizindeki ameliyat biraz hız kaybettirdi.": [
   "src/core/game.js:516"
@@ -2989,9 +2992,9 @@
   "src/core/data.js:266",
   "src/core/nationalCamp.js:22",
   "src/ui/app.js:430",
-  "src/ui/screens/afterCareer.js:100",
+  "src/ui/screens/afterCareer.js:106",
   "src/ui/screens/shop.js:9",
-  "src/ui/wardrobe.js:51"
+  "src/ui/wardrobe.js:52"
  ],
  "Antrenman +%{0}": [
   "src/ui/screens/home.js:102",
@@ -3007,7 +3010,7 @@
   "src/core/achievements.js:81"
  ],
  "Antrenman forması": [
-  "src/core/cosmetics.js:9"
+  "src/core/cosmetics.js:10"
  ],
  "Antrenman gelişim hızın %20 artar.": [
   "src/core/mentor/models.js:73"
@@ -3046,7 +3049,7 @@
   "src/core/data.js:292"
  ],
  "Antrenmanda (maçta kulüp forması giyilir)": [
-  "src/core/cosmetics.js:9"
+  "src/core/cosmetics.js:10"
  ],
  "Antrenmanda baldırında bir gerginlik hissettin.": [
   "src/core/events.js:152"
@@ -3211,7 +3214,7 @@
   "src/ui/broadcast.js:952"
  ],
  "Asist: {0}.": [
-  "src/core/match.js:352"
+  "src/core/match.js:370"
  ],
  "Asistan Hoca Selin": [
   "src/ui/tutorial.js:9"
@@ -3229,7 +3232,7 @@
   "src/core/data.js:322"
  ],
  "Asker yeşili": [
-  "src/core/cosmetics.js:36"
+  "src/core/cosmetics.js:37"
  ],
  "Aslında her şeyimi herkes biliyor, açık kitabım!": [
   "src/core/social/dialogues2.js:98"
@@ -3262,7 +3265,7 @@
   "src/core/character.js:23"
  ],
  "Atak sürdü ve GOL! {0}. Hücumu {1} başlattı ama son pas onun değil. {2}": [
-  "src/core/match.js:431"
+  "src/core/match.js:449"
  ],
  "Atak ve çalımda +%5 · hız gelişimi +%10": [
   "src/core/character.js:18"
@@ -3271,7 +3274,7 @@
   "src/core/character.js:28"
  ],
  "Ateş Kırmızısı": [
-  "src/core/cosmetics.js:25"
+  "src/core/cosmetics.js:26"
  ],
  "Ateş Sports Management": [
   "src/core/agent.js:32"
@@ -3368,7 +3371,7 @@
   "src/core/summerCamp.js:16"
  ],
  "Ay-Yıldız": [
-  "src/core/cosmetics.js:37"
+  "src/core/cosmetics.js:38"
  ],
  "Ay-Yıldızlı Forma": [
   "src/core/achievements.js:91"
@@ -3377,8 +3380,8 @@
   "src/core/social/dialogues2.js:114"
  ],
  "Ay-yıldızlı formayla tarih yazdın! Adın milli takım efsaneleri arasında.": [
-  "src/ui/nationalView.js:157",
-  "src/ui/nationalView.js:222"
+  "src/ui/nationalView.js:159",
+  "src/ui/nationalView.js:224"
  ],
  "Ay-Yıldızlı Zafer": [
   "src/core/achievements.js:92"
@@ -3646,7 +3649,7 @@
   "src/games/gym.js:433"
  ],
  "Bantsız": [
-  "src/core/cosmetics.js:39"
+  "src/core/cosmetics.js:40"
  ],
  "BANTTAN DÜŞTÜN!": [
   "src/games/gym.js:376"
@@ -3759,9 +3762,15 @@
  "Başlangıç": [
   "src/core/game.js:130"
  ],
+ "Başlangıç eşofmanı": [
+  "src/core/cosmetics.js:64"
+ ],
  "Başlat": [
   "src/ui/screens/settings.js:26",
   "src/ui/screens/wealth.js:221"
+ ],
+ "Başlık sahnesi açılamadı:": [
+  "src/ui/screens/title.js:136"
  ],
  "Batı Konferansı": [
   "src/core/world/leagueConfig.js:148",
@@ -3852,7 +3861,7 @@
   "src/core/social/dialogues.js:116"
  ],
  "Bembeyaz": [
-  "src/core/cosmetics.js:33"
+  "src/core/cosmetics.js:34"
  ],
  "Ben asistan hocan Selin. Kariyerinin ilk günlerinde yanındayım; oyunu birlikte öğrenelim. İstersen \"Geç\" ile atlayabilirsin.": [
   "src/ui/tutorial.js:18"
@@ -3991,10 +4000,10 @@
  "BERABERLİK": [
   "src/ui/app.js:616",
   "src/ui/cupView.js:115",
-  "src/ui/nationalView.js:125"
+  "src/ui/nationalView.js:127"
  ],
  "Berber": [
-  "src/core/cosmetics.js:13"
+  "src/core/cosmetics.js:14"
  ],
  "Beslenme": [
   "src/ui/screens/body.js:75"
@@ -4015,10 +4024,10 @@
   "src/ui/screens/settings.js:26"
  ],
  "Beyaz bant": [
-  "src/core/cosmetics.js:40"
+  "src/core/cosmetics.js:41"
  ],
  "Beyaz eldiven": [
-  "src/core/cosmetics.js:47"
+  "src/core/cosmetics.js:48"
  ],
  "Beyaz Grup": [
   "src/core/world/leagueConfig.js:22"
@@ -4033,7 +4042,7 @@
   "src/ui/screens/body.js:85"
  ],
  "Bırak": [
-  "src/ui/screens/afterCareer.js:207"
+  "src/ui/screens/afterCareer.js:214"
  ],
  "Bırak futbolu, git balık tut": [
   "src/core/chirp/content.js:186"
@@ -4163,7 +4172,7 @@
   "src/core/game.js:261"
  ],
  "Bir oyuncu çamurda kaydı, forması kahverengiye döndü.": [
-  "src/ui/screens/match.js:73"
+  "src/ui/screens/match.js:75"
  ],
  "Bir oyuncular toplantısı düzenledin.": [
   "src/core/events.js:271"
@@ -4220,7 +4229,7 @@
   "src/core/events.js:139"
  ],
  "Bir ürüne dokun, üstünde dene.": [
-  "src/ui/wardrobe.js:59"
+  "src/ui/wardrobe.js:61"
  ],
  "Bir yatırım yap": [
   "src/core/quests.js:34"
@@ -4424,7 +4433,7 @@
   "src/core/brain/index.js:120"
  ],
  "Böyle bir ürün yok.": [
-  "src/core/cosmetics.js:93"
+  "src/core/cosmetics.js:104"
  ],
  "BÖYLE OYUNCUYA CANIMIZ FEDA! {PLAYER} BU ARMANIN GURURUDUR! 🔥": [
   "src/core/chirp/content.js:70"
@@ -4622,7 +4631,7 @@
   "src/ui/mentorView.js:202"
  ],
  "Bu haftaki program": [
-  "src/ui/screens/afterCareer.js:192"
+  "src/ui/screens/afterCareer.js:199"
  ],
  "Bu haftaki tüm zamanını kullandın.": [
   "src/core/mentor/MentorManager.js:240",
@@ -4738,12 +4747,12 @@
   "src/core/siyahShow.js:121"
  ],
  "Bu maçta en fazla {0} kare alabilirsin.": [
-  "src/ui/screens/match.js:267"
+  "src/ui/screens/match.js:280"
  ],
  "Bu maçta forma giymedin.": [
   "src/ui/app.js:630",
   "src/ui/cupView.js:125",
-  "src/ui/nationalView.js:138"
+  "src/ui/nationalView.js:140"
  ],
  "Bu maçtan {0} kare var; paylaşıma en iyisi eklenir.": [
   "src/ui/chirpView.js:108"
@@ -4893,7 +4902,7 @@
   "src/core/chirp/content.js:195"
  ],
  "Bu tribün susmaz, bu tribün yorulmaz!": [
-  "src/ui/screens/match.js:37"
+  "src/ui/screens/match.js:39"
  ],
  "Bu turda bay geçiyorsun; sonraki tur H{0}": [
   "src/ui/cupView.js:224"
@@ -5065,7 +5074,7 @@
   "src/core/siyahShow.js:138"
  ],
  "Buz Beyazı": [
-  "src/core/cosmetics.js:23"
+  "src/core/cosmetics.js:24"
  ],
  "Buz gibi zemin": [
   "src/games/index.js:63"
@@ -5139,19 +5148,19 @@
   "src/core/garage.js:78"
  ],
  "CANLI": [
-  "src/ui/broadcast.js:1777",
-  "src/ui/broadcast.js:1788",
-  "src/ui/broadcast.js:1809",
-  "src/ui/broadcast.js:1814",
-  "src/ui/broadcast.js:1821",
-  "src/ui/screens/afterCareer.js:181",
-  "src/ui/screens/match.js:114"
+  "src/ui/broadcast.js:1776",
+  "src/ui/broadcast.js:1787",
+  "src/ui/broadcast.js:1808",
+  "src/ui/broadcast.js:1813",
+  "src/ui/broadcast.js:1820",
+  "src/ui/screens/afterCareer.js:188",
+  "src/ui/screens/match.js:126"
  ],
  "Canlı yayın": [
   "src/ui/tutorial.js:28"
  ],
  "Canlı yayında attığın gollerden sonra": [
-  "src/core/cosmetics.js:15"
+  "src/core/cosmetics.js:16"
  ],
  "Cemil Hocam bir dakika, telefonum titriyor, hanım arıyor. Ekmek almamı istiyor herhalde.": [
   "src/core/siyahShow.js:72"
@@ -5223,7 +5232,7 @@
   "src/ui/app.js:545"
  ],
  "Cezalısın, tribündesin": [
-  "src/ui/screens/match.js:110"
+  "src/ui/screens/match.js:122"
  ],
  "Challenge League": [
   "src/core/world/leagueConfig.js:92"
@@ -5341,7 +5350,7 @@
   "src/ui/screens/career.js:48"
  ],
  "Çağrıyı reddettin": [
-  "src/ui/nationalView.js:106"
+  "src/ui/nationalView.js:108"
  ],
  "Çalım": [
   "src/core/onboarding/tryouts.js:60"
@@ -5423,7 +5432,7 @@
   "src/core/achievements.js:67"
  ],
  "Çimde dizlerinin üstünde kay.": [
-  "src/core/cosmetics.js:56"
+  "src/core/cosmetics.js:57"
  ],
  "ÇİN": [
   "src/core/national.js:97"
@@ -5477,7 +5486,7 @@
   "src/core/social/index.js:128"
  ],
  "Çok yorgunsun: kampta sakatlanma riskin yüksek.": [
-  "src/ui/nationalView.js:97"
+  "src/ui/nationalView.js:99"
  ],
  "Çok yorgunsun.": [
   "src/core/game.js:167",
@@ -5544,7 +5553,7 @@
   "src/core/gym.js:23"
  ],
  "Dans": [
-  "src/core/cosmetics.js:60"
+  "src/core/cosmetics.js:61"
  ],
  "Darbe": [
   "src/core/injury.js:12"
@@ -5638,8 +5647,8 @@
   "src/core/invest.js:53"
  ],
  "Deniyorsun:": [
-  "src/ui/wardrobe.js:59",
-  "src/ui/wardrobe.js:105"
+  "src/ui/wardrobe.js:61",
+  "src/ui/wardrobe.js:119"
  ],
  "deniz manzaralı kafeleri sever": [
   "src/core/social/data.js:100"
@@ -5651,7 +5660,7 @@
   "src/core/data.js:300"
  ],
  "Deplasman": [
-  "src/ui/nationalView.js:96",
+  "src/ui/nationalView.js:98",
   "src/ui/screens/camp.js:65",
   "src/ui/screens/hub.js:143"
  ],
@@ -5662,10 +5671,10 @@
   "src/core/social/dialogues2.js:87"
  ],
  "Deplasman tribünü": [
-  "src/ui/screens/match.js:464"
+  "src/ui/screens/match.js:478"
  ],
  "Deplasmanda rakip tribünü sustur.": [
-  "src/core/cosmetics.js:59"
+  "src/core/cosmetics.js:60"
  ],
  "Depo": [
   "src/ui/screens/home.js:126"
@@ -5733,18 +5742,18 @@
   "src/ui/cupView.js:120",
   "src/ui/lockerView.js:175",
   "src/ui/lockerView.js:230",
-  "src/ui/nationalView.js:106",
-  "src/ui/nationalView.js:192",
+  "src/ui/nationalView.js:108",
+  "src/ui/nationalView.js:194",
   "src/ui/sceneView.js:156",
   "src/ui/sceneView.js:188",
   "src/ui/sceneView.js:194",
-  "src/ui/screens/afterCareer.js:147",
-  "src/ui/screens/afterCareer.js:219",
-  "src/ui/screens/afterCareer.js:229",
+  "src/ui/screens/afterCareer.js:153",
+  "src/ui/screens/afterCareer.js:226",
+  "src/ui/screens/afterCareer.js:236",
   "src/ui/tabloidView.js:91"
  ],
  "DEVRE ARASI": [
-  "src/ui/broadcast.js:1819",
+  "src/ui/broadcast.js:1818",
   "src/ui/siyahShow.js:122",
   "src/ui/siyahShow.js:213"
  ],
@@ -5808,7 +5817,7 @@
   "src/games/shot.js:300"
  ],
  "DİREK! {team} golü kıl payı kaçırdı.": [
-  "src/core/match.js:276"
+  "src/core/match.js:294"
  ],
  "Direksiyon Başında": [
   "src/core/achievements.js:98"
@@ -5836,7 +5845,7 @@
   "src/core/chirp/content.js:45"
  ],
  "Diz kayması": [
-  "src/core/cosmetics.js:56"
+  "src/core/cosmetics.js:57"
  ],
  "Diziliş": [
   "src/ui/lockerView.js:191"
@@ -6170,13 +6179,13 @@
   "src/core/social/events.js:107"
  ],
  "Eldiven": [
-  "src/core/cosmetics.js:11"
+  "src/core/cosmetics.js:12"
  ],
  "Eldivenle ayakkabı bağlamaya çalıştım, olmadı.": [
   "src/core/social/dialogues2.js:117"
  ],
  "Eldivensiz": [
-  "src/core/cosmetics.js:45"
+  "src/core/cosmetics.js:46"
  ],
  "Elektrik tesisatı": [
   "src/core/realestate.js:205"
@@ -6201,7 +6210,7 @@
   "src/ui/app.js:970"
  ],
  "Elendik.": [
-  "src/ui/nationalView.js:191"
+  "src/ui/nationalView.js:193"
  ],
  "Eleştiriyi kabul ediyorum ama hakaret etmeyin": [
   "src/ui/chirpView.js:375"
@@ -6319,7 +6328,7 @@
  "Enerji {0}": [
   "src/ui/app.js:549",
   "src/ui/cupView.js:56",
-  "src/ui/nationalView.js:86"
+  "src/ui/nationalView.js:88"
  ],
  "Enerji +{0}/hf": [
   "src/ui/screens/player.js:69"
@@ -6462,13 +6471,16 @@
   "src/core/locker.js:111"
  ],
  "Esprin gündem oldu, milyonlarca izlendi.": [
-  "src/core/afterCareer.js:205"
+  "src/core/afterCareer.js:207"
  ],
  "Esse menino joga muito {tag}": [
   "src/core/chirp/content.js:164"
  ],
  "Este chico es un crack": [
   "src/core/chirp/content.js:222"
+ ],
+ "Eşofman": [
+  "src/ui/wardrobe.js:32"
  ],
  "Eşofmanım kısaldı! Hâlâ uzuyorum: {0} cm.": [
   "src/core/brain/voice.js:29"
@@ -6531,7 +6543,7 @@
   "src/ui/app.js:210"
  ],
  "Evet, baştan başla": [
-  "src/ui/screens/title.js:124"
+  "src/ui/screens/title.js:112"
  ],
  "Evet, evet!": [
   "src/ui/broadcast.js:1038"
@@ -6659,7 +6671,7 @@
   "src/ui/screens/league.js:128"
  ],
  "filelere gönderdi": [
-  "src/core/match.js:346"
+  "src/core/match.js:364"
  ],
  "Final": [
   "src/core/cup.js:25",
@@ -6667,17 +6679,17 @@
   "src/core/national.js:374",
   "src/core/nationalCamp.js:368",
   "src/core/world/europe.js:26",
-  "src/ui/nationalView.js:206",
+  "src/ui/nationalView.js:208",
   "src/ui/screens/camp.js:44"
  ],
  "FİNAL": [
-  "src/ui/nationalView.js:201"
+  "src/ui/nationalView.js:203"
  ],
  "FİNALDEYİZ!": [
-  "src/ui/nationalView.js:191"
+  "src/ui/nationalView.js:193"
  ],
  "Finale çık": [
-  "src/ui/nationalView.js:201"
+  "src/ui/nationalView.js:203"
  ],
  "Finalist": [
   "src/core/national.js:398"
@@ -6823,7 +6835,7 @@
   "src/ui/chirpCards.js:83"
  ],
  "Forvetin ayağı kaydı, topa tam vuramadı! Karlı zemin affetmiyor.": [
-  "src/ui/screens/match.js:72"
+  "src/ui/screens/match.js:74"
  ],
  "Fotoğraf ekle": [
   "src/ui/chirpView.js:145",
@@ -6890,7 +6902,7 @@
   "src/ui/screens/afterCareer.js:41"
  ],
  "Futbol yorumcusu · Yıl {0}": [
-  "src/ui/screens/afterCareer.js:181"
+  "src/ui/screens/afterCareer.js:188"
  ],
  "Futbola odaklanmayı seçtin.": [
   "src/core/events.js:77"
@@ -6904,6 +6916,12 @@
  "Futbolu bırak (emekli ol)": [
   "src/ui/app.js:868"
  ],
+ "Futbolu bıraktıktan sonra Kariyer sekmesinden teknik direktörlüğe başlayabilirsin.": [
+  "src/ui/screens/afterCareer.js:86"
+ ],
+ "Futbolu bıraktıktan sonra Kariyer sekmesinden TV yorumculuğuna başlayabilirsin.": [
+  "src/ui/screens/afterCareer.js:181"
+ ],
  "Galeriden sil": [
   "src/ui/chirpProfile.js:103"
  ],
@@ -6914,7 +6932,7 @@
  "GALİBİYET": [
   "src/ui/app.js:616",
   "src/ui/cupView.js:115",
-  "src/ui/nationalView.js:125"
+  "src/ui/nationalView.js:127"
  ],
  "Galibiyet %10 · Gol %15 · Asist %8": [
   "src/ui/screens/player.js:78"
@@ -6994,7 +7012,7 @@
   "src/core/garage.js:28"
  ],
  "Gece Moru": [
-  "src/core/cosmetics.js:28"
+  "src/core/cosmetics.js:29"
  ],
  "Gece siyahı": [
   "src/core/garage.js:25"
@@ -7185,8 +7203,8 @@
   "src/ui/ballonView.js:86",
   "src/ui/lockerView.js:85",
   "src/ui/screens/achievements.js:36",
-  "src/ui/screens/afterCareer.js:89",
-  "src/ui/screens/afterCareer.js:181",
+  "src/ui/screens/afterCareer.js:95",
+  "src/ui/screens/afterCareer.js:188",
   "src/ui/screens/agent.js:43",
   "src/ui/screens/body.js:75",
   "src/ui/screens/chirp.js:48",
@@ -7240,13 +7258,13 @@
   "src/core/events.js:46"
  ],
  "Giy": [
-  "src/ui/wardrobe.js:41"
+  "src/ui/wardrobe.js:42"
  ],
  "Giydiğin her maç ün +1": [
-  "src/core/cosmetics.js:29"
+  "src/core/cosmetics.js:30"
  ],
  "Giyili": [
-  "src/ui/wardrobe.js:39"
+  "src/ui/wardrobe.js:40"
  ],
  "GİZEMLİ GÜZELLE KİM BU?": [
   "src/core/social/events.js:122"
@@ -7292,7 +7310,7 @@
  ],
  "Gol sevinci": [
   "src/core/chirp/photos.js:94",
-  "src/core/cosmetics.js:15"
+  "src/core/cosmetics.js:16"
  ],
  "Gol sevinci dansımı görmedin mi?": [
   "src/core/social/dialogues.js:149"
@@ -7322,7 +7340,7 @@
   "src/ui/ballonView.js:86"
  ],
  "GOL! {0} {1}": [
-  "src/core/match.js:309"
+  "src/core/match.js:327"
  ],
  "GOL! ASİST!": [
   "src/games/drawPass.js:638"
@@ -7370,10 +7388,10 @@
   "src/ui/broadcast.js:1038"
  ],
  "GOOOL! {0} {1}!{2} {3}": [
-  "src/core/match.js:352"
+  "src/core/match.js:370"
  ],
  "GOOOL! {0} {1}ver-kaçla başladı, {2} topu ağlara gönderdi! Muhteşem bir atak! {3}": [
-  "src/core/match.js:380"
+  "src/core/match.js:398"
  ],
  "gönderi": [
   "src/ui/chirpProfile.js:51"
@@ -7394,7 +7412,7 @@
   "src/ui/screens/afterCareer.js:69"
  ],
  "Görevliler çizgileri temizlemek için sahaya girdi.": [
-  "src/ui/screens/match.js:72"
+  "src/ui/screens/match.js:74"
  ],
  "Görmezden gel": [
   "src/core/events.js:87"
@@ -7590,6 +7608,9 @@
  ],
  "Güneydoğu": [
   "src/core/world/leagueConfig.js:64"
+ ],
+ "Günlük": [
+  "src/ui/wardrobe.js:32"
  ],
  "Güvence": [
   "src/core/brain/mind.js:15"
@@ -7840,7 +7861,7 @@
   "src/core/attitude.js:236"
  ],
  "Hakem {team} cephesine sarı kart gösterdi.": [
-  "src/core/match.js:275"
+  "src/core/match.js:293"
  ],
  "Hakem açıklamaların yüzünden sonraki maçta forma giyemeyeceksin.": [
   "src/ui/app.js:669"
@@ -7877,7 +7898,7 @@
   "src/ui/chirpView.js:380"
  ],
  "Hakem su molası verdi. Oyuncular gölgeye koştu.": [
-  "src/ui/screens/match.js:74"
+  "src/ui/screens/match.js:76"
  ],
  "Hakem yanlış düdük çaldığında bile omzunu düşürme. Sakin kalan kazanır.": [
   "src/core/mentor/dialogues.js:116"
@@ -7892,7 +7913,7 @@
   "src/core/attitude.js:148"
  ],
  "Hakemin düdüğüyle maç başladı! {0} - {1}.": [
-  "src/ui/screens/match.js:393"
+  "src/ui/screens/match.js:406"
  ],
  "Hakemler de insan. Biz işimize bakalım.": [
   "src/core/press.js:86"
@@ -8043,13 +8064,13 @@
   "src/ui/screens/hub.js:133"
  ],
  "Hava şartları oyunu zorluyor.": [
-  "src/ui/screens/match.js:468"
+  "src/ui/screens/match.js:482"
  ],
  "Hava tahmini:": [
   "src/ui/screens/hub.js:150"
  ],
  "Hava: {0}, {1}°C.": [
-  "src/ui/screens/match.js:397"
+  "src/ui/screens/match.js:410"
  ],
  "Havuzlu site, güvenlik, sessizlik.": [
   "src/core/data.js:299"
@@ -8103,7 +8124,7 @@
   "src/core/onboarding/tryouts.js:48"
  ],
  "Hedef ilk {0}'ti. {1}{2}": [
-  "src/ui/screens/afterCareer.js:147"
+  "src/ui/screens/afterCareer.js:153"
  ],
  "Hedef vuruldu": [
   "src/core/onboarding/tryouts.js:49"
@@ -8181,7 +8202,7 @@
   "src/ui/screens/sponsors.js:192"
  ],
  "Hep beraber, hep birlikte, bu maçı kazanmaya!": [
-  "src/ui/screens/match.js:35"
+  "src/ui/screens/match.js:37"
  ],
  "Her 4 OVR gelişimi ve her 2 ödül sana bir uzmanlık puanı kazandırır.": [
   "src/ui/lifeView.js:69"
@@ -8244,9 +8265,9 @@
   "src/ui/screens/invest.js:382"
  ],
  "Her yerde": [
-  "src/core/cosmetics.js:10",
   "src/core/cosmetics.js:11",
-  "src/core/cosmetics.js:12"
+  "src/core/cosmetics.js:12",
+  "src/core/cosmetics.js:13"
  ],
  "Herhangi bir özelliğini 90 yap.": [
   "src/core/achievements.js:79"
@@ -8306,7 +8327,7 @@
  ],
  "Heyecan %{0}{1}": [
   "src/ui/app.js:562",
-  "src/ui/screens/match.js:143"
+  "src/ui/screens/match.js:155"
  ],
  "Heyecanla nasıl baş ettiğini anlattı.": [
   "src/core/locker.js:55"
@@ -8361,7 +8382,7 @@
   "src/games/intercept.js:226"
  ],
  "Hızlı kontra atak! {team} rakibini cezalandırdı.": [
-  "src/core/match.js:252"
+  "src/core/match.js:270"
  ],
  "Hızlı simülasyon": [
   "src/ui/screens/camp.js:138"
@@ -8703,7 +8724,7 @@
   "src/core/weather.js:56"
  ],
  "Islak zeminde top hızlı akıyor; uzun pas riskli.": [
-  "src/ui/screens/match.js:70"
+  "src/ui/screens/match.js:72"
  ],
  "It's a deal!": [
   "src/core/chirp/lang.js:9"
@@ -8715,7 +8736,7 @@
   "src/core/social/data.js:58"
  ],
  "İç saha": [
-  "src/ui/nationalView.js:96",
+  "src/ui/nationalView.js:98",
   "src/ui/screens/camp.js:65",
   "src/ui/screens/hub.js:143"
  ],
@@ -8795,7 +8816,7 @@
   "src/core/attitude.js:248"
  ],
  "İkinci yarı başladı!": [
-  "src/ui/screens/match.js:459"
+  "src/ui/screens/match.js:473"
  ],
  "İkinci yarı başlıyor! Cemil Hocam, sizi bir sonraki programa alalım.": [
   "src/core/siyahShow.js:162"
@@ -8841,7 +8862,7 @@
  ],
  "İlk 11": [
   "src/ui/cupView.js:66",
-  "src/ui/nationalView.js:96"
+  "src/ui/nationalView.js:98"
  ],
  "İlk 11 adayı": [
   "src/core/economy.js:189",
@@ -8865,7 +8886,7 @@
  "İlk 11'desin": [
   "src/ui/app.js:543",
   "src/ui/app.js:544",
-  "src/ui/screens/match.js:110"
+  "src/ui/screens/match.js:122"
  ],
  "İlk 11'i hoca belirler kardeşim": [
   "src/core/chirp/content.js:213"
@@ -8913,7 +8934,7 @@
   "src/ui/screens/afterCareer.js:27"
  ],
  "İlk yarı sona erdi. {0}": [
-  "src/ui/screens/match.js:452"
+  "src/ui/screens/match.js:466"
  ],
  "İlk yarıda {my} sağ kanattan pres kurdu ama geçiş anlarında orta saha bloğunun mesafesi—": [
   "src/core/siyahShow.js:52"
@@ -9113,10 +9134,10 @@
   "src/core/chirp/personas.js:58"
  ],
  "İtibar": [
-  "src/ui/screens/afterCareer.js:97"
+  "src/ui/screens/afterCareer.js:103"
  ],
  "İY": [
-  "src/ui/screens/match.js:451"
+  "src/ui/screens/match.js:465"
  ],
  "İyi": [
   "src/core/onboarding/tryouts.js:176"
@@ -9274,7 +9295,7 @@
   "src/ui/screens/body.js:103"
  ],
  "Kafa vuruşu, top ağlarda! {team} sevinç içinde.": [
-  "src/core/match.js:249"
+  "src/core/match.js:267"
  ],
  "Kafam çok dolu. Biraz nefes almalıyım.": [
   "src/core/brain/voice.js:30"
@@ -9306,7 +9327,7 @@
   "src/core/locker.js:110"
  ],
  "Kahve": [
-  "src/core/cosmetics.js:53",
+  "src/core/cosmetics.js:54",
   "src/ui/screens/mentor.js:46"
  ],
  "Kahve bahane, seni görmek istedim.": [
@@ -9419,7 +9440,7 @@
   "src/games/header.js:116"
  ],
  "Kaleci kar yüzünden topu ayağının altından kaçırıyordu, son anda kurtardı.": [
-  "src/ui/screens/match.js:72"
+  "src/ui/screens/match.js:74"
  ],
  "KALECİ KURTARDI": [
   "src/games/drawPass.js:644"
@@ -9428,7 +9449,7 @@
   "src/core/social/dialogues2.js:87"
  ],
  "kaleci son anda kurtardı!": [
-  "src/core/match.js:395"
+  "src/core/match.js:413"
  ],
  "Kaleci tercihi yanlış bence": [
   "src/core/chirp/content.js:200"
@@ -9437,7 +9458,7 @@
   "src/ui/chirpCards.js:83"
  ],
  "kalecinin çeldiği topu boş kaleye gönderdi": [
-  "src/core/match.js:346"
+  "src/core/match.js:364"
  ],
  "Kalecinin karaoke performansı unutulmazdı.": [
   "src/core/game.js:225"
@@ -9464,7 +9485,7 @@
   "src/games/shot.js:608"
  ],
  "Kalk ayağa, kalk ayağa, yürü yürü!": [
-  "src/ui/screens/match.js:38"
+  "src/ui/screens/match.js:40"
  ],
  "Kalkacak bu çocuk, inanıyorum 💪": [
   "src/core/chirp/content.js:187"
@@ -9473,7 +9494,7 @@
   "src/core/brain/body.js:24"
  ],
  "Kalp": [
-  "src/core/cosmetics.js:58"
+  "src/core/cosmetics.js:59"
  ],
  "Kamera Aşığı": [
   "src/core/brain/traits.js:79"
@@ -9515,13 +9536,13 @@
   "src/ui/screens/tryouts.js:106"
  ],
  "Kampa dön": [
-  "src/ui/nationalView.js:141"
+  "src/ui/nationalView.js:143"
  ],
  "Kampa katıl": [
-  "src/ui/nationalView.js:86"
+  "src/ui/nationalView.js:88"
  ],
  "Kampı kapat": [
-  "src/ui/nationalView.js:141"
+  "src/ui/nationalView.js:143"
  ],
  "Kampsız, antrenmansız herhangi bir yer!": [
   "src/core/social/dialogues2.js:96"
@@ -9542,7 +9563,7 @@
   "src/ui/app.js:236"
  ],
  "Kanal sözleşmeni yeniledi.": [
-  "src/ui/screens/afterCareer.js:229"
+  "src/ui/screens/afterCareer.js:236"
  ],
  "Kanat": [
   "src/core/chirp/feed.js:301"
@@ -9649,7 +9670,7 @@
   "src/core/social/dialogues2.js:121"
  ],
  "Kar kalınlaştı, top zor yuvarlanıyor.": [
-  "src/ui/screens/match.js:72"
+  "src/ui/screens/match.js:74"
  ],
  "Kar yağarken top oynamak çocukluğumu hatırlatıyor.": [
   "src/core/social/dialogues2.js:117"
@@ -9681,10 +9702,10 @@
   "src/ui/tensionPick.js:14"
  ],
  "Karambolde en hızlı {scorer} davrandı, {team} golü buldu.": [
-  "src/core/match.js:258"
+  "src/core/match.js:276"
  ],
  "Karambolde top ağlarda! {team} golü attı.": [
-  "src/core/match.js:250"
+  "src/core/match.js:268"
  ],
  "Kararını vermişti.": [
   "src/ui/intro.js:44"
@@ -9705,10 +9726,10 @@
   "src/games/shoot.js:250"
  ],
  "Kare al": [
-  "src/ui/screens/match.js:133"
+  "src/ui/screens/match.js:145"
  ],
  "Kare al (Chirp galerisi)": [
-  "src/ui/screens/match.js:133"
+  "src/ui/screens/match.js:145"
  ],
  "Kare galeriden silindi.": [
   "src/ui/chirpProfile.js:115"
@@ -10150,7 +10171,7 @@
   "src/core/social/home.js:20"
  ],
  "Kırmızı bant": [
-  "src/core/cosmetics.js:42"
+  "src/core/cosmetics.js:43"
  ],
  "KIRMIZI BÖLGE!": [
   "src/games/interval.js:336"
@@ -10159,10 +10180,10 @@
   "src/core/world/leagueConfig.js:22"
  ],
  "KIRMIZI KART": [
-  "src/ui/screens/match.js:315"
+  "src/ui/screens/match.js:328"
  ],
  "Kırmızı kart ({0}')": [
-  "src/ui/screens/match.js:332"
+  "src/ui/screens/match.js:345"
  ],
  "Kırmızı kart cezası: {0} maç forma giyemeyeceksin.": [
   "src/core/game.js:427"
@@ -10186,7 +10207,7 @@
   "src/core/siyahShow.js:93"
  ],
  "Kısa kol": [
-  "src/core/cosmetics.js:49"
+  "src/core/cosmetics.js:50"
  ],
  "Kısa uğra": [
   "src/core/events.js:45"
@@ -10222,7 +10243,7 @@
   "src/core/mentor/bigMatch.js:12"
  ],
  "Kızıl": [
-  "src/core/cosmetics.js:53"
+  "src/core/cosmetics.js:54"
  ],
  "Kibarca iste": [
   "src/core/events.js:186"
@@ -10336,13 +10357,16 @@
   "src/core/social/home.js:33"
  ],
  "Klasik Siyah": [
-  "src/core/cosmetics.js:22"
+  "src/core/cosmetics.js:23"
+ ],
+ "Klasik siyah takım": [
+  "src/core/cosmetics.js:70"
  ],
  "Klasik: köşeye koş, tribünü selamla.": [
-  "src/core/cosmetics.js:55"
+  "src/core/cosmetics.js:56"
  ],
  "Klip sosyal medyada patladı; kulüpler tepkili.": [
-  "src/core/afterCareer.js:205"
+  "src/core/afterCareer.js:207"
  ],
  "Klişe cümleler, sahada göster.": [
   "src/core/chirp/comments.js:70"
@@ -10363,7 +10387,7 @@
   "src/ui/screens/settings.js:26"
  ],
  "Kol": [
-  "src/core/cosmetics.js:12"
+  "src/core/cosmetics.js:13"
  ],
  "Kolay": [
   "src/core/training.js:8"
@@ -10375,7 +10399,7 @@
   "src/core/chirp/photos.js:170"
  ],
  "Kollar açık, tribünlerin önünden süzül.": [
-  "src/core/cosmetics.js:57"
+  "src/core/cosmetics.js:58"
  ],
  "Kollar bağlı": [
   "src/games/shootLogic.js:7"
@@ -10430,7 +10454,7 @@
  ],
  "Kondisyon %{0}": [
   "src/games/index.js:62",
-  "src/ui/screens/match.js:175"
+  "src/ui/screens/match.js:187"
  ],
  "Kondisyon +{0}": [
   "src/ui/app.js:494"
@@ -10485,7 +10509,7 @@
   "src/games/intercept.js:213"
  ],
  "Kontra atak! {assist} topu taşıdı, {scorer} bitirdi. {team} sevinç içinde.": [
-  "src/core/match.js:268"
+  "src/core/match.js:286"
  ],
  "Kontra atak! Üç rakip paslaşarak kalene geliyor. Top sahibinin bakışını oku, koridoru kapat, pası kes!": [
   "src/core/match.js:59"
@@ -10525,13 +10549,13 @@
   "src/core/match.js:65"
  ],
  "Korner {0}'ın üstünden geçti, zamanlama tutmadı.": [
-  "src/core/match.js:363"
+  "src/core/match.js:381"
  ],
  "Korner geliyor! Sürükle: topun ineceği yere koş": [
   "src/games/header.js:314"
  ],
  "Korner kullanıldı, kaleci {0}'ın önünde topu havada kontrol etti.": [
-  "src/core/match.js:361"
+  "src/core/match.js:379"
  ],
  "Korner ve kafa toplarında +%8": [
   "src/core/character.js:37"
@@ -10543,7 +10567,7 @@
   "src/core/match.js:48"
  ],
  "kornerden gelen topa yükseldi ve kafayla filelere gönderdi": [
-  "src/core/match.js:344"
+  "src/core/match.js:362"
  ],
  "KOŞ": [
   "src/games/gym.js:389",
@@ -10577,7 +10601,7 @@
   "src/core/quests.js:25"
  ],
  "Kovulmak bu işin parçası. Yeni bir sayfa açma zamanı.": [
-  "src/ui/screens/afterCareer.js:156"
+  "src/ui/screens/afterCareer.js:162"
  ],
  "Koyu cam filmi sayesinde kimse ikinizi göremedi.": [
   "src/core/events.js:304"
@@ -10604,7 +10628,7 @@
   "src/ui/components.js:57"
  ],
  "Köşe bayrağı koşusu": [
-  "src/core/cosmetics.js:55",
+  "src/core/cosmetics.js:56",
   "src/ui/celebPick.js:88"
  ],
  "Köşe Kahvecisi": [
@@ -10614,7 +10638,7 @@
   "src/core/social/dialogues.js:129"
  ],
  "Köşeye nefis bir vuruş, {team} golü buldu!": [
-  "src/core/match.js:248"
+  "src/core/match.js:266"
  ],
  "Kötü Gidişat": [
   "src/core/events.js:267"
@@ -10650,7 +10674,7 @@
   "src/core/chirp/content.js:206"
  ],
  "Krampon": [
-  "src/core/cosmetics.js:8",
+  "src/core/cosmetics.js:9",
   "src/games/unity3d.js:58"
  ],
  "Krampon 3D": [
@@ -10712,7 +10736,7 @@
   "src/core/invest.js:474"
  ],
  "Kritik an yok": [
-  "src/ui/screens/match.js:140"
+  "src/ui/screens/match.js:152"
  ],
  "Kriz": [
   "src/core/locker.js:37"
@@ -10754,7 +10778,7 @@
   "src/ui/screens/shop.js:29"
  ],
  "Kulübe geçmişi": [
-  "src/ui/screens/afterCareer.js:108"
+  "src/ui/screens/afterCareer.js:114"
  ],
  "Kulübe onun yeri, performansı yetersiz.": [
   "src/core/chirp/comments.js:54"
@@ -10781,13 +10805,13 @@
   "src/ui/screens/afterCareer.js:24"
  ],
  "Kulübeye veda": [
-  "src/ui/screens/afterCareer.js:128"
+  "src/ui/screens/afterCareer.js:134"
  ],
  "Kulübeye veda et (tamamen emekli ol)": [
-  "src/ui/screens/afterCareer.js:89"
+  "src/ui/screens/afterCareer.js:95"
  ],
  "Kulübeye veda zamanı.": [
-  "src/ui/screens/afterCareer.js:100"
+  "src/ui/screens/afterCareer.js:106"
  ],
  "Kulübümde kalıyorum": [
   "src/ui/app.js:981"
@@ -10802,7 +10826,7 @@
   "src/ui/lifeView.js:171"
  ],
  "Kulübünde dinlenip bir sonraki maça hazırlandın ama Federasyon bundan hoşlanmadı.": [
-  "src/ui/nationalView.js:106"
+  "src/ui/nationalView.js:108"
  ],
  "Kulübünde kalmaya karar verdin.": [
   "src/ui/app.js:768"
@@ -10811,17 +10835,17 @@
   "src/core/living.js:198"
  ],
  "Kulübüne dön": [
-  "src/ui/nationalView.js:159"
+  "src/ui/nationalView.js:161"
  ],
  "Kulübüne dönüyorsun. Kamptaki performansın bir sonraki çağrıda hatırlanacak.": [
-  "src/ui/nationalView.js:157"
+  "src/ui/nationalView.js:159"
  ],
  "Kulüp": [
   "src/ui/lifeView.js:192",
   "src/ui/screens/career.js:80"
  ],
  "Kulüp antrenmanı": [
-  "src/core/cosmetics.js:31"
+  "src/core/cosmetics.js:32"
  ],
  "Kulüp başkanı": [
   "src/ui/lifeView.js:205"
@@ -10912,7 +10936,7 @@
   "src/ui/screens/player.js:78"
  ],
  "Kumral": [
-  "src/core/cosmetics.js:53"
+  "src/core/cosmetics.js:54"
  ],
  "Kupa": [
   "src/core/cup.js:550",
@@ -10960,8 +10984,8 @@
   "src/core/chirp/photos.js:170"
  ],
  "Kupaya çok yaklaştın. Bu acı, bir sonraki turnuvanın yakıtı olacak.": [
-  "src/ui/nationalView.js:157",
-  "src/ui/nationalView.js:222"
+  "src/ui/nationalView.js:159",
+  "src/ui/nationalView.js:224"
  ],
  "KUPAYA VEDA": [
   "src/ui/cupView.js:115"
@@ -11090,7 +11114,7 @@
   "src/core/social/home.js:50"
  ],
  "Lapa lapa kar yağıyor, {0}°C. Hakem turuncu topu oyuna soktu.": [
-  "src/ui/screens/match.js:64"
+  "src/ui/screens/match.js:66"
  ],
  "Leader": [
   "src/core/mentor/models.js:79"
@@ -11247,7 +11271,7 @@
   "src/ui/screens/career.js:42",
   "src/ui/screens/career.js:42",
   "src/ui/screens/chirp.js:60",
-  "src/ui/wardrobe.js:51"
+  "src/ui/wardrobe.js:52"
  ],
  "Maç {0}": [
   "src/ui/screens/camp.js:56"
@@ -11263,6 +11287,12 @@
  ],
  "Maç bitti! Ana ekrandan Chirp'te paylaşabilirsin.": [
   "src/ui/app.js:641"
+ ],
+ "Maç dışı kıyafet; kulüp formanı değiştirmez.": [
+  "src/ui/wardrobe.js:61"
+ ],
+ "Maç dışı profil ve dolap önizlemesi": [
+  "src/core/cosmetics.js:8"
  ],
  "Maç dışında neyle uğraşıyorsun? Bir hobin var mı?": [
   "src/core/social/dialogues.js:164"
@@ -11341,13 +11371,13 @@
   "src/ui/screens/settings.js:26"
  ],
  "Maç sona erdi! {0}": [
-  "src/ui/screens/match.js:491"
+  "src/ui/screens/match.js:505"
  ],
  "Maç sonu": [
   "src/core/chirp/photos.js:94"
  ],
  "MAÇ SONU": [
-  "src/ui/broadcast.js:1826"
+  "src/ui/broadcast.js:1825"
  ],
  "Maç Sonu Masası": [
   "src/core/afterCareer.js:31"
@@ -11371,7 +11401,7 @@
   "src/core/social/dialogues2.js:74"
  ],
  "Maç, antrenman, seçmeler": [
-  "src/core/cosmetics.js:8"
+  "src/core/cosmetics.js:9"
  ],
  "Maç: centilmence el uzattın": [
   "src/core/attitude.js:38"
@@ -11508,7 +11538,7 @@
  "MAĞLUBİYET": [
   "src/ui/app.js:616",
   "src/ui/cupView.js:115",
-  "src/ui/nationalView.js:125"
+  "src/ui/nationalView.js:127"
  ],
  "Mahalle liglerindeki 8 takıma forma ve top.": [
   "src/core/foundation.js:13"
@@ -11772,7 +11802,7 @@
   "src/core/agent.js:98"
  ],
  "Mevcut kariyerin silinecek. Emin misin?": [
-  "src/ui/screens/title.js:124"
+  "src/ui/screens/title.js:112"
  ],
  "Mevduat": [
   "src/core/invest.js:30"
@@ -11784,13 +11814,13 @@
   "src/ui/screens/create.js:17"
  ],
  "Mikrofonu bırak": [
-  "src/ui/screens/afterCareer.js:207"
+  "src/ui/screens/afterCareer.js:214"
  ],
  "Mikrofonu bırak (tamamen emekli ol)": [
-  "src/ui/screens/afterCareer.js:181"
+  "src/ui/screens/afterCareer.js:188"
  ],
  "Mikrofonu bırakma zamanı.": [
-  "src/ui/screens/afterCareer.js:192"
+  "src/ui/screens/afterCareer.js:199"
  ],
  "Miktar": [
   "src/ui/screens/invest.js:261"
@@ -11805,7 +11835,7 @@
   "src/ui/screens/national.js:24"
  ],
  "Milli maç notun": [
-  "src/ui/nationalView.js:138"
+  "src/ui/nationalView.js:140"
  ],
  "Milli maçlar": [
   "src/ui/screens/national.js:47"
@@ -11818,7 +11848,7 @@
   "src/ui/screens/national.js:24"
  ],
  "MİLLİ TAKIM ÇAĞRISI": [
-  "src/ui/nationalView.js:86"
+  "src/ui/nationalView.js:88"
  ],
  "Milli takım çağrısı: {0} kadrosundasın!": [
   "src/core/game.js:560"
@@ -11830,7 +11860,7 @@
   "src/core/afterCareer.js:33"
  ],
  "Milli Takım T.D.": [
-  "src/ui/screens/match.js:194"
+  "src/ui/screens/match.js:207"
  ],
  "Milli takımda 50 maça çık.": [
   "src/core/achievements.js:95"
@@ -11878,6 +11908,12 @@
  ],
  "Modern": [
   "src/core/social/home.js:33"
+ ],
+ "Modern antrenman takımı": [
+  "src/core/cosmetics.js:65"
+ ],
+ "Modern gece mavisi": [
+  "src/core/cosmetics.js:71"
  ],
  "Modern tablo": [
   "src/core/social/home.js:51"
@@ -12038,7 +12074,7 @@
   "src/core/events.js:33"
  ],
  "Müthiş kurtarış! {team} golü kaçırdı.": [
-  "src/core/match.js:273"
+  "src/core/match.js:291"
  ],
  "Müzik çok iyi bu akşam! Ne içiyorsun?": [
   "src/core/social/dialogues.js:11",
@@ -12133,13 +12169,13 @@
   "src/core/garage.js:86"
  ],
  "Neon bant": [
-  "src/core/cosmetics.js:43"
+  "src/core/cosmetics.js:44"
  ],
  "Neon Lounge": [
   "src/core/social/data.js:21"
  ],
  "Neon Yıldırım": [
-  "src/core/cosmetics.js:24"
+  "src/core/cosmetics.js:25"
  ],
  "Net maaşının seçtiğin kadarı hafta sonu {0}.": [
   "src/ui/screens/invest.js:136"
@@ -12152,11 +12188,11 @@
  ],
  "NEW FOOTBALL STARS": [
   "src/ui/broadcast.js:26",
-  "src/ui/broadcast.js:1564",
+  "src/ui/broadcast.js:1563",
   "src/ui/titleScene.js:46"
  ],
  "NEW FOOTBALL STARS - FUTBOL KARİYERİ": [
-  "src/ui/screens/title.js:108"
+  "src/ui/screens/title.js:128"
  ],
  "NEW FOOTBALL STARS • TURBO KOLA • YILDIZ BANK •": [
   "src/games/shot.js:484"
@@ -12212,10 +12248,10 @@
   "src/ui/screens/mentor.js:63"
  ],
  "Notun {0}": [
-  "src/ui/nationalView.js:156"
+  "src/ui/nationalView.js:158"
  ],
  "Notun {0}{1}": [
-  "src/ui/nationalView.js:165"
+  "src/ui/nationalView.js:167"
  ],
  "NOVA": [
   "src/core/sponsors.js:17"
@@ -12329,12 +12365,12 @@
   "src/games/drawPass.js:292"
  ],
  "Ofsayt! {team} atağı kesildi.": [
-  "src/core/match.js:277"
+  "src/core/match.js:295"
  ],
  "OKKWWWKKO": [
-  "src/games/pixel/playerPixels.js:435",
-  "src/games/pixel/playerPixels.js:435",
-  "src/games/pixel/playerPixels.js:436"
+  "src/games/pixel/playerPixels.js:436",
+  "src/games/pixel/playerPixels.js:436",
+  "src/games/pixel/playerPixels.js:437"
  ],
  "Okul ziyaretinde çocuklarla maç yaptın.": [
   "src/core/game.js:238"
@@ -12346,13 +12382,13 @@
   "src/core/social/dialogues2.js:76"
  ],
  "OKWWKWWKO": [
-  "src/games/pixel/playerPixels.js:436"
+  "src/games/pixel/playerPixels.js:437"
  ],
  "OKWWWWWKO": [
-  "src/games/pixel/playerPixels.js:436"
+  "src/games/pixel/playerPixels.js:437"
  ],
  "Okyanus": [
-  "src/core/cosmetics.js:26"
+  "src/core/cosmetics.js:27"
  ],
  "Olabilir…": [
   "src/core/social/dialogues.js:183",
@@ -12429,7 +12465,7 @@
   "src/core/achievements.js:27"
  ],
  "Ooo {0} ooo! Ooo {1} ooo!": [
-  "src/ui/screens/match.js:33"
+  "src/ui/screens/match.js:35"
  ],
  "opacity .25s": [
   "src/games/gym.js:85",
@@ -12511,17 +12547,17 @@
   "src/core/chirp/content.js:221"
  ],
  "OWWKKKWSO": [
-  "src/games/pixel/playerPixels.js:435"
+  "src/games/pixel/playerPixels.js:436"
  ],
  "OWWKKKWWO": [
-  "src/games/pixel/playerPixels.js:436"
+  "src/games/pixel/playerPixels.js:437"
  ],
  "OWWWKWWSO": [
-  "src/games/pixel/playerPixels.js:435",
-  "src/games/pixel/playerPixels.js:436"
+  "src/games/pixel/playerPixels.js:436",
+  "src/games/pixel/playerPixels.js:437"
  ],
  "OWWWKWWWO": [
-  "src/games/pixel/playerPixels.js:435"
+  "src/games/pixel/playerPixels.js:436"
  ],
  "OYALADIN!": [
   "src/games/intercept.js:74"
@@ -12587,7 +12623,7 @@
   "src/core/chirp/personas.js:33"
  ],
  "Oyuncu değişikliği: {0} oyuna giriyor!": [
-  "src/ui/screens/match.js:480"
+  "src/ui/screens/match.js:494"
  ],
  "Oyuncu ekranı": [
   "src/ui/tutorial.js:34"
@@ -12599,13 +12635,13 @@
   "src/core/chirp/content.js:38"
  ],
  "Oyuncunun görünüşü": [
-  "src/ui/wardrobe.js:51"
+  "src/ui/wardrobe.js:52"
  ],
  "Oyundan çıktın ({0}')": [
-  "src/ui/screens/match.js:472"
+  "src/ui/screens/match.js:486"
  ],
  "Oyundasın ({0}')": [
-  "src/ui/screens/match.js:481"
+  "src/ui/screens/match.js:495"
  ],
  "Oyunun beyni: pas anları artar.": [
   "src/core/coach.js:32"
@@ -12617,6 +12653,9 @@
   "src/core/brain/ledger.js:121",
   "src/ui/app.js:902",
   "src/ui/screens/career.js:42"
+ ],
+ "Ödül gecesi": [
+  "src/core/cosmetics.js:72"
  ],
  "Ödül: Moral +{0}{1}": [
   "src/ui/achievementsView.js:59"
@@ -12631,13 +12670,13 @@
   "src/core/chirp/comments.js:50"
  ],
  "ödülü senin!": [
-  "src/ui/screens/afterCareer.js:229"
+  "src/ui/screens/afterCareer.js:236"
  ],
  "Ölçek 0–{0}": [
   "src/ui/screens/player.js:34"
  ],
  "ölçülü": [
-  "src/core/match.js:417"
+  "src/core/match.js:435"
  ],
  "Ön": [
   "src/ui/cupView.js:152",
@@ -12689,7 +12728,7 @@
   "src/core/chirp/content.js:211"
  ],
  "Önce satın almalısın.": [
-  "src/core/cosmetics.js:106"
+  "src/core/cosmetics.js:117"
  ],
  "Önce savunma": [
   "src/core/afterCareer.js:16"
@@ -12732,6 +12771,9 @@
  "Öyle mi?": [
   "src/core/social/dialogues.js:188",
   "src/core/social/dialogues2.js:138"
+ ],
+ "Özel": [
+  "src/ui/wardrobe.js:32"
  ],
  "ÖZEL": [
   "src/ui/chirpView.js:71",
@@ -12811,7 +12853,7 @@
   "src/core/ballondor.js:17"
  ],
  "Panenka vuruşuyla kaleciyi avladı, top ağlarda süzüldü": [
-  "src/core/match.js:342"
+  "src/core/match.js:360"
  ],
  "PANENKA!": [
   "src/games/shot.js:284"
@@ -12866,7 +12908,7 @@
   "src/core/social/dialogues2.js:73"
  ],
  "Paran yetmiyor.": [
-  "src/core/cosmetics.js:96",
+  "src/core/cosmetics.js:107",
   "src/core/economy.js:62",
   "src/core/garage.js:157",
   "src/core/social/home.js:121",
@@ -12946,7 +12988,7 @@
   "src/ui/screens/player.js:101"
  ],
  "Pas rakipte kaldı: {0} topu kaptırdı.": [
-  "src/core/match.js:445"
+  "src/core/match.js:463"
  ],
  "Pas tuttu, top geri sende! Son adamı geç": [
   "src/games/attack.js:12"
@@ -12958,7 +13000,7 @@
   "src/core/training.js:99"
  ],
  "Pas: {0}.": [
-  "src/core/match.js:502"
+  "src/core/match.js:520"
  ],
  "Pastayı yüzüne bas!": [
   "src/core/locker.js:120"
@@ -13025,7 +13067,7 @@
   "src/core/social/dialogues2.js:138"
  ],
  "Pembe Panter": [
-  "src/core/cosmetics.js:27"
+  "src/core/cosmetics.js:28"
  ],
  "Penaltı": [
   "src/core/archive.js:8",
@@ -13065,7 +13107,7 @@
   "src/ui/app.js:969"
  ],
  "Penaltılar: {0}-{1}": [
-  "src/ui/nationalView.js:137"
+  "src/ui/nationalView.js:139"
  ],
  "Penaltını gole çevirdin!": [
   "src/ui/cupView.js:124"
@@ -13074,7 +13116,7 @@
   "src/ui/cupView.js:124"
  ],
  "penaltıyı gole çevirdi": [
-  "src/core/match.js:343"
+  "src/core/match.js:361"
  ],
  "Pencere gece yarısı kapanıyor. Teklifler masaya düştükçe karar ver; geç kalan kaçırır!": [
   "src/ui/app.js:981"
@@ -13207,7 +13249,7 @@
  ],
  "Platin": [
   "src/core/achievements.js:20",
-  "src/core/cosmetics.js:53"
+  "src/core/cosmetics.js:54"
  ],
  "Play-off": [
   "src/ui/screens/league.js:176"
@@ -13234,13 +13276,13 @@
   "src/ui/chirpProfile.js:51"
  ],
  "Popülerlik": [
-  "src/ui/screens/afterCareer.js:189"
+  "src/ui/screens/afterCareer.js:196"
  ],
  "Popülerlik {0} · Kazanç {1}": [
   "src/ui/screens/afterCareer.js:21"
  ],
  "Popülerlik {0}{1}": [
-  "src/ui/screens/afterCareer.js:219"
+  "src/ui/screens/afterCareer.js:226"
  ],
  "Popülerlik {0}/100": [
   "src/ui/chirpProfile.js:51"
@@ -13296,7 +13338,7 @@
   "src/ui/lifeView.js:92"
  ],
  "POZİSYON": [
-  "src/ui/broadcast.js:1788"
+  "src/ui/broadcast.js:1787"
  ],
  "Pozisyon net penaltı. Temas var, rakip topu oynamıyor. VAR'ın bunu görmemesi mümkün değil.": [
   "src/core/chirp/content.js:97"
@@ -13538,7 +13580,7 @@
  ],
  "Rakip oyuncu": [
   "src/core/attitude.js:214",
-  "src/ui/screens/match.js:373"
+  "src/ui/screens/match.js:386"
  ],
  "Rakip Provokasyonu": [
   "src/core/events.js:219"
@@ -13648,13 +13690,16 @@
   "src/core/events.js:143"
  ],
  "Retro 90'lar": [
-  "src/core/cosmetics.js:35"
+  "src/core/cosmetics.js:36"
+ ],
+ "Retro spor takımı": [
+  "src/core/cosmetics.js:66"
  ],
  "Reyting patlar ama kulüpler ve federasyon kızar.": [
   "src/core/afterCareer.js:40"
  ],
  "Reytingler düştü, kanal sözleşmeni yenilemedi.": [
-  "src/ui/screens/afterCareer.js:229"
+  "src/ui/screens/afterCareer.js:236"
  ],
  "Rezalet, kulübün adını magazine düşürdü.": [
   "src/core/chirp/comments.js:66"
@@ -13719,10 +13764,10 @@
   "src/core/sponsors.js:20"
  ],
  "Rüzgâr kale vuruşunu geri itti!": [
-  "src/ui/screens/match.js:75"
+  "src/ui/screens/match.js:77"
  ],
  "Rüzgâr ortaları yolundan saptırıyor.": [
-  "src/ui/screens/match.js:71"
+  "src/ui/screens/match.js:73"
  ],
  "Rüzgar Otomotiv": [
   "src/core/sponsors.js:20"
@@ -13792,16 +13837,16 @@
   "src/core/chirp/comments.js:53"
  ],
  "Saç bandı": [
-  "src/core/cosmetics.js:10"
+  "src/core/cosmetics.js:11"
  ],
  "Saç modelin": [
-  "src/core/cosmetics.js:13"
+  "src/core/cosmetics.js:14"
  ],
  "Saç rengi": [
-  "src/core/cosmetics.js:14"
+  "src/core/cosmetics.js:15"
  ],
  "Saç rengin": [
-  "src/core/cosmetics.js:14"
+  "src/core/cosmetics.js:15"
  ],
  "Saçmalama": [
   "src/core/chirp/content.js:209"
@@ -13835,7 +13880,7 @@
   "src/core/weather.js:57"
  ],
  "Sağanak yağış ve sert rüzgâr ({0} km/sa)! Uzun toplar sürüklenecek.": [
-  "src/ui/screens/match.js:63"
+  "src/ui/screens/match.js:65"
  ],
  "Sağlığın her şeyden önemli, güçlü dön!": [
   "src/core/chirp/comments.js:37"
@@ -13865,7 +13910,7 @@
   "src/ui/injuryView.js:42"
  ],
  "Saha çamur deryası. Top yerde yavaşlıyor, ayaklar ağır.": [
-  "src/ui/screens/match.js:65"
+  "src/ui/screens/match.js:67"
  ],
  "Saha kar altında, çizgiler görünmüyor. Hakem ve federasyon temsilcisi sahayı oynanamaz buldu.": [
   "src/ui/app.js:580"
@@ -13913,7 +13958,7 @@
   "src/ui/screens/hub.js:75"
  ],
  "Sakatlandın · {0} hf": [
-  "src/ui/nationalView.js:139"
+  "src/ui/nationalView.js:141"
  ],
  "Sakatlığa yatkınlık:": [
   "src/ui/injuryView.js:44"
@@ -13931,7 +13976,7 @@
   "src/core/events.js:394"
  ],
  "Sakatlık bahanesiyle reddet (dinlen)": [
-  "src/ui/nationalView.js:86"
+  "src/ui/nationalView.js:88"
  ],
  "Sakatlık bedenini değil sabrını sınar. Fizyoterapistin dediğinden bir gün bile erken dönme.": [
   "src/core/mentor/dialogues.js:67"
@@ -13965,7 +14010,7 @@
   "src/core/game.js:173"
  ],
  "Sakatsın, tribündesin": [
-  "src/ui/screens/match.js:110"
+  "src/ui/screens/match.js:122"
  ],
  "Sakatsın: yalnızca esneme yapabilirsin.": [
   "src/core/gym.js:121"
@@ -14014,10 +14059,10 @@
   "src/core/social/data.js:36"
  ],
  "Sarı": [
-  "src/core/cosmetics.js:53"
+  "src/core/cosmetics.js:54"
  ],
  "SARI KART": [
-  "src/ui/screens/match.js:315"
+  "src/ui/screens/match.js:328"
  ],
  "Sarı kart! {0} gerginlik yüzünden kartı gördü.": [
   "src/core/attitude.js:241"
@@ -14057,6 +14102,9 @@
   "src/ui/screens/shop.js:29",
   "src/ui/screens/wealth.js:187"
  ],
+ "Satın al · {0}": [
+  "src/ui/wardrobe.js:43"
+ ],
  "Satın alma opsiyonu {0}": [
   "src/ui/components.js:67"
  ],
@@ -14088,7 +14136,7 @@
   "src/core/training.js:82"
  ],
  "savunmanın arkasına sarkıp": [
-  "src/core/match.js:380"
+  "src/core/match.js:398"
  ],
  "Savunmanın önünde kalkan: top kapma anları.": [
   "src/core/coach.js:34"
@@ -14236,7 +14284,7 @@
   "src/ui/lifeView.js:199"
  ],
  "Sende": [
-  "src/ui/wardrobe.js:47"
+  "src/ui/wardrobe.js:48"
  ],
  "Sende {0}": [
   "src/ui/screens/invest.js:124"
@@ -14344,6 +14392,10 @@
   "src/core/clauses.js:15",
   "src/ui/screens/player.js:53"
  ],
+ "Serbest stil": [
+  "src/core/cosmetics.js:8",
+  "src/ui/wardrobe.js:52"
+ ],
  "Serbest vuruş": [
   "src/core/archive.js:8"
  ],
@@ -14354,13 +14406,13 @@
   "src/core/character.js:36"
  ],
  "Serbest vuruşu {0} kullandı, top ağlarda. {1}": [
-  "src/core/match.js:493"
+  "src/core/match.js:511"
  ],
  "serbest vuruşu barajın üstünden aşırttı, top doksana": [
-  "src/core/match.js:345"
+  "src/core/match.js:363"
  ],
  "serbest vuruşu barajın yanından kıvırarak ağlara gönderdi": [
-  "src/core/match.js:345"
+  "src/core/match.js:363"
  ],
  "Seri": [
   "src/core/achievements.js:70"
@@ -14597,7 +14649,7 @@
   "src/ui/app.js:593"
  ],
  "Sezon bitti": [
-  "src/ui/screens/afterCareer.js:229"
+  "src/ui/screens/afterCareer.js:236"
  ],
  "Sezon Finali": [
   "src/core/mentor/bigMatch.js:29",
@@ -14607,13 +14659,13 @@
   "src/core/chirp/followers.js:51"
  ],
  "Sezon ortasında sakatlık krizi yaşandı.": [
-  "src/ui/screens/afterCareer.js:149"
+  "src/ui/screens/afterCareer.js:155"
  ],
  "Sezon planı · Yıl {0}": [
-  "src/ui/screens/afterCareer.js:100"
+  "src/ui/screens/afterCareer.js:106"
  ],
  "Sezon primi {0}": [
-  "src/ui/screens/afterCareer.js:229"
+  "src/ui/screens/afterCareer.js:236"
  ],
  "Sezon sonu": [
   "src/ui/chirpCards.js:129"
@@ -14625,14 +14677,14 @@
   "src/ui/app.js:788"
  ],
  "SEZON SONU TURNUVASI": [
-  "src/ui/nationalView.js:177"
+  "src/ui/nationalView.js:179"
  ],
  "Sezon sonu: {0} ile yollar ayrıldı. Yeni teknik direktör {1}.": [
   "src/core/game.js:655"
  ],
  "Sezon sonuna geç": [
-  "src/ui/nationalView.js:159",
-  "src/ui/nationalView.js:219"
+  "src/ui/nationalView.js:161",
+  "src/ui/nationalView.js:221"
  ],
  "Sezon sonunda": [
   "src/core/chirp/triggers.js:148"
@@ -14647,14 +14699,14 @@
   "src/ui/lifeView.js:126"
  ],
  "Sezonlar": [
-  "src/ui/screens/afterCareer.js:197",
+  "src/ui/screens/afterCareer.js:204",
   "src/ui/screens/career.js:80"
  ],
  "Sezonluk getiri": [
   "src/ui/screens/wealth.js:182"
  ],
  "Sezonu oynat": [
-  "src/ui/screens/afterCareer.js:100"
+  "src/ui/screens/afterCareer.js:106"
  ],
  "Sezonun bombası geliyor 💣": [
   "src/core/chirp/content.js:182"
@@ -14691,7 +14743,7 @@
   "src/core/weather.js:54"
  ],
  "Sıcak bacakları ağırlaştırdı, tempo düştü.": [
-  "src/ui/screens/match.js:74"
+  "src/ui/screens/match.js:76"
  ],
  "Sıkışık fikstür: {0}. haftanın ikinci lig maçı hafta içinde oynanıyor. Sonuç lig tablosuna işlenecek.": [
   "src/ui/cupView.js:64"
@@ -14707,10 +14759,10 @@
   "src/ui/screens/tryouts.js:66"
  ],
  "Sıradaki an": [
-  "src/ui/screens/match.js:114"
+  "src/ui/screens/match.js:126"
  ],
  "Sıradaki ana": [
-  "src/ui/screens/match.js:149"
+  "src/ui/screens/match.js:161"
  ],
  "Sıradaki büyük turnuva": [
   "src/ui/screens/national.js:24"
@@ -14769,16 +14821,16 @@
   "src/core/social/dialogues2.js:119"
  ],
  "Siyah": [
-  "src/core/cosmetics.js:53"
+  "src/core/cosmetics.js:54"
  ],
  "SİYAH": [
   "src/ui/siyahShow.js:114"
  ],
  "Siyah bant": [
-  "src/core/cosmetics.js:41"
+  "src/core/cosmetics.js:42"
  ],
  "Siyah eldiven": [
-  "src/core/cosmetics.js:46"
+  "src/core/cosmetics.js:47"
  ],
  "Siyah Show": [
   "src/ui/screens/settings.js:26"
@@ -14797,7 +14849,7 @@
   "src/core/siyahShow.js:20"
  ],
  "Siyah-Altın": [
-  "src/core/cosmetics.js:34"
+  "src/core/cosmetics.js:35"
  ],
  "Sizin sayenizde. Her gün sizden öğreniyorum.": [
   "src/core/social/dialogues.js:64"
@@ -14873,7 +14925,7 @@
   "src/core/world/europe.js:26"
  ],
  "son adamı da geçip": [
-  "src/core/match.js:380"
+  "src/core/match.js:398"
  ],
  "Son bir cümle: kanat bekleri içeri kat ederse—": [
   "src/core/siyahShow.js:59"
@@ -14948,9 +15000,9 @@
   "src/core/events.js:239"
  ],
  "Sona atla": [
-  "src/ui/screens/match.js:149",
-  "src/ui/screens/match.js:336",
-  "src/ui/screens/match.js:583"
+  "src/ui/screens/match.js:161",
+  "src/ui/screens/match.js:349",
+  "src/ui/screens/match.js:597"
  ],
  "Sonra karar vereceğim": [
   "src/ui/mentorView.js:123"
@@ -14965,7 +15017,7 @@
   "src/ui/ballonView.js:33"
  ],
  "Sonuna kadar {0}, sonuna kadar!": [
-  "src/ui/screens/match.js:34"
+  "src/ui/screens/match.js:36"
  ],
  "Sonunda bir boş günün oldu ha! Telefonunu kapat bugün.": [
   "src/core/social/dialogues2.js:23"
@@ -15051,7 +15103,7 @@
   "src/core/market.js:89"
  ],
  "Sözlerin çok tepki çekti, kanal özür yayınladı.": [
-  "src/core/afterCareer.js:204"
+  "src/core/afterCareer.js:206"
  ],
  "Sözlerin dengeli bulundu.": [
   "src/ui/lockerView.js:231"
@@ -15096,7 +15148,7 @@
   "src/ui/components.js:75"
  ],
  "SÖZLÜ UYARI": [
-  "src/ui/screens/match.js:315"
+  "src/ui/screens/match.js:328"
  ],
  "SÖZÜ KESİLDİ": [
   "src/ui/siyahShow.js:210"
@@ -15208,7 +15260,7 @@
   "src/core/realestate.js:19"
  ],
  "Stadyumda sert rüzgâr var ({0} km/sa). Havadan toplar zor kontrol edilecek.": [
-  "src/ui/screens/match.js:67"
+  "src/ui/screens/match.js:69"
  ],
  "Stage 1 yazılım": [
   "src/core/garage.js:98"
@@ -15237,7 +15289,7 @@
   "src/core/chirp/photos.js:163"
  ],
  "Stat tıklım tıklım. Kupanın kaderi senin kritik anında!": [
-  "src/ui/nationalView.js:201"
+  "src/ui/nationalView.js:203"
  ],
  "Statta kaybettiğim sesimi arıyorum, bulan haber versin 📣 {tag}": [
   "src/core/chirp/content.js:157"
@@ -15258,7 +15310,7 @@
   "src/core/coach.js:38"
  ],
  "Stoper buzlu zeminde kayıp topu kaçırdı, tribünlerden uğultu.": [
-  "src/ui/screens/match.js:72"
+  "src/ui/screens/match.js:74"
  ],
  "Stoper Kaya": [
   "src/core/character.js:27"
@@ -15295,7 +15347,7 @@
   "src/core/world/leagueConfig.js:67"
  ],
  "Sus işareti": [
-  "src/core/cosmetics.js:59"
+  "src/core/cosmetics.js:60"
  ],
  "Suyu bile yakarım, dürüst olayım.": [
   "src/core/social/dialogues2.js:93"
@@ -15356,6 +15408,9 @@
  "Sürükleyerek pas koridorunu kapat, top yanından geçerken dokun. Hızlı kaydırırsan kayarak girersin ama adama girersen faul!": [
   "src/ui/tutorial.js:65"
  ],
+ "Sweatshirt ve jogger": [
+  "src/core/cosmetics.js:68"
+ ],
  "Şafak sökerken, babasından gizli…": [
   "src/ui/intro.js:48"
  ],
@@ -15378,7 +15433,7 @@
  ],
  "ŞAMPİYON!": [
   "src/ui/cupView.js:121",
-  "src/ui/screens/afterCareer.js:148"
+  "src/ui/screens/afterCareer.js:154"
  ],
  "Şampiyonlar": [
   "src/ui/app.js:846"
@@ -15414,6 +15469,9 @@
  "Şehir Stadı · Seçmeler": [
   "src/ui/intro.js:56"
  ],
+ "Şehir stili": [
+  "src/core/cosmetics.js:69"
+ ],
  "Şehrin ışıklarından zor görünüyor ama güzel.": [
   "src/core/social/dialogues2.js:101"
  ],
@@ -15448,7 +15506,7 @@
   "src/core/sponsors.js:16"
  ],
  "Şimşek çaktı, tribünlerden uğultu yükseldi!": [
-  "src/ui/screens/match.js:71"
+  "src/ui/screens/match.js:73"
  ],
  "Şimşek Enerji": [
   "src/core/sponsors.js:16"
@@ -15516,7 +15574,7 @@
   "src/ui/screens/player.js:100"
  ],
  "T.D. {0}": [
-  "src/ui/screens/match.js:194"
+  "src/ui/screens/match.js:207"
  ],
  "Tablolar ve formalar üst duvara asılır.": [
   "src/ui/screens/home.js:205"
@@ -15552,7 +15610,7 @@
   "src/ui/screens/league.js:73"
  ],
  "takım arkadaşı": [
-  "src/core/match.js:410"
+  "src/core/match.js:428"
  ],
  "Takım arkadaşı": [
   "src/core/chirp/feed.js:397"
@@ -15597,7 +15655,7 @@
   "src/core/events.js:33"
  ],
  "Takım arkadaşlarınla koreografi.": [
-  "src/core/cosmetics.js:60"
+  "src/core/cosmetics.js:61"
  ],
  "Takım arkadaşlarınla ve sevdiklerinle buluş. Konuşmalarında verdiğin cevaplar ilişkini ve moralini etkiler; gece hayatı profesyonelliğini düşürebilir.": [
   "src/ui/tutorial.js:37"
@@ -15610,6 +15668,9 @@
  ],
  "Takım çok iyi oynadı.": [
   "src/core/social/dialogues2.js:110"
+ ],
+ "Takım elbise": [
+  "src/ui/wardrobe.js:32"
  ],
  "Takım havası": [
   "src/ui/lockerView.js:109"
@@ -15714,7 +15775,7 @@
   "src/core/brain/mind.js:12"
  ],
  "TAKIMLAR SAHADA": [
-  "src/ui/broadcast.js:1764"
+  "src/ui/broadcast.js:1763"
  ],
  "Takip ettiği portföy": [
   "src/ui/screens/agent.js:63"
@@ -15739,7 +15800,7 @@
   "src/ui/chirpProfile.js:73"
  ],
  "Taktik": [
-  "src/ui/screens/afterCareer.js:100"
+  "src/ui/screens/afterCareer.js:106"
  ],
  "Taktik defterime yeni sayfa ekledim: \"Kaos 4-4-2\" 📓 {tag}": [
   "src/core/chirp/content.js:151"
@@ -15775,7 +15836,7 @@
   "src/core/agent.js:230"
  ],
  "Tam ekran": [
-  "src/ui/screens/match.js:114",
+  "src/ui/screens/match.js:126",
   "src/ui/tutorial.js:30"
  ],
  "Tam köşeye! Kaleciye şans tanımadın.": [
@@ -15910,7 +15971,7 @@
   "src/core/brain/mind.js:14"
  ],
  "Taraftara ellerinle kalp yap.": [
-  "src/core/cosmetics.js:58"
+  "src/core/cosmetics.js:59"
  ],
  "Taraftara göre:": [
   "src/ui/chirpCards.js:110"
@@ -15946,10 +16007,10 @@
   "src/core/brain/voice.js:25"
  ],
  "Tartışma": [
-  "src/ui/screens/afterCareer.js:189"
+  "src/ui/screens/afterCareer.js:196"
  ],
  "Tartışma {0}{1}": [
-  "src/ui/screens/afterCareer.js:219"
+  "src/ui/screens/afterCareer.js:226"
  ],
  "Tartışma büyüdü, güvenlik araya girdi. Video her yerde; kulüp €2.000 disiplin cezası kesti.": [
   "src/core/social/events.js:332"
@@ -16048,8 +16109,8 @@
  "Teknik Direktör": [
   "src/core/chirp/relationships.js:10",
   "src/ui/broadcast.js:1026",
-  "src/ui/screens/afterCareer.js:89",
-  "src/ui/screens/match.js:194"
+  "src/ui/screens/afterCareer.js:95",
+  "src/ui/screens/match.js:207"
  ],
  "Teknik direktör · {0}": [
   "src/ui/screens/afterCareer.js:18"
@@ -16064,13 +16125,16 @@
   "src/core/achievements.js:107"
  ],
  "Teknik direktör ödülleri": [
-  "src/ui/screens/afterCareer.js:109"
+  "src/ui/screens/afterCareer.js:115"
  ],
  "Teknik direktör seni {0} için kadroya çağırdı.": [
-  "src/ui/nationalView.js:86"
+  "src/ui/nationalView.js:88"
+ ],
+ "Teknik direktörlük": [
+  "src/ui/screens/afterCareer.js:86"
  ],
  "Teknik direktörlük kariyerin sona erecek.": [
-  "src/ui/screens/afterCareer.js:128"
+  "src/ui/screens/afterCareer.js:134"
  ],
  "Teknik direktörlük teklifleri": [
   "src/ui/screens/afterCareer.js:55"
@@ -16133,10 +16197,10 @@
   "src/core/realestate.js:25"
  ],
  "Termometre {0}°C'yi gösteriyor. Bu sıcakta kondisyon belirleyici olacak.": [
-  "src/ui/screens/match.js:66"
+  "src/ui/screens/match.js:68"
  ],
  "Ters takla": [
-  "src/core/cosmetics.js:61"
+  "src/core/cosmetics.js:62"
  ],
  "Tesislerin kafeteryasında iki Türk kahvesi söylediniz. {mentor} fincanı çevirip konuşmaya başladı.": [
   "src/core/mentor/dialogues.js:17"
@@ -16159,6 +16223,9 @@
  "Thiago Moraes": [
   "src/core/ballondor.js:16"
  ],
+ "Tişört ve kot": [
+  "src/core/cosmetics.js:67"
+ ],
  "Titreşim gücü": [
   "src/ui/screens/settings.js:37"
  ],
@@ -16175,10 +16242,10 @@
   "src/games/drawPass.js:288"
  ],
  "top direkten döndü!": [
-  "src/core/match.js:395"
+  "src/core/match.js:413"
  ],
  "Top direkten döndü! {team} şanssız.": [
-  "src/core/match.js:276"
+  "src/core/match.js:294"
  ],
  "Top kapma": [
   "src/ui/screens/gym.js:103"
@@ -16187,7 +16254,7 @@
   "src/games/drawPass.js:283"
  ],
  "Top kaybı pahalıya patladı: GOL! {0}. {1}": [
-  "src/core/match.js:449"
+  "src/core/match.js:467"
  ],
  "Top oraya vardığında o da orada olsun. Çizgiyi kavisli çizersen top falsolu gider (maçtaki pasla aynı).": [
   "src/core/onboarding/tryouts.js:38"
@@ -16229,7 +16296,7 @@
   "src/ui/screens/wealth.js:119"
  ],
  "Toplam kazanç {0}": [
-  "src/ui/screens/afterCareer.js:181"
+  "src/ui/screens/afterCareer.js:188"
  ],
  "Toplam ödenen {0}": [
   "src/ui/screens/agent.js:56"
@@ -16291,7 +16358,7 @@
  ],
  "Transfer": [
   "src/ui/lifeView.js:181",
-  "src/ui/screens/afterCareer.js:100"
+  "src/ui/screens/afterCareer.js:106"
  ],
  "Transfer dedikoduları dönüyor. Gidiyor musun yoksa?": [
   "src/core/social/dialogues.js:72"
@@ -16339,7 +16406,7 @@
   "src/core/attitude.js:140"
  ],
  "Tribünler": [
-  "src/ui/screens/match.js:464"
+  "src/ui/screens/match.js:478"
  ],
  "Tribünler adını daha yüksek sesle haykıracak.": [
   "src/core/events.js:176"
@@ -16366,7 +16433,7 @@
   "src/ui/cupView.js:115"
  ],
  "Tur atladık!": [
-  "src/ui/nationalView.js:191"
+  "src/ui/nationalView.js:193"
  ],
  "Tur tur gidiyoruz.": [
   "src/core/social/dialogues2.js:116"
@@ -16384,23 +16451,23 @@
   "src/core/garage.js:91"
  ],
  "Turnuva bitti. Milli takım deneyimi seni daha da güçlendirdi.": [
-  "src/ui/nationalView.js:157",
-  "src/ui/nationalView.js:222"
+  "src/ui/nationalView.js:159",
+  "src/ui/nationalView.js:224"
  ],
  "Turnuvalar": [
   "src/ui/screens/national.js:46"
  ],
  "Turnuvaya başla": [
-  "src/ui/nationalView.js:177"
+  "src/ui/nationalView.js:179"
  ],
  "Turnuvayı bitir": [
-  "src/ui/nationalView.js:192"
+  "src/ui/nationalView.js:194"
  ],
  "Turuncu": [
   "src/core/garage.js:30"
  ],
  "Turuncu yelek": [
-  "src/core/cosmetics.js:32"
+  "src/core/cosmetics.js:33"
  ],
  "Tutar planın ağırlıklarına göre dağıtılır; varlıkların komisyonu düşülür.": [
   "src/ui/screens/invest.js:382"
@@ -16455,6 +16522,9 @@
  "TV röportajı: rakibe laf": [
   "src/core/attitude.js:21"
  ],
+ "TV yorumculuğu": [
+  "src/ui/screens/afterCareer.js:181"
+ ],
  "TV yorumculuğunda yılın yorumcusu seçil.": [
   "src/core/achievements.js:108"
  ],
@@ -16462,7 +16532,7 @@
   "src/ui/screens/afterCareer.js:21"
  ],
  "TV Yorumcusu": [
-  "src/ui/screens/afterCareer.js:181"
+  "src/ui/screens/afterCareer.js:188"
  ],
  "TV yorumcusu ol": [
   "src/ui/screens/afterCareer.js:24"
@@ -16502,7 +16572,7 @@
   "src/core/national.js:19"
  ],
  "Uçak": [
-  "src/core/cosmetics.js:57"
+  "src/core/cosmetics.js:58"
  ],
  "Uçuyor": [
   "src/core/brain/mind.js:95"
@@ -16594,7 +16664,7 @@
   "src/core/character.js:39"
  ],
  "Uzaktan füze! {team} adına harika bir gol.": [
-  "src/core/match.js:251"
+  "src/core/match.js:269"
  ],
  "Uzman": [
   "src/core/achievements.js:79"
@@ -16615,7 +16685,7 @@
   "src/core/game.js:217"
  ],
  "Uzun kol": [
-  "src/core/cosmetics.js:50"
+  "src/core/cosmetics.js:51"
  ],
  "Uzun sakatlıktan döndün; kafan hâlâ o anda.": [
   "src/core/brain/traits.js:122"
@@ -16624,10 +16694,10 @@
   "src/core/brain/traits.js:94"
  ],
  "Uzun top rüzgârla taca gitti.": [
-  "src/ui/screens/match.js:75"
+  "src/ui/screens/match.js:77"
  ],
  "Uzun ve onurlu bir kariyerin sonuna geldin.": [
-  "src/ui/screens/afterCareer.js:100"
+  "src/ui/screens/afterCareer.js:106"
  ],
  "Uzun zamandır böyle bir gece yapmamıştık!": [
   "src/core/social/dialogues.js:11",
@@ -16763,7 +16833,7 @@
   "src/core/gym.js:24"
  ],
  "üstten": [
-  "src/core/match.js:367"
+  "src/core/match.js:385"
  ],
  "ÜSTTEN!": [
   "src/games/header.js:225",
@@ -16850,7 +16920,7 @@
   "src/core/siyahShow.js:21"
  ],
  "Veda et": [
-  "src/ui/screens/afterCareer.js:128"
+  "src/ui/screens/afterCareer.js:134"
  ],
  "Veri Futbol": [
   "src/core/chirp/personas.js:27"
@@ -16898,7 +16968,7 @@
   "src/core/sponsors.js:15"
  ],
  "vurdu ama kaleci kurtardı": [
-  "src/core/match.js:422"
+  "src/core/match.js:440"
  ],
  "Vücudumu dinlemeyi yeni yeni öğreniyorum.": [
   "src/core/social/dialogues2.js:89"
@@ -16959,10 +17029,10 @@
   "src/core/brain/body.js:24"
  ],
  "Yağmur altında oynanıyor ({0}°C). Zemin ıslak, top hızlı kayıyor.": [
-  "src/ui/screens/match.js:62"
+  "src/ui/screens/match.js:64"
  ],
  "Yağmur şiddetini artırdı, oyuncular kaymamak için dikkatli.": [
-  "src/ui/screens/match.js:70"
+  "src/ui/screens/match.js:72"
  ],
  "Yağmurlu": [
   "src/core/weather.js:56"
@@ -17121,7 +17191,7 @@
   "src/core/siyahShow.js:158"
  ],
  "YAYINDA": [
-  "src/ui/screens/afterCareer.js:219"
+  "src/ui/screens/afterCareer.js:226"
  ],
  "Yaylalar Derbisi": [
   "src/core/mentor/bigMatch.js:22"
@@ -17140,11 +17210,11 @@
  ],
  "Yedek kulübesi": [
   "src/ui/app.js:547",
-  "src/ui/nationalView.js:96",
+  "src/ui/nationalView.js:98",
   "src/ui/screens/camp.js:56"
  ],
  "Yedek kulübesindesin": [
-  "src/ui/screens/match.js:110"
+  "src/ui/screens/match.js:122"
  ],
  "Yediremedi": [
   "src/core/attitude.js:131"
@@ -17219,7 +17289,7 @@
  "Yeni kariyer": [
   "src/ui/app.js:927",
   "src/ui/screens/create.js:17",
-  "src/ui/screens/title.js:124"
+  "src/ui/screens/title.js:112"
  ],
  "Yeni Kariyer": [
   "src/ui/app.js:902",
@@ -17286,7 +17356,7 @@
   "src/ui/screens/sponsors.js:134"
  ],
  "Yeni teklifler": [
-  "src/ui/screens/afterCareer.js:156"
+  "src/ui/screens/afterCareer.js:162"
  ],
  "Yeni yol arkadaşım 🚗": [
   "src/core/chirp/photos.js:166"
@@ -17357,10 +17427,10 @@
   "src/ui/screens/mentor.js:56"
  ],
  "Yıl {0}": [
-  "src/ui/screens/afterCareer.js:109"
+  "src/ui/screens/afterCareer.js:115"
  ],
  "Yıl {0} · popülerlik {1}": [
-  "src/ui/screens/afterCareer.js:178"
+  "src/ui/screens/afterCareer.js:185"
  ],
  "Yıldız Adayı": [
   "src/core/achievements.js:77"
@@ -17400,8 +17470,8 @@
  ],
  "Yılın Yorumcusu": [
   "src/core/achievements.js:108",
-  "src/core/afterCareer.js:216",
-  "src/ui/screens/afterCareer.js:229"
+  "src/core/afterCareer.js:218",
+  "src/ui/screens/afterCareer.js:236"
  ],
  "Yıllar sonra. 17 yaşında.": [
   "src/ui/intro.js:34"
@@ -17464,7 +17534,7 @@
   "src/core/siyahShow.js:13"
  ],
  "Yorumculuk kariyerin sona erecek.": [
-  "src/ui/screens/afterCareer.js:207"
+  "src/ui/screens/afterCareer.js:214"
  ],
  "Yorumlar gelmeye başladı 👇": [
   "src/ui/chirpView.js:349"
@@ -17506,7 +17576,7 @@
   "src/core/chirp/comments.js:58"
  ],
  "Yönetim hedefi: ilk {0}": [
-  "src/ui/screens/afterCareer.js:89"
+  "src/ui/screens/afterCareer.js:95"
  ],
  "Yönetim kötü sonuçların ardından {0}'da değişikliğe gitti. Yeni teknik direktör": [
   "src/ui/lockerView.js:191"
@@ -17515,16 +17585,16 @@
   "src/core/locker.js:102"
  ],
  "Yönetim sözleşmeni uzattı ve maaşına zam yaptı.": [
-  "src/ui/screens/afterCareer.js:149"
+  "src/ui/screens/afterCareer.js:155"
  ],
  "YÖNETİM UYUMASIN! {OPP} KARŞISINDA ALINAN SONUÇ KABUL EDİLEMEZ!": [
   "src/core/chirp/content.js:67"
  ],
  "Yönetim yollarınızı ayırdı. Yeni teklifler masanda.": [
-  "src/ui/screens/afterCareer.js:149"
+  "src/ui/screens/afterCareer.js:155"
  ],
  "Yönetim yolun doğru olduğunu düşünüyor.": [
-  "src/ui/screens/afterCareer.js:149"
+  "src/ui/screens/afterCareer.js:155"
  ],
  "Yönetimden çok akıllıca bir hamle.": [
   "src/core/chirp/comments.js:25"

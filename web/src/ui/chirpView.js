@@ -17,6 +17,7 @@ import { paintPhotos } from './tabloidView.js';
 import { paintPics, picHTML } from './photoArt.js';
 import { frameById, frameLabel, galleryOf, isVerified, lifestyleOptions } from '../core/chirp/index.js';
 import { buzz, sfx } from '../audio.js';
+import { tx } from '../i18n/index.js';
 
 /** 1234 → "1,2B", 2_400_000 → "2,4 Mn" (Türkçe sosyal medya biçimi) */
 export function compact(n) {
@@ -32,18 +33,22 @@ export function authorOf(state, tw) {
   return JOURNALISTS[tw.authorId] || PERSONAS[tw.authorId] || { displayName: tw.authorId, handle: '', avatar: { color: '#475569', initials: '?' } };
 }
 
-/** Metin: imza vurgusu + tıklanabilir #etiketler ve @bahsetmeler */
+/** Metin: imza vurgusu + tıklanabilir #etiketler ve @bahsetmeler.
+ *  Seçili dile çeviri biçimlendirmeden ÖNCE yapılır (etiket düğmeleri metni böldüğü için DOM çevirisi tutmaz);
+ *  çıktı data-noi18n ile işaretlenir ki çevrilmiş metin bir daha çevrilmeye çalışılmasın. */
 function formatText(text, author) {
-  let safe = esc(text);
-  if (author?.signature && text.startsWith(author.signature)) {
-    const sig = esc(author.signature);
-    safe = `<b class="sig sig-${author.id}">${sig}</b>${safe.slice(sig.length)}`;
+  let body = String(text ?? '');
+  let sigHTML = '';
+  if (author?.signature && body.startsWith(author.signature)) {
+    sigHTML = `<b class="sig sig-${author.id}">${esc(tx(author.signature))}</b>`;
+    body = body.slice(author.signature.length);
   }
-  return safe
+  const safe = esc(tx(body))
     // &#39; gibi HTML varlıkları etiket sanılmasın
     .replace(/(^|[^&\p{L}\p{N}_])(#[\p{L}\p{N}_]*\p{L}[\p{L}\p{N}_]*)/gu, '$1<button class="tag" data-tag="$2">$2</button>')
     .replace(/(^|\s)(@[\w.]+)/g, '$1<span class="mention">$2</span>')
     .replace(/\n/g, '<br>');
+  return `<span data-noi18n>${sigHTML}${safe}</span>`;
 }
 
 function replyHTML(c) {

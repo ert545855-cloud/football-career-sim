@@ -27,12 +27,25 @@ export function playMentor(state) {
 }
 
 /** İnsan benzeri mini oyun sonucu: yetenek arttıkça başarı artar. */
-export function fakeGame(skill, humanSkill = 0.5) {
-  const p = Math.min(0.85, 0.18 + 0.4 * skill + 0.25 * humanSkill);
+export function fakeGame(skill, humanSkill = 0.5, difficulty = 1) {
+  const p = Math.min(0.85, (0.18 + 0.4 * skill + 0.25 * humanSkill) * difficulty);
   const success = chance(p);
   return { success, accuracy: success ? rand(0.3, 1) : 0, outcome: success ? 'goal' : pickFail() };
 }
 const pickFail = () => ['save', 'wide', 'over', 'post', 'block'][Math.floor(Math.random() * 5)];
+
+/**
+ * Mini oyunun zorluğu (insan oyuncunun başarı oranına yaklaşık): penaltı kolay, ceza sahası orta,
+ * uzaktan / serbest vuruş / kafa ve üç aşamalı atak daha zor; rakip kaleci iyiyse daha da zor.
+ */
+export function momentDifficulty(m, match) {
+  const ctx = { penalty: 1.2, box: 1, edge: 0.62, freekick: 0.45, corner: 0.6, counter: 0.72, build: 0.66 }[m.context];
+  const keeper = Math.min(0.95, (match.oppR || 60) / 90);
+  const scoring = m.type === 'shot' || m.type === 'attack';
+  // gol attıkça yakın markaj (maç ekranındaki kaleci artışıyla aynı)
+  const marked = Math.max(0.55, 1 - 0.15 * (match.tally?.goals || 0));
+  return scoring ? (ctx ?? 1) * (1.25 - 0.45 * keeper) * marked : 1;
+}
 
 export function playWeek(state, humanSkill = 0.5) {
   const pos = POSITIONS[state.player.position];
@@ -69,7 +82,7 @@ export function playWeek(state, humanSkill = 0.5) {
       const w = GAME_WEIGHTS[item.m.type] || { shooting: 1 };
       let s = 0; let tw = 0;
       for (const [k, v] of Object.entries(w)) { s += state.player.stats[k] * v; tw += v; }
-      resolveMoment(match, item.m, fakeGame((s / tw / 100) * (match.big?.skillMult ?? 1), humanSkill), state.player.name);
+      resolveMoment(match, item.m, fakeGame((s / tw / 100) * (match.big?.skillMult ?? 1), humanSkill, momentDifficulty(item.m, match)), state.player.name);
     }
   }
   const out = !match ? freeWeek(state) : match.postponed ? postponeMatch(state, match) : completeMatch(state, match);

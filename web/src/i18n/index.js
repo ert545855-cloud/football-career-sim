@@ -46,20 +46,20 @@ function compile(dict) {
   BUCKETS = new Map();
   WILD = [];
   for (const [src, out] of Object.entries(dict)) {
-    if (!/\{\w+\}/.test(src) || !out) continue;
-    const parts = src.split(/(\{\w+\})/);
+    if (!/\{\w+(?::\w+)?\}/.test(src) || !out) continue;
+    const parts = src.split(/(\{\w+(?::\w+)?\})/);
     let re = '^';
     const order = [];
     // soldan harfe yapışık yer tutucu ("H{1}", "S{1}"): boşluksuz tek parça yakalar
     const tightAt = (i) => /\p{L}$/u.test(parts[i - 1] || '');
     parts.forEach((p, i) => {
-      const m = /^\{(\w+)\}$/.exec(p);
+      const m = /^\{(\w+(?::\w+)?)\}$/.exec(p);
       if (m) { re += tightAt(i) ? '(\\S*?)' : '(.*?)'; order.push(m[1]); } else re += esc(p);
     });
     re += '$';
     const lit = parts[0];
-    if (!parts.some((p) => !/^\{\w+\}$/.test(p) && /\p{L}/u.test(p))) continue; // yalnız yer tutucu: anlamsız
-    const toks = parts.map((p, i) => { const m = /^\{(\w+)\}$/.exec(p); return m ? { ph: m[1], tight: tightAt(i) } : { lit: p }; }).filter((t) => t.lit !== '');
+    if (!parts.some((p) => !/^\{\w+(?::\w+)?\}$/.test(p) && /\p{L}/u.test(p))) continue; // yalnız yer tutucu: anlamsız
+    const toks = parts.map((p, i) => { const m = /^\{(\w+(?::\w+)?)\}$/.exec(p); return m ? { ph: m[1], tight: tightAt(i) } : { lit: p }; }).filter((t) => t.lit !== '');
     const pat = { re: new RegExp(re, 's'), out, order, src, toks };
     PATTERNS.push(pat);
     if (lit.length >= 2) {
@@ -79,7 +79,7 @@ const stripSuffix = (v) => v.replace(/^(\p{Lu}[^']*?)['’](?:[a-zçğıöşü]{
 
 let DEPTH = 0;
 function fill(pat, vals) {
-  return pat.out.replace(/\{(\w+)\}/g, (all, i) => {
+  return pat.out.replace(/\{(\w+(?::\w+)?)\}/g, (all, i) => {
     if (!(i in vals)) return all;
     const v = vals[i] ?? '';
     if (!v.trim()) return v;

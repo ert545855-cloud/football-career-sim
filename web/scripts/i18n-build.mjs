@@ -4,7 +4,7 @@ import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 const ROOT = new URL('..', import.meta.url).pathname;
 export const ORDER = ['en', 'zh', 'hi', 'es', 'ar', 'fr', 'bn', 'pt', 'id', 'ur'];
 const dicts = Object.fromEntries(ORDER.map((l) => [l, {}]));
-const ph = (s) => (String(s).match(/\{[\w]+\}/g) || []).sort().join(',');
+const ph = (s) => (String(s).match(/\{\w+(?::\w+)?\}/g) || []).sort().join(',');
 let rows = 0;
 const problems = [];
 for (const f of readdirSync(`${ROOT}src/i18n/src`).filter((x) => x.endsWith('.json')).sort()) {
