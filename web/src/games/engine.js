@@ -1,4 +1,5 @@
 // MİNİ OYUN MOTORU — tuval, retina ölçekleme, döngü, dokunma/fare girdisi, parçacıklar, çizim yardımcıları.
+import { adaptiveDpr } from '../ui/adaptiveDpr.js';
 import { drawSprite, spritePattern } from '../assets/sprites.js';
 
 export const ease = {
@@ -21,9 +22,10 @@ export function createStage(host, { update, render, pointer, tempo = 1 } = {}) {
   const ctx = canvas.getContext('2d');
   const stage = { canvas, ctx, W: 0, H: 0, dpr: 1, t: 0, shakeAmt: 0, running: true };
 
+  const adDpr = adaptiveDpr('game', { max: 2.5 });
   const resize = () => {
     const r = host.getBoundingClientRect();
-    stage.dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    stage.dpr = adDpr.value; // uyarlanır çözünürlük
     stage.W = Math.max(1, r.width);
     stage.H = Math.max(1, r.height);
     canvas.width = Math.round(stage.W * stage.dpr);
@@ -58,6 +60,7 @@ export function createStage(host, { update, render, pointer, tempo = 1 } = {}) {
     if (!stage.running) return;
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
+    if (adDpr.frame(now)) resize();
     stage.t += dt;
     update?.(dt * tempo, stage.t);
     const { W, H, dpr } = stage;

@@ -2,6 +2,7 @@
 // LED reklam panoları (kurgusal sponsorlar), perspektifli çim, 22 oyuncu + hakem ve top. Akış kendi kendine oynar;
 // goller (rakip goller dahil) ve pozisyonlar senaryo olarak canlandırılır, istenirse yavaş çekim tekrar gösterilir.
 // Tüm kulüp, sponsor ve oyuncu isimleri kurgusaldır.
+import { adaptiveDpr } from './adaptiveDpr.js';
 import { awayBanner, bannerTexts as localBanners, brandTexts, nameLangOf } from '../core/world/locale.js';
 import { randomName } from '../core/world/names.js';
 import { drawPixelPlayer, drawPixelBall, dirFromVelocity, runFrame } from '../games/pixel/sprites.js';
@@ -359,14 +360,15 @@ export function createBroadcast(root, o) {
     grassPat = ctx.createPattern(c, 'repeat');
   }
 
+  const adDpr = adaptiveDpr('bc', { max: 2 });
   function resize() {
     // clientWidth/Height: döndürülmüş (tam ekran yatay) görünümde de gerçek yerleşim boyutu
     const nw = Math.max(200, Math.round(root.clientWidth));
     const nh = Math.max(120, Math.round(root.clientHeight));
-    if (nw === W && nh === H) return;
+    if (nw === W && nh === H && dpr === adDpr.value) return;
     W = nw;
     H = nh;
-    dpr = Math.min(3, window.devicePixelRatio || 1);
+    dpr = adDpr.value; // uyarlanır: yavaş cihazda tuval yoğunluğu düşer, akıcılık korunur
     cv.width = Math.round(W * dpr);
     cv.height = Math.round(H * dpr);
     if (mini) {
@@ -1696,6 +1698,7 @@ export function createBroadcast(root, o) {
     last = now;
     S.rate = rateNow() * (S.replaying ? 0.45 : 1) * (S.slowmo || 1);
     if (!S.paused) {
+      adDpr.frame(now);
       resize();
       // sabit adımlar (yüksek hızda da kararlı)
       let rem = dt0 * S.rate;

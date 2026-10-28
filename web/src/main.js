@@ -36,6 +36,8 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
 }
 
 app.go('title');
+// ilk ekran çizildikten sonra, tarayıcı boşta kalınca diğer ekran parçalarını indir
+(window.requestIdleCallback || ((f) => setTimeout(f, 1200)))(() => app.preload(), { timeout: 4000 });
 // Açılış: stüdyo introsu (oturum başına bir kez, dokununca atlanır); giriş ekranı altında hazır bekler
 playStudioIntro(root.closest('.app') || root.querySelector('.app') || root);
 window.__krampon = app;

@@ -30,7 +30,6 @@ import { playerCanvas } from '../../games/pixel/sprites.js';
 import { shortName as shortOf } from '../../core/lineups.js';
 import { selectMatchBall } from '../../core/matchBall.js';
 import { formatMatchClock } from '../../core/matchClock.js';
-import { playGoalCinematic, warmGoalCinematic } from '../goalCinematic.js';
 
 const CHANTS = [
   (t) => `Ooo ${t} ooo! Ooo ${t} ooo!`,
@@ -215,7 +214,6 @@ export function matchScreen(app, { match }) {
       });
       bc.onSfx((n) => sfx(n));
       if (import.meta.env?.DEV) window.__bc = bc;
-      if (app.settings.goalCinema !== false && !app.autoplay) warmGoalCinematic(); // gol sinematiği videosunu önceden indir
       drawFace(el0.querySelector('.bc-face'), meLook);
       const glH = el0.querySelector('[data-gl-h]');
       const glA = el0.querySelector('[data-gl-a]');
@@ -254,11 +252,6 @@ export function matchScreen(app, { match }) {
             onGoal: doPush,
             capture,
           });
-          // maçtaki ilk golünden sonra kısa gol sevinci videosu (sessiz; dokununca geçilir)
-          if (me && !match.cinemaShown && skipTo === null && !app.autoplay && app.settings.goalCinema !== false) {
-            match.cinemaShown = true;
-            await playGoalCinematic(bcEl, { look: meLook, name: s.player.name, number: s.player.number, minute: ln.minute, club: CLUB_BY_ID[match.myId]?.short || '', colors: my?.colors });
-          }
         } else if (ln.ai && ['save', 'post', 'chance'].includes(ln.kind) && (app.settings.speed || 1) === 1 && chanceAnims < (watching() ? 4 : 2)) {
           chanceAnims++;
           await bc.play({ side: ln.side || 'my', outcome: ln.kind === 'save' ? 'save' : ln.kind === 'post' ? 'post' : 'miss', kind: Math.random() < 0.5 ? 'open' : 'long', onGoal: doPush });

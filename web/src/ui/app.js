@@ -29,43 +29,23 @@ import { changeChips, offerCard, ratingColor } from './components.js';
 import { titleScreen } from './screens/title.js';
 import { createScreen } from './screens/create.js';
 import { hubScreen } from './screens/hub.js';
-import { playerScreen } from './screens/player.js';
-import { leagueScreen } from './screens/league.js';
-import { shopScreen } from './screens/shop.js';
-import { careerScreen } from './screens/career.js';
 import { settingsScreen } from './screens/settings.js';
-import { matchScreen } from './screens/match.js';
-import { chirpScreen } from './screens/chirp.js';
-import { mentorScreen } from './screens/mentor.js';
 import { unreadCount } from '../core/chirp/index.js';
 import { MENTOR_TRAITS, MentorManager } from '../core/mentor/index.js';
 import { legacyShiftSheet, requestsSheet, selectionSheet } from './mentorView.js';
 import { ACTION_SPRITES, ROLE_SPRITES, TRAINING_SPRITES, awardArt, eventArt } from './spriteMap.js';
 import { sprite, spriteOr } from '../assets/sprites.js';
-import { tryoutsScreen } from './screens/tryouts.js';
-import { achievementsScreen } from './screens/achievements.js';
 import { checkAchievements, drainAchievementQueue } from '../core/achievements.js';
 import { showAchievementToasts } from './achievementsView.js';
 import { AGENT_RULES, currentAgent } from '../core/agent.js';
 import { agentAvatar, negotiationSheet } from './agentView.js';
-import { agentScreen } from './screens/agent.js';
-import { investScreen } from './screens/invest.js';
-import { gymScreen } from './screens/gym.js';
-import { sponsorsScreen } from './screens/sponsors.js';
-import { wealthScreen } from './screens/wealth.js';
 import { investPct } from '../core/invest.js';
-import { socialScreen } from './screens/social.js';
 import { outingsLeft } from '../core/social/index.js';
-import { homeScreen } from './screens/home.js';
-import { garageScreen } from './screens/garage.js';
 import { tabloidSheet } from './tabloidView.js';
 import { CUPS, STAGE_LABEL } from '../core/world/europe.js';
-import { nationalScreen } from './screens/national.js';
 import { ballonCeremony, ballonScreen } from './ballonView.js';
 import { afterCareerClick, afterCareerSection, coachScreen, punditScreen } from './screens/afterCareer.js';
 import { campMatchFlow, nationalFlow, tournamentFlow } from './nationalView.js';
-import { campScreen } from './screens/camp.js';
-import { bodyScreen } from './screens/body.js';
 import { coachChangeFlow, lockerFlow, lockerScreen, pressFlow } from './lockerView.js';
 import { cupFlow, finishCupMatch } from './cupView.js';
 import { cupTieLabel, cupTieReady } from '../core/cup.js';
@@ -97,31 +77,34 @@ const clone = (o) => (typeof structuredClone === 'function' ? structuredClone(o)
 export function createApp(rootEl) {
   setRoot(rootEl);
 
+  // Seyrek açılan ekranlar ayrı parçalarda: ilk açılış hafifler; ilk ekran çizildikten sonra boşta önceden yüklenir.
+  const LAZY = {
+    player: () => import('./screens/player.js').then((m) => m.playerScreen),
+    league: () => import('./screens/league.js').then((m) => m.leagueScreen),
+    shop: () => import('./screens/shop.js').then((m) => m.shopScreen),
+    career: () => import('./screens/career.js').then((m) => m.careerScreen),
+    match: () => import('./screens/match.js').then((m) => m.matchScreen),
+    chirp: () => import('./screens/chirp.js').then((m) => m.chirpScreen),
+    mentor: () => import('./screens/mentor.js').then((m) => m.mentorScreen),
+    tryouts: () => import('./screens/tryouts.js').then((m) => m.tryoutsScreen),
+    achievements: () => import('./screens/achievements.js').then((m) => m.achievementsScreen),
+    agent: () => import('./screens/agent.js').then((m) => m.agentScreen),
+    invest: () => import('./screens/invest.js').then((m) => m.investScreen),
+    gym: () => import('./screens/gym.js').then((m) => m.gymScreen),
+    sponsors: () => import('./screens/sponsors.js').then((m) => m.sponsorsScreen),
+    wealth: () => import('./screens/wealth.js').then((m) => m.wealthScreen),
+    social: () => import('./screens/social.js').then((m) => m.socialScreen),
+    home: () => import('./screens/home.js').then((m) => m.homeScreen),
+    garage: () => import('./screens/garage.js').then((m) => m.garageScreen),
+    national: () => import('./screens/national.js').then((m) => m.nationalScreen),
+    camp: () => import('./screens/camp.js').then((m) => m.campScreen),
+    body: () => import('./screens/body.js').then((m) => m.bodyScreen),
+  };
   const SCREENS = {
     title: titleScreen,
     create: createScreen,
     hub: hubScreen,
-    player: playerScreen,
-    league: leagueScreen,
-    shop: shopScreen,
-    career: careerScreen,
     settings: settingsScreen,
-    match: matchScreen,
-    chirp: chirpScreen,
-    mentor: mentorScreen,
-    tryouts: tryoutsScreen,
-    achievements: achievementsScreen,
-    agent: agentScreen,
-    invest: investScreen,
-    gym: gymScreen,
-    sponsors: sponsorsScreen,
-    wealth: wealthScreen,
-    social: socialScreen,
-    home: homeScreen,
-    garage: garageScreen,
-    national: nationalScreen,
-    camp: campScreen,
-    body: bodyScreen,
     locker: lockerScreen,
     ballon: ballonScreen,
     coach: coachScreen,
@@ -130,6 +113,11 @@ export function createApp(rootEl) {
   };
 
   const app = {
+    /** Ayrı parçalardaki ekranları ve mini oyunları arka planda indir (ilk ekran çizildikten sonra) */
+    preload() {
+      for (const [k, f] of Object.entries(LAZY)) f().then((fn) => { SCREENS[k] ||= fn; }).catch(() => {});
+      import('../games/index.js').then((m) => m.preloadMiniGames?.()).catch(() => {});
+    },
     state: loadGame(),
     /** Seçmeler taslağı (kamp sürerken) */
     draft: loadDraft(),
@@ -162,6 +150,12 @@ export function createApp(rootEl) {
     },
 
     go(name, params = {}) {
+      if (!SCREENS[name] && LAZY[name]) {
+        // ekran parçası henüz inmediyse indir, sonra aç (genelde boşta önceden yüklenmiş olur)
+        return LAZY[name]()
+          .then((fn) => { SCREENS[name] = fn; return this.go(name, params); })
+          .catch(() => toast('Bağlantı sorunu: ekran yüklenemedi, tekrar dene', 'bad'));
+      }
       const def = SCREENS[name](this, params);
       rootEl.innerHTML = '';
       let screenEl;

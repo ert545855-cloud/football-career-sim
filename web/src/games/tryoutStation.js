@@ -6,9 +6,6 @@ import { icon } from '../ui/art.js';
 import { sprite } from '../assets/sprites.js';
 import { sfx, buzz, unlock } from '../audio.js';
 import { TRYOUT_RULES } from '../core/onboarding/tryouts.js';
-import { playPassStation } from './drawPass.js';
-import { playDribble } from './dribble.js';
-import { playShot } from './shot.js';
 
 /** Şut istasyonu hedefleri: kalenin dört köşesi (kale koordinatı: u −1…1, v 0…1) */
 const CORNERS = [
@@ -29,7 +26,13 @@ export function heartsHTML(n, max = TRYOUT_RULES.heartsPerStation) {
  *   onProgress: her denemeden sonra çağrılır (kayıt: sayfa yenilense de kaybedilen hak geri gelmez)
  * @returns {Promise<ReturnType<import('../core/onboarding/tryouts.js').TryoutSession['finishStation']>>}
  */
+// İstasyon oyunları ayrı parçalarda: seçme kampı açılınca yüklenir
+const loadPass = () => import('./drawPass.js').then((m) => m.playPassStation);
+const loadDribble = () => import('./dribble.js').then((m) => m.playDribble);
+const loadShot = () => import('./shot.js').then((m) => m.playShot);
+
 export async function runTryoutStation(o) {
+  const [playPassStation, playDribble, playShot] = await Promise.all([loadPass(), loadDribble(), loadShot()]);
   const { station, session } = o;
   const st = () => session.state(station.id);
   // Kayıttan dönüş: istasyon bitmiş ama kapatılmamışsa doğrudan kapat

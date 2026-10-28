@@ -3,6 +3,7 @@
 //   iki ışık kulesi ve ışık hüzmeleri, kayan LED reklam panosu, perspektif saha ve ortada top sektiren oyuncu.
 //   Sahne mantıksal 180 birim genişliğinde çizilir, tuvale keskin büyütülür. Yerleşim DOM'dan gelir:
 //   oyuncu logonun altıyla düğmelerin üstü arasındaki boşluğa (anchor) oturur; ekran ne olursa olsun kaymaz.
+import { adaptiveDpr } from './adaptiveDpr.js';
 import { drawPixelBall, drawPixelPlayer } from '../games/pixel/sprites.js';
 import { drawPixelText, pixelTextWidth } from '../games/pixel/font.js';
 import { defaultLook, shade } from '../games/pixel/playerPixels.js';
@@ -53,10 +54,11 @@ export function mountTitleScene(cv, o = {}) {
   const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const t0 = performance.now();
 
+  const adDpr = adaptiveDpr('title', { max: 2 });
   function layout() {
     const rect = cv.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
-    const dpr = Math.min(3, window.devicePixelRatio || 1);
+    const dpr = adDpr.value;
     k = rect.width / LW;
     W = LW;
     H = Math.max(200, Math.round(rect.height / k));
@@ -290,6 +292,7 @@ export function mountTitleScene(cv, o = {}) {
   function frame(now) {
     if (stopped) return;
     if (!cv.isConnected) { stop(); return; }
+    if (!reduced && adDpr.frame(now)) layout();
     const t = reduced ? 2.2 : (now - t0) / 1000;
     const winter = !!o.winter?.();
     g.imageSmoothingEnabled = false;

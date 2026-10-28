@@ -2,20 +2,29 @@
 import { el, esc, root, sleep } from '../ui/dom.js';
 import { icon } from '../ui/art.js';
 import { sfx, unlock } from '../audio.js';
-import { playShot } from './shot.js';
-import { playDrawPass } from './drawPass.js';
 import { loadSettings } from '../core/storage.js';
-import { playIntercept } from './intercept.js';
-import { playDribble } from './dribble.js';
-import { playShuttle } from './shuttle.js';
-import { playInterval } from './interval.js';
-import { playHeader } from './header.js';
-import { playAttack } from './attack.js';
 import { playUnityMoment, unityBuildAvailable } from './unity3d.js';
 import { setBallVariant } from './pixel/sprites.js';
 import { duckMusic } from '../music/player.js';
 import { windArrow } from '../core/weather.js';
 import { ASSISTANT, gameTip } from '../ui/tutorial.js';
+
+// Mini oyunlar ayrı parçalar halinde yüklenir (ilk açılış hafifler); maç ekranında boşta önceden yüklenir.
+const GAMES = {
+  shot: () => import('./shot.js').then((m) => m.playShot),
+  header: () => import('./header.js').then((m) => m.playHeader),
+  attack: () => import('./attack.js').then((m) => m.playAttack),
+  pass: () => import('./drawPass.js').then((m) => m.playDrawPass),
+  tackle: () => import('./intercept.js').then((m) => m.playIntercept),
+  dribble: () => import('./dribble.js').then((m) => m.playDribble),
+  shuttle: () => import('./shuttle.js').then((m) => m.playShuttle),
+  interval: () => import('./interval.js').then((m) => m.playInterval),
+};
+const gameKey = (o) => ({ shot: o.context === 'corner' ? 'header' : 'shot', sprint: 'dribble', endurance: 'shuttle' }[o.type] || o.type);
+/** Tüm mini oyunları arka planda indir (maç başlarken çağrılır) */
+export function preloadMiniGames() {
+  for (const f of Object.values(GAMES)) f().catch(() => {});
+}
 
 /**
  * @param {{type:'shot'|'pass'|'tackle'|'dribble'|'shuttle', skill:number, context?:string, title:string, text:string, me?:object,
@@ -23,6 +32,7 @@ import { ASSISTANT, gameTip } from '../ui/tutorial.js';
  *   big?:{title:string, nerves:number, tempo:number, cool:boolean}|null}} o
  */
 export async function runMiniGame(o) {
+  const gameLoad = !o.auto && GAMES[gameKey(o)] ? GAMES[gameKey(o)]().catch(() => null) : null; // giriş ekranı okunurken yüklenir
   const pct = Math.round(o.skill * 100);
   const big = o.big && o.big.nerves > 0 ? o.big : null;
   const nervesPct = big ? Math.round(big.nerves * 100) : 0;
@@ -97,22 +107,19 @@ export async function runMiniGame(o) {
     if ((o.type === 'pass' || (o.type === 'shot' && o.context !== 'corner' && o.context !== 'freekick')) && loadSettings().unity3d && (await unityBuildAvailable())) {
       result = await playIn3D(host, o, big).catch(() => null);
     }
-    if (!result) switch (o.type) {
+    const play = result ? null : await gameLoad;
+    if (!result && !play) result = { success: false, accuracy: 0, outcome: 'none' };
+    if (!result) switch (gameKey(o)) {
       // Korner: kafa düellosu; diğer şutlar (ceza sahası, uzaktan, serbest vuruş, penaltı) şut oyununda
-      case 'shot': result = o.context === 'corner' ? await playHeader(host, { ...common, keeper: o.keeper }) : await playShot(host, { ...common, keeper: o.keeper }); break;
+      case 'shot': case 'header': result = await play(host, { ...common, keeper: o.keeper }); break;
       // Kesintisiz atak: pas (ofsayt) → çalım → şut, tek anda
-      case 'attack': result = await playAttack(host, common, { context: o.context, keeper: o.keeper }); break;
-      // Tek pas sistemi: çizerek kavisli pas (seçmelerde de aynı)
-      case 'pass': result = await playDrawPass(host, common); break;
-      // Defans: pas arası (maçta ve antrenmanda aynı)
-      case 'tackle': result = await playIntercept(host, common); break;
+      case 'attack': result = await play(host, common, { context: o.context, keeper: o.keeper }); break;
       // Hız: Adamı Geç (seçmelerdeki çalım istasyonu ile aynı oyun)
-      case 'dribble': case 'sprint': result = await playDribble(host, { ...common, rows: 8 }); break;
-      // Dayanıklılık: mekik koşusu (bip testi)
-      case 'shuttle': case 'endurance': result = await playShuttle(host, common); break;
+      case 'dribble': result = await play(host, { ...common, rows: 8 }); break;
       // Kondisyon parkuru: nabız bölgesi + engeller (kondisyon seviyesi nabzı etkiler)
-      case 'interval': result = await playInterval(host, { ...common, cond: gymCond }); break;
-      default: result = { success: false, accuracy: 0, outcome: 'none' };
+      case 'interval': result = await play(host, { ...common, cond: gymCond }); break;
+      // Pas (çizerek), defans (pas arası), dayanıklılık (mekik)
+      default: result = await play(host, common);
     }
   }
   setBallVariant('white');
