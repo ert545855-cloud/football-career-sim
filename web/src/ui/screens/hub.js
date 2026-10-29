@@ -16,6 +16,7 @@ import { cupTieReady, roundLabel } from '../../core/cup.js';
 import { portfolioValue } from '../../core/invest.js';
 import { GYM_RULES, ensureGym } from '../../core/gym.js';
 import { questsCard, questsClick } from '../questsView.js';
+import { notifBell, openNotifs } from '../notifyView.js';
 import { acwrLive, brainAdvice, brainSummary } from '../../core/brain/index.js';
 
 const ACT_NAMES = { rest: 'Dinlen', train: 'Antrenman', gym: 'Salon', team: 'Takımla yemek', media: 'Medya', manager: 'Hocayla görüş', drill: 'Özel çalışma' };
@@ -112,7 +113,7 @@ export function hubScreen(app) {
           <button class="money-pill w-pill" data-act="wealth" title="Servet: işletmeler, emlak, vakıf">${icon('coin')} <span class="tnum">${money(career.money)}</span></button>
           <button class="money-pill inv-pill" data-act="invest" data-tut="invest">${icon('chart')} <span class="tnum">${(() => { const pv = portfolioValue(s); return pv > 0 ? money(pv) : 'Yatırım'; })()}</span></button>
         </div>
-        <div class="row" style="gap:6px">${status}<button class="icon-btn" data-act="settings" aria-label="Ayarlar">${icon('gear')}</button></div>
+        <div class="row" style="gap:6px">${status}${notifBell(s)}<button class="icon-btn" data-act="settings" aria-label="Ayarlar">${icon('gear')}</button></div>
       </div>
 
       <div class="card" data-tut="meters" style="margin-top:12px;display:grid;gap:12px">
@@ -219,6 +220,7 @@ export function hubScreen(app) {
         if (t.dataset.action) app.runAction(t.dataset.action);
         else if (t.dataset.act === 'match' || t.dataset.act === 'cup') app.matchDay();
         else if (t.dataset.act === 'settings') app.go('settings');
+        else if (t.dataset.act === 'notifs') openNotifs(app);
         else if (t.dataset.act === 'locker') app.go('locker');
         else if (t.dataset.act === 'invest') app.go('invest', { from: 'hub' });
         else if (t.dataset.act === 'wealth') app.go('wealth', { from: 'hub' });

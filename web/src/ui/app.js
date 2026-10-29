@@ -54,6 +54,7 @@ import { clauseOptions, negotiateClauses } from '../core/clauses.js';
 import { lastMinuteOffer } from '../core/economy.js';
 import { activeCamp, startTournamentCamp, tournamentFor } from '../core/nationalCamp.js';
 import { scheduleCloudSync } from '../cloud.js';
+import { writeNotifyMeta } from './sysNotify.js';
 import { runTryoutStation, heartsHTML } from '../games/tryoutStation.js';
 import { drillSheet, electionSheet, monthAwardSheet, summerCampSheet, testimonialSheet } from './lifeView.js';
 import { summerCampDue } from '../core/summerCamp.js';
@@ -132,6 +133,7 @@ export function createApp(rootEl) {
       checkAchievements(this.state); // ölçüye dayalı rozetler (para, ün, eşya…) her kayıtta kontrol edilir
       saveGame(this.state);
       scheduleCloudSync(this.state); // bulut bağlıysa birkaç saniye sonra yüklenir
+      writeNotifyMeta(this); // cihaz bildirimi hatırlatması için kısa özet
     },
 
     /** Açılan başarımları bildirir (oyun/maç ekranlarında beklemeye alınır). */

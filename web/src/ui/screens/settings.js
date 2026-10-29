@@ -9,6 +9,7 @@ import { unityBuildAvailable } from '../../games/unity3d.js';
 import { configureMusic, nowPlaying, onNowPlaying } from '../../music/player.js';
 import { resetTutorial } from '../tutorial.js';
 import { LANGS, setLang } from '../../i18n/index.js';
+import { disableSysNotify, enableSysNotify, showSysNotification, sysNotifyOn, sysNotifyPermission } from '../sysNotify.js';
 
 const npText = () => { const n = nowPlaying(); return n ? `♪ Şu an çalıyor: <b>${n.title}</b> · ${n.mood}` : '♪ Müzik ilk dokunuşta başlar.'; };
 
@@ -33,6 +34,14 @@ export function settingsScreen(app) {
         ${toggle('sound', 'Ses efektleri', 'sound', 'Vuruş, düdük, tribün sesleri')}
         ${toggle('music', 'Müzik', 'music', 'Oyuna özel bestelenmiş hareketli pop parçalar')}
         ${st.music !== false ? `<div class="li"><span class="ic"></span><div class="grow"><b>Müzik sesi</b><div class="seg" style="margin-top:8px">${[[0.25, 'Kısık'], [0.5, 'Orta'], [0.85, 'Yüksek']].map(([k, l]) => `<button class="${Math.abs((st.musicVol ?? 0.5) - k) < 0.05 ? 'on' : ''}" data-mvol="${k}">${l}</button>`).join('')}</div><div class="muted small" style="margin-top:6px" data-np>${npText()}</div></div></div>` : ''}
+        ${(() => {
+          const perm = sysNotifyPermission();
+          const on = sysNotifyOn(app);
+          const desc = perm === 'unsupported' ? 'Bu tarayıcı cihaz bildirimlerini desteklemiyor (iPhone: önce Ana Ekrana ekle).'
+            : perm === 'denied' ? 'İzin reddedildi; tarayıcı/telefon ayarlarından bu site için bildirimlere izin ver.'
+            : 'Maç günü ve antrenman hatırlatmaları. Oyun içi bildirimler ana sayfadaki zilde.';
+          return `<div class="li"><span class="ic" style="color:var(--accent)">${icon('bell')}</span><div class="grow"><b>Cihaz bildirimleri</b><div class="muted small">${desc}</div>${on ? '<button class="btn sm ghost" style="margin-top:8px" data-notify-test>Deneme bildirimi gönder</button>' : ''}</div>${perm === 'unsupported' || perm === 'denied' ? '' : `<button class="btn sm ${on ? 'primary' : 'ghost'}" data-notify>${on ? 'Açık' : 'Kapalı'}</button>`}</div>`;
+        })()}
         ${toggle('vibrate', 'Titreşim', 'vibrate', hapticSupport() === 'none' ? 'Bu cihaz/tarayıcı titreşimi desteklemiyor.' : hapticSupport() === 'ios' ? 'Golü, pası, kurtarışı hisset (iPhone: dokunsal tıklar)' : 'Golü, pası, kurtarışı ve müdahaleyi elinde hisset')}
         ${st.vibrate ? `<div class="li"><span class="ic"></span><div class="grow"><b>Titreşim gücü</b><div class="seg" style="margin-top:8px">${[['soft', 'Hafif'], ['normal', 'Normal'], ['strong', 'Güçlü']].map(([k, l]) => `<button class="${(st.haptic || 'normal') === k ? 'on' : ''}" data-haptic-level="${k}">${l}</button>`).join('')}</div><div class="muted small" style="margin-top:6px">Seçince gol titreşimini dener.</div></div></div>` : ''}
         <div class="li"><span class="ic" style="color:#bfdbfe">❄️</span><div class="grow"><b>Kış teması</b><div class="muted small">Otomatik: giriş ekranında ve takvimde Aralık–Şubat haftalarında kar yağar.</div><div class="seg" style="margin-top:8px">${[['auto', 'Otomatik'], ['on', 'Hep açık'], ['off', 'Kapalı']].map(([k, l]) => `<button class="${(st.winter || 'auto') === k ? 'on' : ''}" data-winter="${k}">${l}</button>`).join('')}</div></div></div>
@@ -85,6 +94,16 @@ export function settingsScreen(app) {
           saveSettings(st);
           configureMusic(st);
           app.go('settings');
+          return;
+        }
+        if (t.matches('[data-notify]')) {
+          if (sysNotifyOn(app)) await disableSysNotify(app);
+          else await enableSysNotify(app);
+          app.go('settings');
+          return;
+        }
+        if (t.matches('[data-notify-test]')) {
+          showSysNotification('Maç günü yaklaşıyor ⚽', 'Bu bir deneme bildirimi: hatırlatmalar böyle görünecek.', 'krampon-test');
           return;
         }
         if (t.dataset.siyah) {

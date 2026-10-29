@@ -141,7 +141,10 @@ export function newGame(setup) {
 }
 
 export function addNews(state, text, kind = 'info') {
-  state.career.news.unshift({ s: state.calendar.season, w: state.calendar.week, text, kind });
+  const c = state.career;
+  if (c.newsSeq == null) c.newsSeq = c.news.length; // bildirim merkezi: okunmamış takibi için kimlik
+  c.newsSeq++;
+  c.news.unshift({ id: c.newsSeq, s: state.calendar.season, w: state.calendar.week, text, kind });
   if (state.career.news.length > 40) state.career.news.length = 40;
 }
 

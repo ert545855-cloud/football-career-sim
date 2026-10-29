@@ -1,6 +1,6 @@
 // Çevrimdışı oynama için service worker.
 // Sayfa (index.html) önce ağdan gelir (güncellemeler hemen görünsün), diğer dosyalar önbellekten.
-const CACHE = 'nfstars-v44';
+const CACHE = 'nfstars-v45';
 const CORE = ['./', './index.html', './manifest.webmanifest', './logo.webp', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
@@ -48,4 +48,40 @@ self.addEventListener('fetch', (e) => {
       }),
     ),
   );
+});
+
+// ── BİLDİRİMLER ──
+// Günlük hatırlatma (Android'de ana ekrana eklenmiş uygulama: Periodic Background Sync). Sayfa son
+// durumun kısa özetini 'krampon-meta' önbelleğine yazar; oyuncu 18 saattir açmadıysa hatırlatılır.
+async function dailyReminder() {
+  try {
+    const c = await caches.open('krampon-meta');
+    const r = await c.match('./__krampon_meta');
+    if (!r) return;
+    const m = await r.json();
+    if (!m.on || Date.now() - (m.ts || 0) < 18 * 3600 * 1000) return;
+    await self.registration.showNotification(m.title || 'New Football Stars ⚽', {
+      body: m.body || '', icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', tag: 'krampon-daily', data: { url: './' },
+    });
+  } catch { /* özet yok */ }
+}
+self.addEventListener('periodicsync', (e) => {
+  if (e.tag === 'krampon-daily') e.waitUntil(dailyReminder());
+});
+// Sunucu bildirimi (ileride bulut kayıt açıldığında): { title, body, url }
+self.addEventListener('push', (e) => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch { d = { body: e.data?.text?.() || '' }; }
+  e.waitUntil(self.registration.showNotification(d.title || 'New Football Stars ⚽', {
+    body: d.body || '', icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', tag: d.tag || 'krampon', data: { url: d.url || './' },
+  }));
+});
+// Bildirime dokununca açık oyunu öne getir, yoksa aç
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const url = e.notification.data?.url || './';
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((ws) => {
+    for (const w of ws) if ('focus' in w) return w.focus();
+    return self.clients.openWindow ? self.clients.openWindow(url) : undefined;
+  }));
 });
