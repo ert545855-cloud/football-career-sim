@@ -125,6 +125,7 @@ export function canGoOut(state, venueId, tierId, companionId) {
   if (outingsLeft(state) <= 0) return { ok: false, reason: `Haftada en fazla ${SOCIAL_RULES.maxOutingsPerWeek} sosyal etkinlik.` };
   const t = venueTier(state, venueId, tierId);
   if (!t) return { ok: false, reason: 'Mekân bulunamadı.' };
+  if (VENUES[venueId]?.minAge && (player.age || 0) < VENUES[venueId].minAge) return { ok: false, reason: `${VENUES[venueId].name} ${VENUES[venueId].minAge} yaşından sonra açılır.` };
   if (player.energy < Math.abs(t.energy) + 5) return { ok: false, reason: 'Çok yorgunsun, önce dinlen.' };
   if (career.money < t.price) return { ok: false, reason: 'Paran yetmiyor.' };
   if (companionId && companionId !== 'alone') {

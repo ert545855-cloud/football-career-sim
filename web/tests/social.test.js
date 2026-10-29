@@ -63,8 +63,16 @@ test('sosyal: üslup etkisi kişiliğe göre; flört arkadaşa ters teper', () =
   assert.ok(toneDelta(PERSON_BY_ID.melis, 'romance', 'cocky', 30) > 0, 'Melis özgüveni sever');
 });
 
+test('sosyal: bar ve gece hayatı 18 yaşından sonra açılır', () => {
+  const young = fresh(8, { age: 17 });
+  const r = canGoOut(young, 'bar', 'bar1', 'emre');
+  assert.equal(r.ok, false);
+  assert.match(r.reason, /18/);
+  assert.equal(canGoOut(young, 'cafe', 'cafe1', 'emre').ok, true);
+});
+
 test('sosyal: çıkış para/enerji/zaman harcar; haftalık sınır', () => {
-  const s = fresh(8);
+  const s = fresh(8, { age: 20 });
   const money = s.career.money;
   const slots = s.calendar.slots;
   const { result } = playBest(s, 'cafe', 'cafe1', 'emre');
@@ -171,6 +179,7 @@ test('sosyal: aynı kişiyle buluşmalar her seferinde farklı sohbetler getirir
   const { newGame } = await import('../src/core/game.js');
   const so = await import('../src/core/social/index.js');
   const s = newGame({ name: 'Çeşit Test', position: 'MF' });
+  s.player.age = 20; // barda da buluşabilsin
   const p = so.socialContacts(s)[0];
   const lines = [];
   for (let i = 0; i < 6; i++) {

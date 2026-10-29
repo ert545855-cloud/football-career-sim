@@ -14,7 +14,7 @@ export const VENUES = {
     ],
   },
   bar: {
-    id: 'bar', name: 'Bar', icon: 'glass', scene: 'bar',
+    id: 'bar', name: 'Bar', icon: 'glass', scene: 'bar', minAge: 18,
     desc: 'Eğlence ve müzik. Moral yükselir ama yorar; paparazzi de orada.',
     tiers: [
       { id: 'bar1', name: 'Tribün Pub', price: 80, prestige: 1, energy: -9, morale: 6, palette: 'pub' },

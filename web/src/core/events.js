@@ -48,7 +48,7 @@ export const EVENTS = [
   },
   {
     id: 'nightclub', icon: 'moon', title: 'Gece Kulübü Daveti',
-    when: () => true, weight: 0.9,
+    when: (s) => (s.player?.age || 0) >= 18, weight: 0.9, // reşit olmayan oyuncuya gece kulübü daveti gelmez
     text: () => 'Arkadaşların maçtan sonra seni şehrin en popüler gece kulübüne çağırıyor.',
     choices: [
       {
